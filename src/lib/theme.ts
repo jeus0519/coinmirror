@@ -1,0 +1,76 @@
+import { DarkTheme, DefaultTheme, type Theme } from 'expo-router/react-navigation';
+
+// coinmirror 팔레트 — docs/coinmirror_demo.html 기준(라이트+그린). src/global.css와 값을 맞춰 유지한다.
+export const THEME = {
+  light: {
+    background: 'hsl(180 20% 99%)',
+    foreground: 'hsl(217 33% 17%)',
+    card: 'hsl(0 0% 100%)',
+    cardForeground: 'hsl(217 33% 17%)',
+    popover: 'hsl(0 0% 100%)',
+    popoverForeground: 'hsl(217 33% 17%)',
+    primary: 'hsl(142 71% 45%)',
+    primaryForeground: 'hsl(0 0% 100%)',
+    secondary: 'hsl(199 89% 48%)',
+    secondaryForeground: 'hsl(0 0% 100%)',
+    muted: 'hsl(210 40% 96%)',
+    mutedForeground: 'hsl(215 16% 47%)',
+    accent: 'hsl(204 100% 97%)',
+    accentForeground: 'hsl(200 98% 39%)',
+    destructive: 'hsl(0 84% 60%)',
+    warning: 'hsl(25 95% 53%)',
+    success: 'hsl(142 76% 36%)',
+    border: 'hsl(214 32% 91%)',
+    input: 'hsl(214 32% 91%)',
+    ring: 'hsl(142 71% 45%)',
+    radius: '1rem',
+  },
+  dark: {
+    background: 'hsl(222 25% 8%)',
+    foreground: 'hsl(210 20% 96%)',
+    card: 'hsl(222 20% 13%)',
+    cardForeground: 'hsl(210 20% 96%)',
+    popover: 'hsl(222 20% 13%)',
+    popoverForeground: 'hsl(210 20% 96%)',
+    primary: 'hsl(142 71% 45%)',
+    primaryForeground: 'hsl(222 25% 8%)',
+    secondary: 'hsl(199 89% 55%)',
+    secondaryForeground: 'hsl(222 25% 8%)',
+    muted: 'hsl(222 20% 16%)',
+    mutedForeground: 'hsl(215 15% 65%)',
+    accent: 'hsl(222 20% 16%)',
+    accentForeground: 'hsl(199 89% 60%)',
+    destructive: 'hsl(0 70% 55%)',
+    warning: 'hsl(25 90% 55%)',
+    success: 'hsl(142 65% 50%)',
+    border: 'hsl(222 20% 20%)',
+    input: 'hsl(222 20% 20%)',
+    ring: 'hsl(142 71% 45%)',
+    radius: '1rem',
+  },
+} as const;
+
+export const NAV_THEME: Record<'light' | 'dark', Theme> = {
+  light: {
+    ...DefaultTheme,
+    colors: {
+      background: THEME.light.background,
+      border: THEME.light.border,
+      card: THEME.light.card,
+      notification: THEME.light.destructive,
+      primary: THEME.light.primary,
+      text: THEME.light.foreground,
+    },
+  },
+  dark: {
+    ...DarkTheme,
+    colors: {
+      background: THEME.dark.background,
+      border: THEME.dark.border,
+      card: THEME.dark.card,
+      notification: THEME.dark.destructive,
+      primary: THEME.dark.primary,
+      text: THEME.dark.foreground,
+    },
+  },
+};

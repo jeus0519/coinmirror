@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- 단일 파일 데모 · build_static.py 로 생성 -->
+<title>coinmirror — 투자 습관 기록 웰니스 도구</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>🪞</text></svg>">
+<style>
+/* coinmirror 로컬 데모 UI — 외부 CDN 없이 동작 */
+:root {
+  --brand-50: #f0fdf4;
+  --brand-100: #dcfce7;
+  --brand-200: #bbf7d0;
+  --brand-500: #22c55e;
+  --brand-600: #16a34a;
+  --brand-700: #15803d;
+  --accent-50: #f0f9ff;
+  --accent-100: #e0f2fe;
+  --accent-500: #0ea5e9;
+  --accent-600: #0284c7;
+  --warn-50: #fff7ed;
+  --warn-500: #f97316;
+  --danger-500: #ef4444;
+  --ink: #1e293b;
+  --muted: #64748b;
+  --line: #e2e8f0;
+  --surface: #ffffff;
+  --bg: #fcfdfd;
+  --radius: 16px;
+  --shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 8px 24px rgba(15, 23, 42, .05);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: Pretendard, 'Malgun Gothic', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--accent-600); }
+
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+
+/* ---------- header ---------- */
+header.top {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(255,255,255,.88);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+.top-inner { display: flex; align-items: center; justify-content: space-between; height: 66px; gap: 16px; }
+.logo { display: flex; align-items: center; gap: 10px; }
+.logo-mark {
+  width: 38px; height: 38px; border-radius: 12px; background: var(--brand-500);
+  display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 18px;
+  box-shadow: 0 6px 14px rgba(34,197,94,.28);
+}
+.logo b { font-size: 17px; letter-spacing: -.02em; display: block; }
+.logo span { font-size: 11px; color: var(--muted); display: block; margin-top: -3px; }
+
+.steps { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.step-btn {
+  display: flex; align-items: center; gap: 7px;
+  border: 1px solid transparent; background: transparent; cursor: pointer;
+  padding: 7px 12px; border-radius: 999px; font-size: 13px; font-weight: 600; color: var(--muted);
+  font-family: inherit;
+}
+.step-btn .num {
+  width: 21px; height: 21px; border-radius: 50%; background: #f1f5f9;
+  display: grid; place-items: center; font-size: 11px; font-weight: 800;
+}
+.step-btn:hover:not(:disabled) { background: #f8fafc; color: var(--ink); }
+.step-btn.active { background: var(--brand-50); color: var(--brand-700); border-color: var(--brand-200); }
+.step-btn.active .num { background: var(--brand-500); color: #fff; }
+.step-btn:disabled { opacity: .42; cursor: not-allowed; }
+
+/* ---------- layout ---------- */
+.panel { display: none; padding: 34px 0 72px; }
+.panel.active { display: block; animation: fade .35s ease-out; }
+@keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+.section { margin-bottom: 34px; }
+.section-title { font-size: 19px; font-weight: 800; letter-spacing: -.02em; margin: 0 0 4px; }
+.section-desc { color: var(--muted); font-size: 13.5px; margin: 0 0 16px; }
+
+.card {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow);
+}
+.grid { display: grid; gap: 14px; }
+.g2 { grid-template-columns: repeat(2, minmax(0,1fr)); }
+.g3 { grid-template-columns: repeat(3, minmax(0,1fr)); }
+.g4 { grid-template-columns: repeat(4, minmax(0,1fr)); }
+@media (max-width: 900px) { .g3, .g4 { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+@media (max-width: 620px) { .g2, .g3, .g4 { grid-template-columns: 1fr; } }
+
+/* ---------- hero ---------- */
+.hero { padding: 46px 0 14px; text-align: center; }
+.badge {
+  display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700;
+  background: var(--brand-50); color: var(--brand-700); border: 1px solid var(--brand-200);
+  padding: 6px 13px; border-radius: 999px;
+}
+.hero h1 { font-size: 38px; line-height: 1.28; letter-spacing: -.035em; margin: 18px 0 12px; font-weight: 800; }
+.hero h1 em { font-style: normal; color: var(--brand-600); }
+.hero p.lead { color: var(--muted); font-size: 16px; max-width: 620px; margin: 0 auto 26px; }
+@media (max-width: 620px) { .hero h1 { font-size: 27px; } }
+
+.cta-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.btn {
+  font-family: inherit; font-size: 14.5px; font-weight: 700; cursor: pointer;
+  border-radius: 12px; padding: 13px 22px; border: 1px solid transparent; transition: .15s;
+}
+.btn-primary { background: var(--brand-500); color: #fff; box-shadow: 0 8px 18px rgba(34,197,94,.24); }
+.btn-primary:hover { background: var(--brand-600); }
+.btn-ghost { background: #fff; border-color: var(--line); color: var(--ink); }
+.btn-ghost:hover { border-color: #cbd5e1; background: #f8fafc; }
+.btn-sm { padding: 8px 14px; font-size: 13px; border-radius: 10px; }
+.btn:disabled { opacity: .6; cursor: progress; }
+
+/* ---------- dropzone ---------- */
+.dropzone {
+  margin: 26px auto 0; max-width: 560px; border: 2px dashed var(--brand-200);
+  background: var(--brand-50); border-radius: 18px; padding: 26px; text-align: center; transition: .15s;
+}
+.dropzone.over { border-color: var(--brand-500); background: var(--brand-100); }
+.dropzone p { margin: 0; font-size: 13.5px; color: var(--muted); }
+.dropzone b { display: block; font-size: 15px; color: var(--ink); margin-bottom: 4px; }
+
+/* ---------- feature / trust ---------- */
+.feat { padding: 18px; border-radius: 14px; border: 1px solid var(--line); background: #fff; }
+.feat .tag { font-size: 11px; font-weight: 800; color: var(--brand-600); letter-spacing: .04em; }
+.feat h4 { margin: 6px 0 6px; font-size: 15px; }
+.feat p { margin: 0; font-size: 13px; color: var(--muted); }
+
+.trust { background: #0f172a; color: #e2e8f0; border-radius: 20px; padding: 30px; }
+.trust h3 { margin: 0 0 6px; font-size: 20px; letter-spacing: -.02em; }
+.trust > p { color: #94a3b8; font-size: 13.5px; margin: 0 0 18px; }
+.trust ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; grid-template-columns: repeat(2, minmax(0,1fr)); }
+@media (max-width: 620px) { .trust ul { grid-template-columns: 1fr; } }
+.trust li { display: flex; gap: 9px; font-size: 13.5px; align-items: flex-start; }
+.trust li::before { content: "✓"; color: var(--brand-500); font-weight: 800; }
+
+.flow { counter-reset: s; display: grid; gap: 12px; grid-template-columns: repeat(3, minmax(0,1fr)); }
+@media (max-width: 620px) { .flow { grid-template-columns: 1fr; } }
+.flow .step { border: 1px solid var(--line); border-radius: 14px; padding: 18px; background: #fff; }
+.flow .step .n { width: 26px; height: 26px; border-radius: 8px; background: var(--accent-50); color: var(--accent-600); display: grid; place-items: center; font-weight: 800; font-size: 13px; }
+.flow .step h4 { margin: 10px 0 4px; font-size: 15px; }
+.flow .step p { margin: 0; font-size: 13px; color: var(--muted); }
+
+/* ---------- stats ---------- */
+.stat { border: 1px solid var(--line); border-radius: 14px; padding: 15px 16px; background: #fff; }
+.stat .k { font-size: 12px; color: var(--muted); font-weight: 600; }
+.stat .v { font-size: 21px; font-weight: 800; letter-spacing: -.03em; margin-top: 3px; }
+.stat .v.pos { color: var(--brand-600); }
+.stat .v.neg { color: var(--danger-500); }
+.stat .sub { font-size: 11.5px; color: var(--muted); }
+
+/* ---------- metric card ---------- */
+.metric { display: flex; flex-direction: column; gap: 12px; }
+.metric-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.metric-head h4 { margin: 0; font-size: 16px; letter-spacing: -.02em; }
+.kind {
+  font-size: 10.5px; font-weight: 800; padding: 3px 8px; border-radius: 999px;
+  background: #f1f5f9; color: var(--muted); letter-spacing: .03em;
+}
+.kind.risk { background: var(--warn-50); color: #c2410c; }
+.kind.skill { background: var(--brand-50); color: var(--brand-700); }
+.kind.observation { background: var(--accent-50); color: var(--accent-600); }
+
+.score-num { font-size: 30px; font-weight: 800; letter-spacing: -.04em; line-height: 1; }
+.score-num small { font-size: 12px; font-weight: 600; color: var(--muted); margin-left: 3px; }
+.score-band { font-size: 11.5px; font-weight: 700; color: var(--muted); }
+
+.bar { height: 8px; border-radius: 999px; background: #f1f5f9; overflow: hidden; }
+.bar > i { display: block; height: 100%; border-radius: 999px; background: var(--brand-500); transition: width .5s ease; }
+.bar > i.lv-mid { background: #fbbf24; }
+.bar > i.lv-high { background: var(--warn-500); }
+.bar > i.lv-danger { background: var(--danger-500); }
+
+.headline { font-size: 13.5px; margin: 0; }
+.kv { display: flex; flex-wrap: wrap; gap: 6px; }
+.kv span { font-size: 11.5px; background: #f8fafc; border: 1px solid var(--line); border-radius: 8px; padding: 3px 9px; color: var(--muted); }
+.kv span b { color: var(--ink); font-weight: 700; }
+
+.evidence { border-top: 1px dashed var(--line); padding-top: 11px; display: grid; gap: 7px; }
+.evidence .row { display: flex; gap: 9px; font-size: 12.5px; align-items: baseline; }
+.evidence .when { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 11.5px; }
+.evidence .sym { font-weight: 800; color: var(--brand-700); min-width: 42px; }
+
+.question {
+  background: var(--accent-50); border: 1px solid var(--accent-100); border-radius: 11px;
+  padding: 10px 13px; font-size: 13px; color: #0c4a6e;
+}
+.limitation { font-size: 11.5px; color: var(--warn-500); background: var(--warn-50); border-radius: 9px; padding: 7px 11px; }
+.pending { opacity: .78; }
+
+/* ---------- charts ---------- */
+.hbars { display: flex; align-items: flex-end; gap: 3px; height: 110px; }
+.hbars .col { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 4px; height: 100%; }
+.hbars .col i { display: block; width: 100%; border-radius: 4px 4px 0 0; background: var(--brand-200); min-height: 2px; }
+.hbars .col.night i { background: var(--accent-500); }
+.hbars .col small { font-size: 9.5px; color: var(--muted); }
+
+table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.tbl th, table.tbl td { text-align: right; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+table.tbl th:first-child, table.tbl td:first-child { text-align: left; }
+table.tbl th { font-size: 11.5px; color: var(--muted); font-weight: 700; }
+table.tbl td.pos { color: var(--brand-600); font-weight: 700; }
+table.tbl td.neg { color: var(--danger-500); font-weight: 700; }
+.scroll-x { overflow-x: auto; }
+
+/* ---------- goals ---------- */
+.goal-row { display: grid; grid-template-columns: 1fr 150px; gap: 14px; align-items: center; padding: 13px 0; border-bottom: 1px solid var(--line); }
+.goal-row:last-child { border-bottom: none; }
+.goal-row h5 { margin: 0 0 2px; font-size: 14px; }
+.goal-row p { margin: 0; font-size: 12px; color: var(--muted); }
+.goal-row .src { font-size: 11px; color: var(--brand-600); font-weight: 700; }
+.input-unit { display: flex; align-items: center; gap: 6px; }
+.input-unit input {
+  width: 100%; font-family: inherit; font-size: 14px; font-weight: 700; text-align: right;
+  border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; color: var(--ink);
+}
+.input-unit input:focus { outline: 2px solid var(--brand-200); border-color: var(--brand-500); }
+.input-unit span { font-size: 12px; color: var(--muted); white-space: nowrap; }
+
+.prog { border: 1px solid var(--line); border-radius: 14px; padding: 16px; background: #fff; }
+.prog .top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.prog h5 { margin: 0; font-size: 14px; }
+.pill { font-size: 11px; font-weight: 800; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+.pill.ok { background: var(--brand-50); color: var(--brand-700); }
+.pill.no { background: #fef2f2; color: #b91c1c; }
+.pill.na { background: #f1f5f9; color: var(--muted); }
+.prog .note { font-size: 12px; color: var(--muted); margin: 8px 0 10px; }
+
+.worksheet textarea {
+  width: 100%; min-height: 92px; font-family: inherit; font-size: 13.5px; line-height: 1.6;
+  border: 1px solid var(--line); border-radius: 12px; padding: 12px; resize: vertical; color: var(--ink);
+}
+.worksheet textarea:focus { outline: 2px solid var(--brand-200); border-color: var(--brand-500); }
+.worksheet label { font-size: 13px; font-weight: 700; display: block; margin-bottom: 6px; }
+
+/* ---------- info (step4) ---------- */
+.notice {
+  background: var(--warn-50); border: 1px solid #fed7aa; color: #9a3412;
+  border-radius: 12px; padding: 12px 15px; font-size: 12.5px;
+}
+.chips { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 14px; }
+.chip {
+  font-family: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer;
+  border: 1px solid var(--line); background: #fff; color: var(--muted);
+  padding: 7px 13px; border-radius: 999px;
+}
+.chip.active { background: var(--brand-500); border-color: var(--brand-500); color: #fff; }
+
+.asset { border: 1px solid var(--line); border-radius: 14px; padding: 16px; background: #fff; }
+.asset .sym { font-size: 16px; font-weight: 800; letter-spacing: -.02em; }
+.asset .nm { font-size: 12px; color: var(--muted); }
+.asset .cat { font-size: 11px; font-weight: 700; color: var(--accent-600); background: var(--accent-50); padding: 3px 8px; border-radius: 8px; }
+.asset p { font-size: 12.5px; color: var(--muted); margin: 10px 0; }
+.asset .links { display: flex; gap: 10px; font-size: 12px; }
+.mine { border-color: var(--brand-200); background: linear-gradient(180deg, var(--brand-50), #fff); }
+
+.event { border: 1px solid var(--line); border-radius: 14px; padding: 16px; background: #fff; display: grid; gap: 8px; }
+.event .head { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+.event h5 { margin: 0; font-size: 14.5px; }
+.event .ex { font-size: 11px; font-weight: 800; color: var(--brand-700); background: var(--brand-50); padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+.event dl { display: grid; grid-template-columns: 74px 1fr; gap: 4px 10px; margin: 0; font-size: 12.5px; }
+.event dt { color: var(--muted); font-weight: 600; }
+.event dd { margin: 0; }
+.event .risk { font-size: 12px; color: #9a3412; background: var(--warn-50); border-radius: 9px; padding: 7px 11px; }
+
+/* ---------- misc ---------- */
+.disclaimer {
+  border-top: 1px solid var(--line); margin-top: 20px; padding: 22px 0 40px;
+  font-size: 12px; color: var(--muted); text-align: center;
+}
+.empty { text-align: center; padding: 60px 20px; color: var(--muted); }
+.toast {
+  position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(20px);
+  background: #0f172a; color: #fff; font-size: 13.5px; font-weight: 600;
+  padding: 12px 20px; border-radius: 12px; opacity: 0; pointer-events: none; transition: .25s; z-index: 100;
+}
+.toast.show { opacity: 1; transform: translateX(-50%); }
+.toast.err { background: #b91c1c; }
+.sample-flag {
+  display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: .05em;
+  background: #fef3c7; color: #92400e; padding: 4px 10px; border-radius: 999px;
+}
+.spinner {
+  width: 15px; height: 15px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff;
+  border-radius: 50%; display: inline-block; animation: spin .7s linear infinite; vertical-align: -2px; margin-right: 7px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap top-inner">
+    <div class="logo">
+      <div class="logo-mark">c</div>
+      <div>
+        <b>coinmirror</b>
+        <span>투자 습관 기록 · 행동 요약 도구</span>
+      </div>
+    </div>
+    <nav class="steps">
+      <button class="step-btn active" data-step="1"><span class="num">1</span>시작하기</button>
+      <button class="step-btn" data-step="2" disabled><span class="num">2</span>스코어 · 분석</button>
+      <button class="step-btn" data-step="3" disabled><span class="num">3</span>목표 · 진행</button>
+      <button class="step-btn" data-step="4" disabled><span class="num">4</span>정보 · 이벤트</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ STEP 1 : 랜딩 ============ -->
+  <section class="panel active" id="panel-1">
+    <div class="hero">
+      <span class="badge">투자 조언이 아닌, 내 거래의 사후 행동 요약</span>
+      <h1>당신의 매매 기록은,<br><em>당신의 습관</em>을 이미 알고 있습니다.</h1>
+      <p class="lead">
+        거래소에서 내려받은 거래내역 CSV 하나로 6가지 행동 패턴을 사후 분석합니다.
+        무엇을 사거나 팔라고 말하지 않습니다. 이미 지나간 내 거래가 어떤 모양이었는지만 그대로 보여드립니다.
+      </p>
+      <div class="cta-row">
+        <button class="btn btn-primary" id="btn-sample">예시 데이터로 바로 체험하기</button>
+        <button class="btn btn-ghost" id="btn-upload">내 CSV 업로드</button>
+        <a class="btn btn-ghost" href="/api/sample/csv" download>예시 CSV 내려받기</a>
+      </div>
+      <input type="file" id="file-input" accept=".csv,text/csv" hidden>
+
+      <div class="dropzone" id="dropzone">
+        <b>여기에 CSV 파일을 끌어다 놓으세요</b>
+        <p>업비트 원화마켓 거래내역 CSV · 파일은 서버에 저장되지 않고 메모리에서만 분석됩니다</p>
+      </div>
+    </div>
+
+    <div class="section" style="margin-top:44px">
+      <h3 class="section-title">6가지 행동 지표</h3>
+      <p class="section-desc">모두 CSV만으로 계산 가능한 항목입니다. 표본이 부족하면 점수를 만들지 않고 '측정 중'으로 남깁니다.</p>
+      <div class="grid g3">
+        <div class="feat"><div class="tag">M1 · 위험도형</div><h4>과매매 지표</h4><p>일평균 체결 횟수, 당일 왕복 비율, 실현손익 대비 누적 수수료 비중</p></div>
+        <div class="feat"><div class="tag">M2 · 역량형</div><h4>익절·손절 비대칭</h4><p>평균 익절률과 손절률, 이익·손실 포지션의 평균 보유시간 차이</p></div>
+        <div class="feat"><div class="tag">M3 · 위험도형</div><h4>추격 진입 지표</h4><p>직전 본인 체결가보다 7% 이상 높은 가격에서 이뤄진 재매수 비율</p></div>
+        <div class="feat"><div class="tag">M4 · 위험도형</div><h4>물타기 지표</h4><p>보유 평단 대비 -10% 이하 구간에서 발생한 추가 매수 비율과 금액</p></div>
+        <div class="feat"><div class="tag">M5 · 위험도형</div><h4>손실 후 재진입</h4><p>손실을 확정한 뒤 2시간 안에 이뤄진 매수 비율과 그때의 베팅 배율</p></div>
+        <div class="feat"><div class="tag">M6 · 관찰형</div><h4>야간 거래 지표</h4><p>00~06시 거래 비중과 야간·주간 청산 손익률 격차</p></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="trust">
+        <h3>coinmirror가 하지 않는 것</h3>
+        <p>이 서비스는 투자 자문이 아니라 기록·회고 도구입니다. 아래는 지키기로 한 경계선입니다.</p>
+        <ul>
+          <li>매수 · 매도를 권하지 않습니다</li>
+          <li>목표 가격 · 청산 가격 · 진입 가격을 제시하지 않습니다</li>
+          <li>시세를 예측하거나 종목을 평가하지 않습니다</li>
+          <li>거래소 API 키를 요구하지 않습니다</li>
+          <li>원본 CSV를 서버에 저장하지 않습니다</li>
+          <li>수익이나 원금을 보장하지 않습니다</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3 class="section-title">진행 방식</h3>
+      <p class="section-desc">4단계로 이어집니다. 지금은 로컬 데모라 모든 단계를 바로 확인할 수 있습니다.</p>
+      <div class="flow">
+        <div class="step"><div class="n">1</div><h4>거래내역 불러오기</h4><p>예시 데이터 또는 내 CSV를 올립니다.</p></div>
+        <div class="step"><div class="n">2</div><h4>스코어 · 분석 확인</h4><p>6개 지표와 근거 거래를 봅니다.</p></div>
+        <div class="step"><div class="n">3</div><h4>내 원칙 세우고 대조</h4><p>직접 정한 기준선 대비 진행 현황을 봅니다.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ STEP 2 : 스코어 및 분석 ============ -->
+  <section class="panel" id="panel-2">
+    <div class="section">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+        <div>
+          <h3 class="section-title">스코어 및 분석 <span id="sample-flag"></span></h3>
+          <p class="section-desc" id="period-desc"></p>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="btn-reset">다른 데이터로 다시 분석</button>
+      </div>
+      <div class="card" id="narrative-card"></div>
+    </div>
+
+    <div class="section">
+      <h3 class="section-title">거래 개요</h3>
+      <p class="section-desc">분할 체결은 가중평균 1건으로 병합했고, 실현손익은 FIFO 기준으로 수수료를 반영해 계산했습니다.</p>
+      <div class="grid g4" id="overview-grid"></div>
+    </div>
+
+    <div class="section">
+      <h3 class="section-title">행동 지표 6종</h3>
+      <p class="section-desc">위험도형은 높을수록 해당 행동의 빈도가 높다는 뜻이며, 좋고 나쁨의 평가가 아닙니다.</p>
+      <div class="grid g2" id="metric-grid"></div>
+    </div>
+
+    <div class="section grid g2">
+      <div class="card">
+        <h4 style="margin:0 0 4px;font-size:15px">시간대별 체결 분포</h4>
+        <p class="section-desc" style="margin-bottom:14px">파란색은 00~06시 구간입니다.</p>
+        <div class="hbars" id="hour-chart"></div>
+      </div>
+      <div class="card">
+        <h4 style="margin:0 0 4px;font-size:15px">요일별 체결 분포</h4>
+        <p class="section-desc" style="margin-bottom:14px">월요일부터 일요일 순입니다.</p>
+        <div class="hbars" id="weekday-chart"></div>
+      </div>
+    </div>
+
+    <div class="section grid g2">
+      <div class="card">
+        <h4 style="margin:0 0 12px;font-size:15px">종목별 거래대금 상위</h4>
+        <div class="scroll-x"><table class="tbl" id="symbol-table"></table></div>
+      </div>
+      <div class="card">
+        <h4 style="margin:0 0 12px;font-size:15px">최근 청산 기록</h4>
+        <div class="scroll-x" style="max-height:330px;overflow-y:auto"><table class="tbl" id="realized-table"></table></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ STEP 3 : 목표 세팅 및 진행 현황 ============ -->
+  <section class="panel" id="panel-3">
+    <div class="section">
+      <h3 class="section-title">내 원칙 세우기</h3>
+      <p class="section-desc" id="goal-notice"></p>
+      <div class="card">
+        <div id="goal-form"></div>
+        <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">
+          <button class="btn btn-primary btn-sm" id="btn-goal-apply">진행 현황 계산</button>
+          <button class="btn btn-ghost btn-sm" id="btn-goal-save">내 원칙 저장</button>
+          <button class="btn btn-ghost btn-sm" id="btn-goal-reset">기본값으로</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3 class="section-title">진행 현황 <span id="goal-summary" class="score-band"></span></h3>
+      <p class="section-desc">내가 정한 기준선과 실제 거래 기록을 대조한 결과입니다.</p>
+      <div class="grid g2" id="progress-grid"></div>
+    </div>
+
+    <div class="section">
+      <div class="card">
+        <h4 style="margin:0 0 4px;font-size:15px">주간 행동 추이</h4>
+        <p class="section-desc" style="margin-bottom:16px">주 단위 체결 건수와 야간 거래 비중입니다.</p>
+        <div id="weekly-chart"></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3 class="section-title">다음 4주 원칙 설계 워크시트</h3>
+      <p class="section-desc">직접 적는 양식입니다. 입력 내용은 이 브라우저에만 저장되며 서버로 전송되지 않습니다.</p>
+      <div class="card worksheet grid g2">
+        <div>
+          <label>1. 이번 분석에서 가장 눈에 띈 사실은?</label>
+          <textarea data-ws="fact" placeholder="예: 손실 포지션 평균 보유시간이 이익 포지션의 3배였다."></textarea>
+        </div>
+        <div>
+          <label>2. 앞으로 4주간 지켜볼 내 기준선은?</label>
+          <textarea data-ws="rule" placeholder="예: 하루 체결 3건을 넘기면 그날은 앱을 닫는다."></textarea>
+        </div>
+        <div>
+          <label>3. 그 기준을 깨기 쉬운 상황은 언제인가?</label>
+          <textarea data-ws="trigger" placeholder="예: 자기 전 시세를 확인할 때."></textarea>
+        </div>
+        <div>
+          <label>4. 4주 뒤 무엇으로 확인할 것인가?</label>
+          <textarea data-ws="check" placeholder="예: 다음 CSV 분석에서 야간 거래 비중 10% 이하."></textarea>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ STEP 4 : 종목 정보 및 거래소 이벤트 ============ -->
+  <section class="panel" id="panel-4">
+    <div class="section">
+      <h3 class="section-title">종목 정보 및 거래소 이벤트</h3>
+      <p class="section-desc">내가 실제로 거래한 종목을 앞쪽에 배치했습니다. 추천 순위가 아닙니다.</p>
+      <div class="notice" id="info-notice"></div>
+    </div>
+
+    <div class="section">
+      <h3 class="section-title">종목 일반 정보</h3>
+      <p class="section-desc">각 프로젝트가 공개한 개요입니다. 시세·전망 정보는 포함하지 않습니다.</p>
+      <div class="chips" id="asset-filters">
+        <button class="chip active" data-asset-filter="mine">내 거래 종목</button>
+        <button class="chip" data-asset-filter="all">전체</button>
+      </div>
+      <div class="grid g3" id="asset-grid"></div>
+      <p class="section-desc" id="asset-missing" style="margin-top:12px"></p>
+    </div>
+
+    <div class="section">
+      <h3 class="section-title">거래소 참여형 이벤트 정보</h3>
+      <p class="section-desc">스테이킹·에어드랍·점검 공지 등 참여 여부를 스스로 판단할 수 있게 유형별로 정리한 목록입니다.</p>
+      <div class="chips" id="event-filters"></div>
+      <div class="grid g2" id="event-grid"></div>
+      <div class="card" style="margin-top:14px">
+        <h4 style="margin:0 0 8px;font-size:14px">거래소 공식 공지 게시판</h4>
+        <div class="links" id="notice-boards" style="display:flex;gap:14px;flex-wrap:wrap;font-size:13px"></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="disclaimer" id="disclaimer">
+    본 솔루션은 행동 요약 및 투자 습관 기록용 웰니스 도구이며, 어떠한 투자 조언이나 원금 보장 약속도 포함하지 않습니다.
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+<script>window.__COINMIRROR__ = {"built_at": "2026-08-09", "report": {"overview": {"exchange": "upbit", "period_start": "2026-02-09", "period_end": "2026-08-07", "period_days": 180, "trade_count": 214, "active_days": 109, "active_day_avg": 1.96, "buy_count": 113, "sell_count": 101, "symbol_count": 8, "top_symbols": [{"symbol": "SOL", "volume": 41479602, "count": 32}, {"symbol": "ARB", "volume": 37454981, "count": 25}, {"symbol": "BTC", "volume": 28959719, "count": 32}, {"symbol": "APT", "volume": 28201655, "count": 25}, {"symbol": "XRP", "volume": 28051292, "count": 25}, {"symbol": "DOGE", "volume": 27943090, "count": 28}, {"symbol": "SAND", "volume": 27363191, "count": 27}, {"symbol": "ETH", "volume": 21813310, "count": 20}], "gross_volume": 241266840, "total_fee": 120633, "realized_pnl": 4095217, "realized_count": 171, "win_rate": 57.9, "fee_to_pnl_pct": 2.9}, "metrics": [{"id": "M1", "name": "과매매 지표", "kind": "risk", "sample_size": 214, "score": 27, "measured": true, "band": "빈도 낮음", "headline": "분석 기간 180일 동안 총 214건, 일평균 1.2건을 체결하셨습니다. 거래가 있었던 날 기준으로는 하루 평균 2.0건입니다.", "stats": {"기간(일)": 180, "총 체결": 214, "일평균 체결": 1.19, "당일 왕복 비율(%)": 9.4, "누적 수수료(원)": 120633, "수수료/실현손익 절대값(%)": 1.0}, "evidence": [{"when": "2026-02-17", "symbol": "전체", "fact": "하루 동안 5건 체결"}, {"when": "2026-03-16", "symbol": "전체", "fact": "하루 동안 5건 체결"}, {"when": "2026-05-19", "symbol": "전체", "fact": "하루 동안 5건 체결"}], "question": "가장 많이 체결한 날, 사전에 계획했던 거래는 그중 몇 건이었나요?", "limitation": null}, {"id": "M2", "name": "익절·손절 비대칭", "kind": "skill", "sample_size": 171, "score": 97, "measured": true, "band": "일관성 높음", "headline": "이익 청산 평균 +11.3%(99건), 손실 청산 평균 -7.0%(72건)입니다. 이익 포지션은 평균 361시간, 손실 포지션은 평균 386시간 보유하셨습니다.", "stats": {"청산 건수": 171, "승률(%)": 57.9, "평균 익절률(%)": 11.3, "평균 손절률(%)": -7.0, "손익비 R": 1.61, "이익 평균 보유(h)": 361.1, "손실 평균 보유(h)": 385.5, "보유시간비 P": 0.94}, "evidence": [{"when": "2026-07-15 16:53", "symbol": "ARB", "fact": "+59.1% 청산, 보유 504시간"}, {"when": "2026-05-31 23:22", "symbol": "ARB", "fact": "+53.6% 청산, 보유 493시간"}, {"when": "2026-06-24 02:31", "symbol": "DOGE", "fact": "-25.8% 청산, 보유 1036시간"}, {"when": "2026-05-19 23:04", "symbol": "APT", "fact": "-19.5% 청산, 보유 1111시간"}], "question": "가장 오래 들고 있었던 손실 포지션은, 어떤 조건이 되면 정리하기로 정해두셨었나요?", "limitation": null}, {"id": "M3", "name": "추격 진입 지표", "kind": "risk", "sample_size": 105, "score": 68, "measured": true, "band": "보통", "headline": "재매수 105건 가운데 33건(31.4%)이 직전 본인 체결가보다 7% 이상 높은 가격에서 발생했습니다.", "stats": {"비교 가능 매수": 105, "추격 매수 건수": 33, "추격 매수 비율(%)": 31.4, "24시간 내 재매수 비율(%)": 3.8}, "evidence": [{"when": "2026-05-24 02:40", "symbol": "ARB", "fact": "직전 본인 체결가 대비 +48.1% 가격에 추가 매수 (900,000원)"}, {"when": "2026-04-03 05:12", "symbol": "SOL", "fact": "직전 본인 체결가 대비 +39.5% 가격에 추가 매수 (1,500,000원)"}, {"when": "2026-08-06 16:25", "symbol": "XRP", "fact": "직전 본인 체결가 대비 +27.1% 가격에 추가 매수 (1,500,000원)"}, {"when": "2026-07-10 01:10", "symbol": "ARB", "fact": "직전 본인 체결가 대비 +24.9% 가격에 추가 매수 (500,000원)"}, {"when": "2026-06-14 11:16", "symbol": "ETH", "fact": "직전 본인 체결가 대비 +23.7% 가격에 추가 매수 (1,500,000원)"}], "question": "이 거래들 중 매수 전에 이미 정해둔 진입 조건이 있었던 건은 몇 건인가요?", "limitation": "시세 데이터 없이 본인 체결가만으로 계산한 프록시 지표입니다. 시장 급등 구간 여부는 반영되지 않습니다."}, {"id": "M4", "name": "물타기 지표", "kind": "risk", "sample_size": 77, "score": 100, "measured": true, "band": "빈도 높음", "headline": "보유 중 추가매수 77건 중 26건(33.8%)이 평단 대비 -10% 이하 구간에서 발생했고, 전체 매수금액의 26.6%를 차지합니다.", "stats": {"추가매수 건수": 77, "평단 -10% 이하 추가매수": 26, "해당 비율(%)": 33.8, "해당 매수금액 비중(%)": 26.6, "해당 매수금액(원)": 32700000}, "evidence": [{"when": "2026-07-17 05:02", "symbol": "DOGE", "fact": "보유 평단 301원 대비 -31.0% 구간에서 1,800,000원 추가 매수"}, {"when": "2026-04-23 20:10", "symbol": "APT", "fact": "보유 평단 11,243원 대비 -24.4% 구간에서 1,100,000원 추가 매수"}, {"when": "2026-04-03 01:33", "symbol": "ARB", "fact": "보유 평단 820원 대비 -19.5% 구간에서 1,100,000원 추가 매수"}, {"when": "2026-05-19 21:00", "symbol": "SAND", "fact": "보유 평단 790원 대비 -19.2% 구간에서 1,100,000원 추가 매수"}, {"when": "2026-06-19 21:13", "symbol": "ARB", "fact": "보유 평단 1,144원 대비 -18.9% 구간에서 700,000원 추가 매수"}], "question": "이 추가 매수들은 처음 진입할 때 세워둔 분할 계획에 포함돼 있던 건가요?", "limitation": "사전에 계획한 분할매수인지 구분할 수 있는 기록이 없어, 계획적 분할매수도 함께 집계됩니다."}, {"id": "M5", "name": "손실 후 재진입", "kind": "risk", "sample_size": 72, "score": 63, "measured": true, "band": "보통", "headline": "손실 확정 72건 중 20건(27.8%) 뒤에 2시간 이내 새 매수가 있었고, 그때 평균 매수금액은 평소의 1.5배였습니다.", "stats": {"손실 확정 건수": 72, "2시간 내 재진입": 20, "재진입 비율(%)": 27.8, "베팅금액 배율": 1.54, "평소 평균 매수금액(원)": 1087611}, "evidence": [{"when": "2026-02-17 14:02", "symbol": "APT", "fact": "직전 2,638원 손실 확정 후 2시간 내 2,200,000원 매수 (평균 매수금액의 2.0배)"}, {"when": "2026-03-11 14:52", "symbol": "ARB", "fact": "직전 4,557원 손실 확정 후 2시간 내 2,200,000원 매수 (평균 매수금액의 2.0배)"}, {"when": "2026-03-16 03:30", "symbol": "ARB", "fact": "직전 46,163원 손실 확정 후 2시간 내 2,200,000원 매수 (평균 매수금액의 2.0배)"}, {"when": "2026-03-25 09:22", "symbol": "XRP", "fact": "직전 89,708원 손실 확정 후 2시간 내 2,200,000원 매수 (평균 매수금액의 2.0배)"}, {"when": "2026-04-18 12:49", "symbol": "BTC", "fact": "직전 88,836원 손실 확정 후 2시간 내 2,200,000원 매수 (평균 매수금액의 2.0배)"}], "question": "손실을 확정한 직후의 그 매수는, 손실 이전에도 사려고 적어두었던 종목이었나요?", "limitation": null}, {"id": "M6", "name": "야간 거래 지표", "kind": "observation", "sample_size": 214, "score": 58, "measured": true, "band": "보통", "headline": "전체 214건 중 61건(28.5%)이 00~06시에 체결됐습니다. 야간 청산 평균 +3.2%, 주간 청산 평균 +3.7%입니다.", "stats": {"야간 체결 건수": 61, "야간 비중(%)": 28.5, "야간 청산 평균(%)": 3.24, "주간 청산 평균(%)": 3.69, "격차(%p)": -0.45}, "evidence": [{"when": "23시대", "symbol": "전체", "fact": "19건 체결 (8.9%)"}, {"when": "09시대", "symbol": "전체", "fact": "17건 체결 (7.9%)"}, {"when": "13시대", "symbol": "전체", "fact": "17건 체결 (7.9%)"}], "question": "00~06시 거래는 잠들기 전 확인 중에 이뤄진 편인가요, 아니면 미리 정해둔 시간대였나요?", "limitation": null}], "realized_sample": [{"symbol": "BTC", "entry_at": "2026-07-27T02:06:45+09:00", "exit_at": "2026-08-07T20:37:51+09:00", "entry_price": 122896000.0, "exit_price": 125459000.0, "quantity": 0.00162739, "pnl": 3968.910723619978, "pnl_pct": 1.98, "holding_hours": 282.5, "fee_total": 202.08984638002204}, {"symbol": "XRP", "entry_at": "2026-08-06T16:25:59+09:00", "exit_at": "2026-08-07T16:45:51+09:00", "entry_price": 3606.0, "exit_price": 3659.0, "quantity": 208.01033868, "pnl": 10268.987962395775, "pnl_pct": 1.37, "holding_hours": 24.3, "fee_total": 755.5599876442257}, {"symbol": "XRP", "entry_at": "2026-07-04T13:48:45+09:00", "exit_at": "2026-08-07T09:34:00+09:00", "entry_price": 2836.099999933068, "exit_price": 3659.0, "quantity": 0.00115217, "pnl": 0.9443789352255891, "pnl_pct": 28.9, "holding_hours": 811.8, "fee_total": 0.0037417578515279073}, {"symbol": "XRP", "entry_at": "2026-08-06T16:25:59+09:00", "exit_at": "2026-08-07T09:34:00+09:00", "entry_price": 3606.0, "exit_price": 3659.0, "quantity": 208.0091865, "pnl": 10268.930030998235, "pnl_pct": 1.37, "holding_hours": 17.1, "fee_total": 755.556853501765}, {"symbol": "BTC", "entry_at": "2026-07-27T02:06:45+09:00", "exit_at": "2026-08-07T00:16:34+09:00", "entry_price": 122896000.0, "exit_price": 125459000.0, "quantity": 0.0016274, "pnl": 3968.9357391400663, "pnl_pct": 1.98, "holding_hours": 262.2, "fee_total": 202.0904608599339}, {"symbol": "ARB", "entry_at": "2026-07-05T21:05:58+09:00", "exit_at": "2026-08-03T04:28:05+09:00", "entry_price": 973.0, "exit_price": 1396.0, "quantity": 210.72789013, "pnl": 88888.23670898189, "pnl_pct": 43.35, "holding_hours": 679.4, "fee_total": 249.6608160081096}, {"symbol": "ARB", "entry_at": "2026-07-10T01:10:07+09:00", "exit_at": "2026-08-03T04:28:05+09:00", "entry_price": 1215.0, "exit_price": 1396.0, "quantity": 411.45490454, "pnl": 73936.07862878188, "pnl_pct": 14.79, "holding_hours": 579.3, "fee_total": 537.259092958119}, {"symbol": "ARB", "entry_at": "2026-07-12T22:01:24+09:00", "exit_at": "2026-08-03T04:28:05+09:00", "entry_price": 1309.0, "exit_price": 1396.0, "quantity": 261.69033143, "pnl": 22413.02989205225, "pnl_pct": 6.54, "holding_hours": 510.4, "fee_total": 354.0289423577494}, {"symbol": "BTC", "entry_at": "2026-07-27T02:06:45+09:00", "exit_at": "2026-07-31T16:28:17+09:00", "entry_price": 122896000.0, "exit_price": 126029000.0, "quantity": 0.00325478, "pnl": 9792.126047239955, "pnl_pct": 2.45, "holding_hours": 110.4, "fee_total": 405.09969276004404}, {"symbol": "SOL", "entry_at": "2026-07-22T23:42:38+09:00", "exit_at": "2026-07-30T13:36:19+09:00", "entry_price": 258340.0, "exit_price": 266390.0, "quantity": 0.96771898, "pnl": 7536.237528076599, "pnl_pct": 3.01, "holding_hours": 181.9, "fee_total": 253.90026092340057}, {"symbol": "ARB", "entry_at": "2026-07-05T21:05:58+09:00", "exit_at": "2026-07-29T21:28:43+09:00", "entry_price": 973.0, "exit_price": 1493.600005523614, "quantity": 1767.68612094, "pnl": 918077.1382589288, "pnl_pct": 53.38, "holding_hours": 576.4, "fee_total": 2180.2660664512073}, {"symbol": "BTC", "entry_at": "2026-06-28T11:09:28+09:00", "exit_at": "2026-07-27T13:14:50+09:00", "entry_price": 110336000.0, "exit_price": 122896000.0, "quantity": 0.00271897, "pnl": 33833.187880535064, "pnl_pct": 11.28, "holding_hours": 698.1, "fee_total": 317.07531946493765}, {"symbol": "BTC", "entry_at": "2026-07-06T04:29:39+09:00", "exit_at": "2026-07-27T13:14:50+09:00", "entry_price": 118482000.0, "exit_price": 122896000.0, "quantity": 0.00759609, "pnl": 32612.376579464937, "pnl_pct": 3.62, "holding_hours": 512.8, "fee_total": 916.7646805350623}, {"symbol": "SAND", "entry_at": "2026-07-11T21:32:40+09:00", "exit_at": "2026-07-21T15:27:48+09:00", "entry_price": 496.0, "exit_price": 582.0, "quantity": 2417.40531829, "pnl": 206593.6376368147, "pnl_pct": 17.23, "holding_hours": 233.9, "fee_total": 1303.219736125288}, {"symbol": "SAND", "entry_at": "2026-07-21T04:37:41+09:00", "exit_at": "2026-07-21T15:27:48+09:00", "entry_price": 581.8000000009091, "exit_price": 582.0, "quantity": 0.06965959, "pnl": -0.026595931506547297, "pnl_pct": -0.07, "holding_hours": 10.8, "fee_total": 0.04052784944321562}, {"symbol": "SOL", "entry_at": "2026-06-29T02:45:46+09:00", "exit_at": "2026-07-21T03:57:24+09:00", "entry_price": 291460.0, "exit_price": 254120.0, "quantity": 1.02930076, "pnl": -38714.87320450649, "pnl_pct": -12.9, "holding_hours": 529.2, "fee_total": 280.78282610649114}, {"symbol": "SOL", "entry_at": "2026-07-19T20:34:55+09:00", "exit_at": "2026-07-21T03:57:24+09:00", "entry_price": 253150.0, "exit_price": 254120.0, "quantity": 4.34524985, "pnl": 3112.785450856203, "pnl_pct": 0.28, "holding_hours": 31.4, "fee_total": 1102.1069036437966}, {"symbol": "APT", "entry_at": "2026-06-25T16:46:01+09:00", "exit_at": "2026-07-20T23:58:00+09:00", "entry_price": 9919.0, "exit_price": 9821.0, "quantity": 50.40779909, "pnl": -5437.503753647783, "pnl_pct": -1.09, "holding_hours": 607.2, "fee_total": 497.5394428277828}, {"symbol": "ARB", "entry_at": "2026-05-26T01:36:46+09:00", "exit_at": "2026-07-15T16:53:40+09:00", "entry_price": 1215.0, "exit_price": 1401.0999908224758, "quantity": 1e-08, "pnl": 1.8479189266566057e-06, "pnl_pct": 15.21, "holding_hours": 1215.3, "fee_total": 1.3080981568151855e-08}, {"symbol": "ARB", "entry_at": "2026-06-19T21:13:09+09:00", "exit_at": "2026-07-15T16:53:40+09:00", "entry_price": 928.0, "exit_price": 1401.0999908224758, "quantity": 753.98535114, "pnl": 355832.2596566096, "pnl_pct": 50.86, "holding_hours": 619.7, "fee_total": 878.2030480055273}, {"symbol": "ARB", "entry_at": "2026-06-24T16:27:24+09:00", "exit_at": "2026-07-15T16:53:40+09:00", "entry_price": 880.0, "exit_price": 1401.0999908224758, "quantity": 2499.14801772, "pnl": 1299455.2355604826, "pnl_pct": 59.09, "holding_hours": 504.4, "fee_total": 2850.773537417927}, {"symbol": "ARB", "entry_at": "2026-07-05T21:05:58+09:00", "exit_at": "2026-07-15T16:53:40+09:00", "entry_price": 973.0, "exit_price": 1401.0999908224758, "quantity": 282.16963052, "pnl": 120461.83907921251, "pnl_pct": 43.88, "holding_hours": 235.8, "fee_total": 334.9771567808599}, {"symbol": "XRP", "entry_at": "2026-07-04T13:48:45+09:00", "exit_at": "2026-07-10T15:00:08+09:00", "entry_price": 2836.099999933068, "exit_price": 2920.0, "quantity": 176.2961337, "pnl": 14283.83889684246, "pnl_pct": 2.86, "holding_hours": 145.2, "fee_total": 507.4067323873851}, {"symbol": "XRP", "entry_at": "2026-07-04T13:48:45+09:00", "exit_at": "2026-07-10T11:44:33+09:00", "entry_price": 2836.099999933068, "exit_price": 2920.0, "quantity": 0.00115213, "pnl": 0.09502992913065288, "pnl_pct": 2.91, "holding_hours": 141.9, "fee_total": 0.0016337779464614427}, {"symbol": "SAND", "entry_at": "2026-07-06T13:19:26+09:00", "exit_at": "2026-07-08T23:08:18+09:00", "entry_price": 487.89999999838017, "exit_price": 551.0, "quantity": 0.10321717, "pnl": 6.455227048910312, "pnl_pct": 12.82, "holding_hours": 57.8, "fee_total": 0.057776378256882116}, {"symbol": "SAND", "entry_at": "2026-07-06T13:19:26+09:00", "exit_at": "2026-07-07T09:39:03+09:00", "entry_price": 487.89999999838017, "exit_price": 528.0, "quantity": 1434.61701239, "pnl": 56799.71737899145, "pnl_pct": 8.11, "holding_hours": 20.3, "fee_total": 728.4248201713785}, {"symbol": "SAND", "entry_at": "2026-06-26T03:45:20+09:00", "exit_at": "2026-07-05T20:50:15+09:00", "entry_price": 666.0, "exit_price": 556.099698504063, "quantity": 750.04475271, "pnl": -82888.65020208983, "pnl_pct": -16.59, "holding_hours": 233.1, "fee_total": 458.5057438152814}, {"symbol": "XRP", "entry_at": "2026-06-26T09:01:46+09:00", "exit_at": "2026-07-03T09:54:18+09:00", "entry_price": 2662.0, "exit_price": 2836.0, "quantity": 300.54850101, "pnl": 51469.21653271561, "pnl_pct": 6.43, "holding_hours": 168.9, "fee_total": 826.2226430243888}, {"symbol": "DOGE", "entry_at": "2026-06-19T09:38:47+09:00", "exit_at": "2026-07-02T05:53:14+09:00", "entry_price": 279.50000000002717, "exit_price": 289.0, "quantity": 1829.22901891, "pnl": 16857.900924202597, "pnl_pct": 3.3, "holding_hours": 308.2, "fee_total": 519.7747553926973}, {"symbol": "SOL", "entry_at": "2026-06-25T04:47:10+09:00", "exit_at": "2026-06-29T01:34:14+09:00", "entry_price": 307550.0, "exit_price": 291460.0, "quantity": 3.90180458, "pnl": -63948.646598633204, "pnl_pct": -5.33, "holding_hours": 92.8, "fee_total": 1168.610906433207}], "open_positions": [{"symbol": "ETH", "quantity": 0.5496882, "avg_price": 6913009.970888951, "cost": 3800000.00748}, {"symbol": "DOGE", "quantity": 13110.91669908, "avg_price": 231.4640366779402, "cost": 3034705.7037172713}, {"symbol": "SAND", "quantity": 2578.13590933, "avg_price": 581.8000000009091, "cost": 1499959.4720505378}, {"symbol": "ARB", "quantity": 883.87252179, "avg_price": 1309.0, "cost": 1156989.13102311}, {"symbol": "APT", "quantity": 58.71990605, "avg_price": 8514.999999731777, "cost": 500000.0}, {"symbol": "SOL", "quantity": 0.96771494, "avg_price": 258340.0, "cost": 249999.4775996}], "hourly": [7, 10, 14, 11, 10, 9, 0, 0, 0, 17, 13, 12, 1, 17, 14, 15, 13, 0, 0, 0, 11, 14, 7, 19], "weekday": [29, 26, 29, 28, 35, 30, 37], "is_sample": true, "disclaimer": "본 솔루션은 행동 요약 및 투자 습관 기록용 웰니스 도구이며, 어떠한 투자 조언이나 원금 보장 약속도 포함하지 않습니다.", "narrative": ["2026-02-09 ~ 2026-08-07 (180일) 동안 8개 종목에서 214건을 체결하셨고, 총 거래대금은 241,266,840원입니다. 청산 완료 171건 기준 실현손익 합계는 +4,095,217원, 누적 수수료는 120,633원입니다.", "누적 수수료 120,633원은 실현손익 절대값의 2.9%에 해당합니다. 이 비율이 커질수록 손익보다 거래 횟수가 결과를 좌우하게 됩니다.", "[물타기 지표] 보유 중 추가매수 77건 중 26건(33.8%)이 평단 대비 -10% 이하 구간에서 발생했고, 전체 매수금액의 26.6%를 차지합니다. — 회고 질문: 이 추가 매수들은 처음 진입할 때 세워둔 분할 계획에 포함돼 있던 건가요?", "[추격 진입 지표] 재매수 105건 가운데 33건(31.4%)이 직전 본인 체결가보다 7% 이상 높은 가격에서 발생했습니다. — 회고 질문: 이 거래들 중 매수 전에 이미 정해둔 진입 조건이 있었던 건은 몇 건인가요?"], "weekly": [{"week_start": "2026-02-09", "label": "2/9", "trade_count": 9, "buy_count": 8, "night_ratio": 11.1, "fee": 2874, "realized_pnl": -2956, "loss_count": 1}, {"week_start": "2026-02-16", "label": "2/16", "trade_count": 9, "buy_count": 3, "night_ratio": 11.1, "fee": 3851, "realized_pnl": 48048, "loss_count": 4}, {"week_start": "2026-02-23", "label": "2/23", "trade_count": 9, "buy_count": 5, "night_ratio": 44.4, "fee": 3256, "realized_pnl": -37454, "loss_count": 4}, {"week_start": "2026-03-02", "label": "3/2", "trade_count": 9, "buy_count": 4, "night_ratio": 33.3, "fee": 4927, "realized_pnl": 302329, "loss_count": 2}, {"week_start": "2026-03-09", "label": "3/9", "trade_count": 6, "buy_count": 2, "night_ratio": 16.7, "fee": 3729, "realized_pnl": -134763, "loss_count": 4}, {"week_start": "2026-03-16", "label": "3/16", "trade_count": 14, "buy_count": 8, "night_ratio": 42.9, "fee": 9578, "realized_pnl": 931492, "loss_count": 3}, {"week_start": "2026-03-23", "label": "3/23", "trade_count": 7, "buy_count": 4, "night_ratio": 28.6, "fee": 4274, "realized_pnl": -308488, "loss_count": 5}, {"week_start": "2026-03-30", "label": "3/30", "trade_count": 7, "buy_count": 6, "night_ratio": 28.6, "fee": 3775, "realized_pnl": 148353, "loss_count": 1}, {"week_start": "2026-04-06", "label": "4/6", "trade_count": 12, "buy_count": 5, "night_ratio": 33.3, "fee": 9840, "realized_pnl": 237986, "loss_count": 7}, {"week_start": "2026-04-13", "label": "4/13", "trade_count": 6, "buy_count": 4, "night_ratio": 33.3, "fee": 2356, "realized_pnl": -88835, "loss_count": 1}, {"week_start": "2026-04-20", "label": "4/20", "trade_count": 10, "buy_count": 5, "night_ratio": 30.0, "fee": 5207, "realized_pnl": 34667, "loss_count": 2}, {"week_start": "2026-04-27", "label": "4/27", "trade_count": 4, "buy_count": 3, "night_ratio": 25.0, "fee": 2356, "realized_pnl": 110443, "loss_count": 0}, {"week_start": "2026-05-04", "label": "5/4", "trade_count": 3, "buy_count": 1, "night_ratio": 33.3, "fee": 1483, "realized_pnl": -194419, "loss_count": 3}, {"week_start": "2026-05-11", "label": "5/11", "trade_count": 4, "buy_count": 3, "night_ratio": 0.0, "fee": 2147, "realized_pnl": 92024, "loss_count": 1}, {"week_start": "2026-05-18", "label": "5/18", "trade_count": 13, "buy_count": 6, "night_ratio": 7.7, "fee": 9060, "realized_pnl": -30426, "loss_count": 6}, {"week_start": "2026-05-25", "label": "5/25", "trade_count": 14, "buy_count": 7, "night_ratio": 57.1, "fee": 9972, "realized_pnl": 552990, "loss_count": 3}, {"week_start": "2026-06-01", "label": "6/1", "trade_count": 9, "buy_count": 4, "night_ratio": 0.0, "fee": 3067, "realized_pnl": -17093, "loss_count": 4}, {"week_start": "2026-06-08", "label": "6/8", "trade_count": 8, "buy_count": 4, "night_ratio": 12.5, "fee": 5670, "realized_pnl": -129781, "loss_count": 6}, {"week_start": "2026-06-15", "label": "6/15", "trade_count": 9, "buy_count": 5, "night_ratio": 33.3, "fee": 6074, "realized_pnl": 13334, "loss_count": 4}, {"week_start": "2026-06-22", "label": "6/22", "trade_count": 11, "buy_count": 7, "night_ratio": 27.3, "fee": 7305, "realized_pnl": -581682, "loss_count": 6}, {"week_start": "2026-06-29", "label": "6/29", "trade_count": 9, "buy_count": 5, "night_ratio": 55.6, "fee": 3968, "realized_pnl": -78510, "loss_count": 2}, {"week_start": "2026-07-06", "label": "7/6", "trade_count": 10, "buy_count": 5, "night_ratio": 30.0, "fee": 3036, "realized_pnl": 71090, "loss_count": 0}, {"week_start": "2026-07-13", "label": "7/13", "trade_count": 4, "buy_count": 3, "night_ratio": 25.0, "fee": 4477, "realized_pnl": 1775749, "loss_count": 0}, {"week_start": "2026-07-20", "label": "7/20", "trade_count": 5, "buy_count": 2, "night_ratio": 40.0, "fee": 2634, "realized_pnl": 165554, "loss_count": 3}, {"week_start": "2026-07-27", "label": "7/27", "trade_count": 6, "buy_count": 2, "night_ratio": 16.7, "fee": 2938, "realized_pnl": 1001851, "loss_count": 0}, {"week_start": "2026-08-03", "label": "8/3", "trade_count": 7, "buy_count": 2, "night_ratio": 28.6, "fee": 2782, "realized_pnl": 213714, "loss_count": 0}], "symbols": ["APT", "ARB", "BTC", "DOGE", "ETH", "SAND", "SOL", "XRP"], "session_id": "static"}, "sample_csv": "체결시각,마켓,종류,체결가격,체결수량,체결금액,수수료,주문번호\r\n2026-02-09 15:33:51,KRW-BTC,매수,\"98,331,000\",0.00508487,\"500,000\",250.0,O260209-00001\r\n2026-02-10 13:33:57,KRW-SOL,매수,\"300,710\",0.99763892,\"300,000\",150.0,O260210-00002\r\n2026-02-12 13:02:42,KRW-XRP,매수,\"3,357\",238.33641185,\"800,000\",400.0,O260212-00004\r\n2026-02-12 13:12:59,KRW-SAND,매수,793,605.52541945,\"480,000\",240.0,O260212-00003\r\n2026-02-12 13:13:16,KRW-SAND,매수,793,403.68361297,\"320,000\",160.0,O260212-00003\r\n2026-02-14 05:47:21,KRW-DOGE,매수,277,1805.05415162,\"500,000\",250.0,O260214-00005\r\n2026-02-14 13:28:03,KRW-APT,매수,\"12,590\",23.82843527,\"300,000\",150.0,O260214-00007\r\n2026-02-14 16:12:31,KRW-ETH,매수,\"5,445,000\",0.14692378,\"800,000\",400.0,O260214-00006\r\n2026-02-15 09:58:54,KRW-DOGE,매도,274,902.64864733,\"247,055\",123.53,O260215-00008\r\n2026-02-15 10:34:54,KRW-BTC,매수,\"102,360,000\",0.00879250,\"900,000\",450.0,O260215-00009\r\n2026-02-15 10:35:11,KRW-BTC,매수,\"102,360,000\",0.00586166,\"600,000\",300.0,O260215-00009\r\n2026-02-16 00:56:02,KRW-BTC,매수,\"104,187,000\",0.01151775,\"1,200,000\",600.0,O260216-00012\r\n2026-02-16 21:03:50,KRW-BTC,매도,\"104,187,000\",0.01973908,\"2,056,556\",1028.28,O260216-00010\r\n2026-02-16 23:20:08,KRW-ARB,매수,874,343.32799268,\"300,000\",150.0,O260216-00011\r\n2026-02-17 10:38:34,KRW-APT,매도,\"12,460\",11.91288738,\"148,435\",74.22,O260217-00016\r\n2026-02-17 13:11:12,KRW-DOGE,매도,292,541.38526049,\"157,976\",78.99,O260217-00013\r\n2026-02-17 13:11:29,KRW-DOGE,매도,292,360.92350700,\"105,317\",52.66,O260217-00013\r\n2026-02-17 13:39:20,KRW-SOL,매도,\"295,720\",0.49881569,\"147,510\",73.75,O260217-00015\r\n2026-02-17 14:02:20,KRW-APT,매수,\"12,460\",176.56500803,\"2,200,000\",1100.0,O260217-00017\r\n2026-02-17 22:42:14,KRW-BTC,매도,\"108,390,000\",0.00575889,\"624,206\",312.1,O260217-00014\r\n2026-02-20 20:59:30,KRW-SAND,매도,755,1009.20467347,\"761,546\",380.77,O260220-00018\r\n2026-02-25 01:16:47,KRW-SAND,매수,700,2569.59314775,\"1,800,000\",900.0,O260225-00020\r\n2026-02-25 11:11:32,KRW-SOL,매수,\"248,220\",7.25163162,\"1,800,000\",900.0,O260225-00021\r\n2026-02-25 21:49:43,KRW-DOGE,매도,279,0.04836154,13,0.01,O260225-00019\r\n2026-02-26 03:06:12,KRW-XRP,매수,\"3,698\",81.12932014,\"300,000\",150.0,O260226-00022\r\n2026-02-26 03:06:29,KRW-XRP,매수,\"3,698\",54.08621342,\"200,000\",100.0,O260226-00022\r\n2026-02-27 05:23:10,KRW-XRP,매수,\"3,821\",235.52194279,\"900,000\",450.0,O260227-00024\r\n2026-02-27 05:23:27,KRW-XRP,매수,\"3,821\",157.01462853,\"600,000\",300.0,O260227-00024\r\n2026-02-27 09:39:47,KRW-BTC,매도,\"95,633,000\",0.00287943,\"275,369\",137.68,O260227-00023\r\n2026-02-28 04:23:43,KRW-DOGE,매수,250,2000.00000000,\"500,000\",250.0,O260228-00026\r\n2026-02-28 23:51:53,KRW-DOGE,매도,250,0.04837784,12,0.01,O260228-00025\r\n2026-03-01 20:29:21,KRW-BTC,매도,\"95,580,000\",0.00086383,\"82,565\",41.28,O260301-00027\r\n2026-03-01 20:29:38,KRW-BTC,매도,\"95,580,000\",0.00057588,\"55,043\",27.52,O260301-00027\r\n2026-03-02 02:48:30,KRW-XRP,매도,\"3,833\",459.65677349,\"1,761,818\",880.91,O260302-00028\r\n2026-03-02 02:48:47,KRW-XRP,매도,\"3,833\",306.43784899,\"1,174,546\",587.27,O260302-00028\r\n2026-03-04 22:45:10,KRW-DOGE,매도,260,1999.76025227,\"520,538\",260.27,O260304-00029\r\n2026-03-05 14:00:20,KRW-SOL,매수,\"291,850\",5.13962652,\"1,500,000\",750.0,O260305-00030\r\n2026-03-07 09:35:32,KRW-XRP,매수,\"3,575\",335.69250566,\"1,200,000\",600.0,O260307-00032\r\n2026-03-07 15:01:31,KRW-BTC,매도,\"96,350,000\",0.00071986,\"69,359\",34.68,O260307-00033\r\n2026-03-07 20:28:46,KRW-APT,매수,\"13,680\",65.78947368,\"900,000\",450.0,O260307-00031\r\n2026-03-08 03:30:38,KRW-DOGE,매도,262,0.11988649,31,0.02,O260308-00035\r\n2026-03-08 04:18:43,KRW-ETH,매수,\"6,509,000\",0.23045015,\"1,500,000\",750.0,O260308-00034\r\n2026-03-08 14:22:38,KRW-ETH,매도,\"6,509,000\",0.18867471,\"1,228,084\",614.04,O260308-00036\r\n2026-03-11 14:15:58,KRW-APT,매도,\"12,220\",254.34482847,\"3,108,094\",1554.05,O260311-00037\r\n2026-03-11 14:52:58,KRW-ARB,매수,888,2476.91961270,\"2,200,000\",1100.0,O260311-00038\r\n2026-03-13 16:44:20,KRW-XRP,매도,\"3,653\",167.84448351,\"613,069\",306.53,O260313-00039\r\n2026-03-14 00:59:52,KRW-DOGE,매도,255,0.05992294,15,0.01,O260314-00040\r\n2026-03-14 15:56:53,KRW-BTC,매도,\"100,865,000\",0.00035993,\"36,304\",18.15,O260314-00041\r\n2026-03-14 16:15:53,KRW-BTC,매수,\"100,865,000\",0.00892282,\"900,000\",450.0,O260314-00042\r\n2026-03-14 16:16:10,KRW-BTC,매수,\"100,865,000\",0.00594854,\"599,999\",300.0,O260314-00042\r\n2026-03-16 02:06:59,KRW-ETH,매도,\"6,026,000\",0.05661113,\"341,139\",170.57,O260316-00043\r\n2026-03-16 02:07:16,KRW-ETH,매도,\"6,026,000\",0.03774076,\"227,426\",113.71,O260316-00043\r\n2026-03-16 03:30:59,KRW-ARB,매수,816,2695.08759035,\"2,200,000\",1100.0,O260316-00047\r\n2026-03-16 09:09:55,KRW-BTC,매도,\"103,776,000\",0.00761565,\"790,322\",395.16,O260316-00046\r\n2026-03-16 13:23:23,KRW-SAND,매수,804,621.73588660,\"500,000\",250.0,O260316-00045\r\n2026-03-16 13:43:38,KRW-SAND,매도,804,1541.68917907,\"1,239,826\",619.91,O260316-00044\r\n2026-03-16 13:43:55,KRW-SAND,매도,804,1027.79278604,\"826,551\",413.28,O260316-00044\r\n2026-03-17 09:28:56,KRW-XRP,매도,\"3,493\",83.92424003,\"293,181\",146.59,O260317-00048\r\n2026-03-17 10:41:31,KRW-SOL,매수,\"313,630\",2.86962344,\"900,000\",450.0,O260317-00049\r\n2026-03-18 02:48:33,KRW-APT,매수,\"11,300\",106.19469027,\"1,200,000\",600.0,O260318-00052\r\n2026-03-18 14:16:32,KRW-SOL,매도,\"319,200\",15.75989339,\"5,030,558\",2515.28,O260318-00050\r\n2026-03-18 23:29:47,KRW-SOL,매수,\"319,200\",3.75939850,\"1,200,000\",600.0,O260318-00051\r\n2026-03-19 03:23:15,KRW-DOGE,매수,308,4874.87812805,\"1,500,000\",750.0,O260319-00053\r\n2026-03-20 11:17:22,KRW-BTC,매도,\"107,016,000\",0.00380781,\"407,497\",203.75,O260320-00054\r\n2026-03-21 05:07:07,KRW-ETH,매수,\"5,371,000\",0.07819773,\"420,000\",210.0,O260321-00055\r\n2026-03-21 05:07:24,KRW-ETH,매수,\"5,371,000\",0.05213182,\"280,000\",140.0,O260321-00055\r\n2026-03-22 03:38:21,KRW-ARB,매수,746,1448.30360735,\"1,080,000\",540.0,O260322-00056\r\n2026-03-22 03:38:38,KRW-ARB,매수,746,965.53573823,\"720,000\",360.0,O260322-00056\r\n2026-03-25 09:01:26,KRW-SOL,매도,\"271,770\",1.87967525,\"510,839\",255.42,O260325-00057\r\n2026-03-25 09:22:26,KRW-XRP,매수,\"3,292\",668.38827282,\"2,200,000\",1100.0,O260325-00058\r\n2026-03-26 02:13:14,KRW-XRP,매수,\"3,124\",256.04916144,\"800,000\",400.0,O260326-00061\r\n2026-03-26 10:56:13,KRW-DOGE,매도,281,2437.12565189,\"685,807\",342.9,O260326-00059\r\n2026-03-26 11:15:13,KRW-SOL,매수,\"275,560\",5.44346059,\"1,500,000\",750.0,O260326-00062\r\n2026-03-26 20:06:36,KRW-XRP,매도,\"3,124\",451.38772132,\"1,410,316\",705.16,O260326-00060\r\n2026-03-26 20:06:53,KRW-XRP,매도,\"3,124\",300.92514755,\"940,211\",470.11,O260326-00060\r\n2026-03-28 03:46:14,KRW-APT,매수,\"12,700\",39.37007874,\"500,000\",250.0,O260328-00063\r\n2026-03-31 09:02:22,KRW-APT,매도,\"12,710\",145.59001783,\"1,850,449\",925.22,O260331-00064\r\n2026-03-31 15:24:29,KRW-DOGE,매수,364,2474.56695078,\"900,000\",450.0,O260331-00065\r\n2026-04-02 14:22:13,KRW-DOGE,매수,376,1330.49494412,\"500,000\",250.0,O260402-00066\r\n2026-04-03 01:32:54,KRW-ARB,매수,660,1000.45475216,\"660,000\",330.0,O260403-00067\r\n2026-04-03 01:33:11,KRW-ARB,매수,660,666.96983477,\"440,000\",220.0,O260403-00067\r\n2026-04-03 05:12:33,KRW-SOL,매수,\"384,380\",3.90238826,\"1,500,000\",750.0,O260403-00068\r\n2026-04-03 15:52:04,KRW-APT,매수,\"12,060\",99.50248756,\"1,200,000\",600.0,O260403-00069\r\n2026-04-05 21:17:36,KRW-BTC,매수,\"117,823,000\",0.00424365,\"500,000\",250.0,O260405-00070\r\n2026-04-07 22:08:24,KRW-DOGE,매도,358,6243.60410116,\"2,237,708\",1118.85,O260407-00072\r\n2026-04-07 23:15:11,KRW-BTC,매수,\"121,001,000\",0.00446278,\"540,001\",270.0,O260407-00071\r\n2026-04-07 23:15:28,KRW-BTC,매수,\"121,001,000\",0.00297518,\"360,000\",180.0,O260407-00071\r\n2026-04-08 03:08:40,KRW-XRP,매도,\"3,195\",256.04689693,\"817,993\",409.0,O260408-00074\r\n2026-04-08 04:15:54,KRW-SAND,매도,975,310.91226035,\"303,108\",151.55,O260408-00073\r\n2026-04-08 23:54:40,KRW-BTC,매도,\"120,700,000\",0.01548944,\"1,869,575\",934.79,O260408-00075\r\n2026-04-09 00:24:57,KRW-ETH,매도,\"5,913,000\",0.11234177,\"664,277\",332.14,O260409-00076\r\n2026-04-09 02:36:28,KRW-SOL,매도,\"365,450\",5.61271892,\"2,051,168\",1025.58,O260409-00077\r\n2026-04-09 14:32:54,KRW-BTC,매수,\"122,684,000\",0.00407551,\"500,000\",250.0,O260409-00078\r\n2026-04-09 15:06:29,KRW-DOGE,매수,345,1448.85540423,\"500,000\",250.0,O260409-00079\r\n2026-04-10 11:57:09,KRW-APT,매수,\"10,470\",105.06208214,\"1,100,000\",550.0,O260410-00080\r\n2026-04-12 14:07:17,KRW-ARB,매도,754,9596.59528748,\"7,235,833\",3617.92,O260412-00081\r\n2026-04-12 22:23:17,KRW-SAND,매수,878,1708.23368637,\"1,500,000\",750.0,O260412-00082\r\n2026-04-18 02:05:56,KRW-SAND,매수,751,931.84238552,\"700,000\",350.0,O260418-00083\r\n2026-04-18 11:59:50,KRW-DOGE,매도,284,1449.07472935,\"411,537\",205.77,O260418-00085\r\n2026-04-18 12:48:50,KRW-BTC,매수,\"122,436,000\",0.01078114,\"1,320,000\",660.0,O260418-00086\r\n2026-04-18 12:49:07,KRW-BTC,매수,\"122,436,000\",0.00718743,\"880,000\",440.0,O260418-00086\r\n2026-04-18 23:07:05,KRW-ARB,매도,798,0.00384080,3,0.0,O260418-00084\r\n2026-04-19 03:00:03,KRW-ARB,매수,752,399.20159681,\"300,000\",150.0,O260419-00087\r\n2026-04-19 10:17:07,KRW-SAND,매수,729,1509.74471589,\"1,100,000\",550.0,O260419-00088\r\n2026-04-20 01:43:42,KRW-DOGE,매수,295,2714.62504242,\"800,000\",400.0,O260420-00089\r\n2026-04-22 13:06:29,KRW-ETH,매도,\"5,618,000\",0.05616877,\"315,556\",157.78,O260422-00090\r\n2026-04-22 14:29:29,KRW-ETH,매수,\"5,618,000\",0.39159843,\"2,200,000\",1100.0,O260422-00091\r\n2026-04-23 20:10:04,KRW-APT,매수,\"8,504\",129.34328885,\"1,100,000\",550.0,O260423-00093\r\n2026-04-23 23:07:48,KRW-ETH,매도,\"5,737,000\",0.22387808,\"1,284,389\",642.19,O260423-00092\r\n2026-04-25 10:40:43,KRW-SOL,매도,\"330,160\",2.80640581,\"926,563\",463.28,O260425-00095\r\n2026-04-25 21:58:39,KRW-APT,매수,\"8,742\",80.07137791,\"700,000\",350.0,O260425-00094\r\n2026-04-26 00:43:28,KRW-ETH,매도,\"6,077,000\",0.22389131,\"1,360,587\",680.29,O260426-00098\r\n2026-04-26 05:42:26,KRW-SOL,매도,\"330,340\",2.80647424,\"927,091\",463.55,O260426-00096\r\n2026-04-26 09:08:24,KRW-SOL,매수,\"330,340\",2.42174729,\"800,000\",400.0,O260426-00097\r\n2026-05-01 02:49:00,KRW-ETH,매수,\"6,109,000\",0.04910787,\"300,000\",150.0,O260501-00099\r\n2026-05-02 09:51:46,KRW-DOGE,매도,336,7176.66923173,\"2,412,079\",1206.04,O260502-00102\r\n2026-05-02 11:11:37,KRW-ARB,매수,858,583.09037901,\"500,000\",250.0,O260502-00101\r\n2026-05-02 11:55:24,KRW-DOGE,매수,336,4462.95745314,\"1,500,000\",750.0,O260502-00100\r\n2026-05-08 20:55:25,KRW-SAND,매도,773,2230.49659031,\"1,724,397\",862.2,O260508-00103\r\n2026-05-10 04:21:45,KRW-APT,매수,\"8,685\",126.65369426,\"1,100,000\",550.0,O260510-00104\r\n2026-05-10 15:03:43,KRW-ETH,매도,\"5,779,000\",0.02455231,\"141,888\",70.94,O260510-00105\r\n2026-05-11 10:08:20,KRW-ARB,매수,730,958.37897043,\"700,000\",350.0,O260511-00106\r\n2026-05-11 22:48:53,KRW-DOGE,매수,385,2339.48531323,\"900,000\",450.0,O260511-00107\r\n2026-05-15 16:32:08,KRW-ARB,매도,821,1164.40179221,\"956,207\",478.1,O260515-00108\r\n2026-05-15 16:32:25,KRW-ARB,매도,821,776.26786148,\"637,471\",318.74,O260515-00108\r\n2026-05-16 13:21:02,KRW-SOL,매수,\"269,840\",2.44589386,\"660,000\",330.0,O260516-00109\r\n2026-05-16 13:21:19,KRW-SOL,매수,\"269,840\",1.63059591,\"440,000\",220.0,O260516-00109\r\n2026-05-19 20:35:14,KRW-XRP,매수,\"2,717\",404.87320107,\"1,100,000\",550.0,O260519-00111\r\n2026-05-19 21:00:10,KRW-SAND,매수,638,1723.86773233,\"1,100,000\",550.0,O260519-00110\r\n2026-05-19 21:20:36,KRW-DOGE,매도,377,1170.34498417,\"441,337\",220.67,O260519-00113\r\n2026-05-19 21:51:36,KRW-XRP,매수,\"2,717\",552.09981965,\"1,500,000\",750.0,O260519-00114\r\n2026-05-19 23:04:55,KRW-APT,매도,\"9,715\",270.31574353,\"2,626,090\",1313.05,O260519-00112\r\n2026-05-20 15:03:07,KRW-BTC,매도,\"124,675,000\",0.01102205,\"1,374,174\",687.09,O260520-00115\r\n2026-05-20 15:42:34,KRW-SAND,매도,634,3954.04703140,\"2,505,284\",1252.64,O260520-00116\r\n2026-05-22 10:15:00,KRW-XRP,매도,\"2,752\",478.48615110,\"1,316,602\",658.3,O260522-00117\r\n2026-05-22 10:36:35,KRW-ETH,매수,\"5,471,000\",0.32900749,\"1,800,000\",900.0,O260522-00118\r\n2026-05-24 02:39:54,KRW-ARB,매수,\"1,081\",499.35269096,\"540,000\",270.0,O260524-00121\r\n2026-05-24 02:40:11,KRW-ARB,매수,\"1,081\",332.90179397,\"360,000\",180.0,O260524-00121\r\n2026-05-24 13:48:38,KRW-APT,매도,\"10,330\",178.78211287,\"1,846,819\",923.41,O260524-00122\r\n2026-05-24 16:24:06,KRW-APT,매수,\"10,330\",87.12487899,\"900,000\",450.0,O260524-00120\r\n2026-05-24 23:00:43,KRW-XRP,매도,\"2,962\",239.24381287,\"708,736\",354.37,O260524-00119\r\n2026-05-25 01:42:17,KRW-SAND,매도,667,0.04203331,28,0.01,O260525-00124\r\n2026-05-25 03:17:17,KRW-SOL,매수,\"271,060\",8.11628422,\"2,200,000\",1100.0,O260525-00126\r\n2026-05-25 10:55:46,KRW-APT,매수,\"10,680\",84.26966292,\"900,000\",450.0,O260525-00123\r\n2026-05-25 16:37:52,KRW-APT,매도,\"10,680\",263.03887637,\"2,809,255\",1404.63,O260525-00125\r\n2026-05-26 01:36:46,KRW-ARB,매수,\"1,215\",740.67977944,\"900,000\",450.0,O260526-00127\r\n2026-05-27 22:23:44,KRW-BTC,매도,\"127,584,000\",0.00661322,\"843,741\",421.87,O260527-00128\r\n2026-05-27 22:24:01,KRW-BTC,매도,\"127,584,000\",0.00440882,\"562,495\",281.25,O260527-00128\r\n2026-05-28 01:12:39,KRW-BTC,매수,\"128,454,000\",0.00140128,\"180,000\",90.0,O260528-00131\r\n2026-05-28 01:12:56,KRW-BTC,매수,\"128,454,000\",0.00093419,\"120,000\",60.0,O260528-00131\r\n2026-05-28 05:01:59,KRW-SAND,매수,622,2892.96046287,\"1,800,000\",900.0,O260528-00130\r\n2026-05-28 16:01:16,KRW-DOGE,매수,316,5703.42205323,\"1,800,000\",900.0,O260528-00129\r\n2026-05-29 00:32:58,KRW-APT,매수,\"9,205\",86.90928843,\"800,000\",400.0,O260529-00132\r\n2026-05-30 04:19:11,KRW-SOL,매도,\"293,910\",14.61447995,\"4,295,342\",2147.67,O260530-00133\r\n2026-05-30 10:45:44,KRW-APT,매도,\"9,253\",86.90946880,\"804,156\",402.08,O260530-00134\r\n2026-05-31 02:48:16,KRW-ETH,매도,\"5,914,000\",0.17677607,\"1,045,454\",522.73,O260531-00136\r\n2026-05-31 23:22:06,KRW-ARB,매도,\"1,122\",786.47331613,\"882,816\",441.41,O260531-00135\r\n2026-06-01 14:59:05,KRW-APT,매수,\"8,981\",33.40310872,\"300,000\",150.0,O260601-00137\r\n2026-06-01 23:56:22,KRW-ARB,매도,\"1,163\",786.46139498,\"914,969\",457.48,O260601-00138\r\n2026-06-02 15:56:59,KRW-SOL,매도,\"290,980\",0.00004133,12,0.01,O260602-00139\r\n2026-06-04 14:11:03,KRW-SOL,매수,\"281,040\",1.06746371,\"300,000\",150.0,O260604-00140\r\n2026-06-05 13:16:30,KRW-ARB,매도,\"1,123\",0.00042292,0,0.0,O260605-00141\r\n2026-06-05 14:40:30,KRW-SOL,매수,\"281,530\",7.81444251,\"2,200,000\",1100.0,O260605-00142\r\n2026-06-06 13:06:10,KRW-SAND,매도,636,867.92188821,\"551,564\",275.78,O260606-00143\r\n2026-06-06 13:06:27,KRW-SAND,매도,636,578.61459214,\"367,710\",183.85,O260606-00143\r\n2026-06-07 10:53:43,KRW-ARB,매도,\"1,091\",0.00025373,0,0.0,O260607-00144\r\n2026-06-07 10:54:00,KRW-ARB,매도,\"1,091\",0.00016916,0,0.0,O260607-00144\r\n2026-06-07 11:47:43,KRW-DOGE,매수,308,4870.12987013,\"1,500,000\",750.0,O260607-00145\r\n2026-06-11 20:28:38,KRW-SOL,매도,\"280,890\",5.32919024,\"1,496,916\",748.46,O260611-00147\r\n2026-06-11 20:28:55,KRW-SOL,매도,\"280,890\",3.55279349,\"997,944\",498.97,O260611-00147\r\n2026-06-11 21:47:38,KRW-BTC,매수,\"116,572,000\",0.01286758,\"1,500,000\",750.0,O260611-00148\r\n2026-06-11 23:31:06,KRW-SAND,매도,543,1446.55564880,\"785,046\",392.52,O260611-00146\r\n2026-06-12 15:03:05,KRW-XRP,매수,\"3,050\",295.05294561,\"900,000\",450.0,O260612-00149\r\n2026-06-12 15:03:22,KRW-XRP,매수,\"3,050\",196.70196374,\"600,000\",300.0,O260612-00149\r\n2026-06-13 01:16:25,KRW-SOL,매수,\"282,580\",1.76941043,\"500,000\",250.0,O260613-00150\r\n2026-06-14 10:39:34,KRW-BTC,매도,\"109,800,000\",0.00760154,\"834,649\",417.32,O260614-00151\r\n2026-06-14 11:16:34,KRW-ETH,매수,\"6,768,000\",0.22163121,\"1,500,000\",750.0,O260614-00153\r\n2026-06-14 23:07:23,KRW-XRP,매도,\"3,044\",438.60094485,\"1,335,189\",667.59,O260614-00152\r\n2026-06-14 23:07:40,KRW-XRP,매도,\"3,044\",292.40062990,\"890,126\",445.06,O260614-00152\r\n2026-06-16 00:37:59,KRW-BTC,매수,\"106,404,000\",0.01691666,\"1,800,000\",900.0,O260616-00154\r\n2026-06-16 09:20:09,KRW-SAND,매수,607,1976.61011366,\"1,200,000\",600.0,O260616-00155\r\n2026-06-16 14:13:21,KRW-ETH,매도,\"6,537,000\",0.39842584,\"2,604,510\",1302.26,O260616-00156\r\n2026-06-17 21:15:41,KRW-SOL,매수,\"305,250\",2.94840295,\"900,000\",450.0,O260617-00157\r\n2026-06-17 21:15:58,KRW-SOL,매수,\"305,250\",1.96560196,\"600,000\",300.0,O260617-00157\r\n2026-06-19 09:38:30,KRW-DOGE,매수,280,3864.04293381,\"1,080,000\",540.0,O260619-00159\r\n2026-06-19 09:38:47,KRW-DOGE,매수,280,2576.02862254,\"720,000\",360.0,O260619-00159\r\n2026-06-19 21:13:09,KRW-ARB,매수,928,753.98535114,\"700,000\",350.0,O260619-00158\r\n2026-06-21 02:00:34,KRW-APT,매도,\"9,379\",33.40322610,\"313,286\",156.64,O260621-00162\r\n2026-06-21 04:55:05,KRW-BTC,매도,\"101,822,000\",0.01225911,\"1,248,247\",624.12,O260621-00161\r\n2026-06-21 23:22:30,KRW-SOL,매도,\"293,660\",3.34165086,\"981,309\",490.65,O260621-00160\r\n2026-06-24 02:31:55,KRW-DOGE,매도,286,18184.75459548,\"5,195,384\",2597.69,O260624-00163\r\n2026-06-24 15:07:24,KRW-SOL,매도,\"285,330\",2.00508922,\"572,112\",286.06,O260624-00164\r\n2026-06-24 15:07:41,KRW-SOL,매도,\"285,330\",1.33672614,\"381,408\",190.7,O260624-00164\r\n2026-06-24 16:27:24,KRW-ARB,매수,880,2499.14801772,\"2,200,000\",1100.0,O260624-00165\r\n2026-06-25 04:47:10,KRW-SOL,매수,\"307,550\",3.90180458,\"1,200,000\",600.0,O260625-00167\r\n2026-06-25 16:46:01,KRW-APT,매수,\"9,919\",50.40779909,\"500,000\",250.0,O260625-00166\r\n2026-06-26 03:45:20,KRW-SAND,매수,666,750.18754689,\"500,000\",250.0,O260626-00170\r\n2026-06-26 09:01:46,KRW-XRP,매수,\"2,662\",300.54850101,\"800,000\",400.0,O260626-00171\r\n2026-06-26 15:46:11,KRW-SAND,매도,666,1976.75290784,\"1,317,506\",658.75,O260626-00168\r\n2026-06-26 23:42:44,KRW-ETH,매수,\"6,641,000\",0.02710435,\"180,000\",90.0,O260626-00169\r\n2026-06-26 23:43:01,KRW-ETH,매수,\"6,641,000\",0.01806957,\"120,000\",60.0,O260626-00169\r\n2026-06-27 09:29:58,KRW-BTC,매도,\"109,584,000\",0.00735544,\"806,039\",403.02,O260627-00172\r\n2026-06-27 09:30:15,KRW-BTC,매도,\"109,584,000\",0.00490362,\"537,358\",268.68,O260627-00172\r\n2026-06-28 11:09:28,KRW-BTC,매수,\"110,336,000\",0.00271897,\"300,000\",150.0,O260628-00173\r\n2026-06-29 01:34:14,KRW-SOL,매도,\"291,460\",3.90186698,\"1,137,238\",568.62,O260629-00174\r\n2026-06-29 02:18:14,KRW-ETH,매수,\"7,172,000\",0.20914668,\"1,500,000\",750.0,O260629-00176\r\n2026-06-29 02:45:46,KRW-SOL,매수,\"291,460\",1.02930076,\"300,000\",150.0,O260629-00175\r\n2026-07-01 01:09:21,KRW-DOGE,매수,273,1097.69484083,\"300,000\",150.0,O260701-00177\r\n2026-07-01 01:09:38,KRW-DOGE,매수,273,731.79656056,\"200,000\",100.0,O260701-00177\r\n2026-07-02 05:53:14,KRW-DOGE,매도,289,1829.22901891,\"528,281\",264.14,O260702-00178\r\n2026-07-03 09:54:18,KRW-XRP,매도,\"2,836\",300.55368874,\"852,460\",426.23,O260703-00179\r\n2026-07-04 13:48:28,KRW-XRP,매수,\"2,836\",105.77906280,\"300,000\",150.0,O260704-00180\r\n2026-07-04 13:48:45,KRW-XRP,매수,\"2,836\",70.51937520,\"200,000\",100.0,O260704-00180\r\n2026-07-05 20:49:58,KRW-SAND,매도,556,450.08440154,\"250,292\",125.15,O260705-00181\r\n2026-07-05 20:50:15,KRW-SAND,매도,556,300.05626770,\"166,861\",83.43,O260705-00181\r\n2026-07-05 21:05:58,KRW-ARB,매수,973,2260.58364159,\"2,200,000\",1100.0,O260705-00182\r\n2026-07-06 04:29:39,KRW-BTC,매수,\"118,482,000\",0.00759609,\"900,000\",450.0,O260706-00184\r\n2026-07-06 05:27:36,KRW-SAND,매도,488,0.02343768,11,0.01,O260706-00183\r\n2026-07-06 13:19:09,KRW-SAND,매수,488,860.83213774,\"420,000\",210.0,O260706-00185\r\n2026-07-06 13:19:26,KRW-SAND,매수,488,573.88809182,\"280,000\",140.0,O260706-00185\r\n2026-07-07 09:39:03,KRW-SAND,매도,528,1434.61701239,\"756,904\",378.45,O260707-00186\r\n2026-07-08 23:08:18,KRW-SAND,매도,551,0.12666024,70,0.04,O260708-00187\r\n2026-07-10 01:10:07,KRW-ARB,매수,\"1,215\",411.45490454,\"500,000\",250.0,O260710-00188\r\n2026-07-10 11:44:33,KRW-XRP,매도,\"2,920\",0.00115213,3,0.0,O260710-00190\r\n2026-07-10 15:00:08,KRW-XRP,매도,\"2,920\",176.29613370,\"514,820\",257.41,O260710-00189\r\n2026-07-11 21:32:40,KRW-SAND,매수,496,2417.40531829,\"1,200,000\",600.0,O260711-00191\r\n2026-07-12 22:01:24,KRW-ARB,매수,\"1,309\",1145.56285322,\"1,500,000\",750.0,O260712-00192\r\n2026-07-15 16:53:23,KRW-ARB,매도,\"1,401\",2121.18179963,\"2,971,988\",1485.99,O260715-00193\r\n2026-07-15 16:53:40,KRW-ARB,매도,\"1,401\",1414.12119976,\"1,981,325\",990.66,O260715-00193\r\n2026-07-17 05:02:47,KRW-DOGE,매수,208,8649.68765017,\"1,800,000\",900.0,O260717-00194\r\n2026-07-19 20:34:55,KRW-SOL,매수,\"253,150\",4.34524985,\"1,100,000\",550.0,O260719-00195\r\n2026-07-19 23:07:36,KRW-ETH,매수,\"6,280,000\",0.17515924,\"1,100,000\",550.0,O260719-00196\r\n2026-07-20 23:58:00,KRW-APT,매도,\"9,821\",50.40791255,\"495,071\",247.54,O260720-00197\r\n2026-07-21 03:57:24,KRW-SOL,매도,\"254,120\",5.37463144,\"1,365,801\",682.9,O260721-00198\r\n2026-07-21 04:37:24,KRW-SAND,매수,582,1546.92334135,\"900,000\",450.0,O260721-00200\r\n2026-07-21 04:37:41,KRW-SAND,매수,582,1031.28222757,\"600,000\",300.0,O260721-00200\r\n2026-07-21 15:27:48,KRW-SAND,매도,582,2417.47497788,\"1,406,487\",703.24,O260721-00199\r\n2026-07-22 23:42:38,KRW-SOL,매수,\"258,340\",1.93543392,\"500,000\",250.0,O260722-00201\r\n2026-07-27 02:06:45,KRW-BTC,매수,\"122,896,000\",0.00650957,\"800,000\",400.0,O260727-00203\r\n2026-07-27 13:14:50,KRW-BTC,매도,\"122,896,000\",0.01031506,\"1,267,680\",633.84,O260727-00202\r\n2026-07-29 11:14:40,KRW-APT,매수,\"8,515\",35.23194363,\"300,000\",150.0,O260729-00204\r\n2026-07-29 11:14:57,KRW-APT,매수,\"8,515\",23.48796242,\"200,000\",100.0,O260729-00204\r\n2026-07-29 21:28:26,KRW-ARB,매도,\"1,494\",1060.61167256,\"1,584,130\",792.07,O260729-00205\r\n2026-07-29 21:28:43,KRW-ARB,매도,\"1,494\",707.07444838,\"1,056,086\",528.04,O260729-00205\r\n2026-07-30 13:36:19,KRW-SOL,매도,\"266,390\",0.96771898,\"257,791\",128.9,O260730-00206\r\n2026-07-31 16:28:17,KRW-BTC,매도,\"126,029,000\",0.00325478,\"410,197\",205.1,O260731-00207\r\n2026-08-03 04:28:05,KRW-ARB,매도,\"1,396\",883.87312610,\"1,234,152\",617.08,O260803-00208\r\n2026-08-06 16:25:59,KRW-XRP,매수,\"3,606\",416.01952518,\"1,500,000\",750.0,O260806-00209\r\n2026-08-07 00:16:34,KRW-BTC,매도,\"125,459,000\",0.00162740,\"204,172\",102.09,O260807-00211\r\n2026-08-07 09:34:00,KRW-XRP,매도,\"3,659\",208.01033867,\"761,110\",380.56,O260807-00214\r\n2026-08-07 16:45:51,KRW-XRP,매도,\"3,659\",208.01091311,\"761,112\",380.56,O260807-00210\r\n2026-08-07 20:37:51,KRW-BTC,매도,\"125,459,000\",0.00162739,\"204,171\",102.09,O260807-00212\r\n2026-08-07 21:25:01,KRW-ETH,매수,\"7,487,000\",0.12020836,\"900,000\",450.0,O260807-00213\r\n", "goals": {"templates": [{"id": "daily_trade_limit", "label": "하루 체결 건수 상한", "unit": "건/일", "default_target": 3, "direction": "lower", "description": "거래가 있었던 날의 평균 체결 건수를 내가 정한 상한과 비교합니다.", "source": "M1 과매매 지표"}, {"id": "night_ratio", "label": "00~06시 거래 비중", "unit": "%", "default_target": 10, "direction": "lower", "description": "수면 시간대 거래 비중을 내가 정한 한도와 비교합니다.", "source": "M6 야간 거래 지표"}, {"id": "chase_ratio", "label": "추격 진입 비율", "unit": "%", "default_target": 15, "direction": "lower", "description": "직전 본인 체결가보다 7% 이상 높은 가격의 재매수 비율입니다.", "source": "M3 추격 진입 지표"}, {"id": "averaging_ratio", "label": "평단 -10% 이하 추가매수 비율", "unit": "%", "default_target": 20, "direction": "lower", "description": "보유 평단이 크게 내려간 구간에서의 추가매수 비율입니다.", "source": "M4 물타기 지표"}, {"id": "revenge_count", "label": "손실 확정 후 2시간 내 재진입", "unit": "건", "default_target": 0, "direction": "lower", "description": "손실을 확정한 직후 2시간 안에 새로 매수한 건수입니다.", "source": "M5 손실 후 재진입"}, {"id": "fee_budget", "label": "기간 누적 수수료 상한", "unit": "원", "default_target": 100000, "direction": "lower", "description": "분석 기간 동안 지불한 누적 수수료입니다.", "source": "거래 개요"}, {"id": "win_hold_gap", "label": "손실 포지션 평균 보유시간 상한", "unit": "시간", "default_target": 72, "direction": "lower", "description": "손실 포지션을 평균 몇 시간 들고 있었는지 내가 정한 한도와 비교합니다.", "source": "M2 익절·손절 비대칭"}], "value_spec": {"daily_trade_limit": {"overview": "active_day_avg"}, "night_ratio": {"metric": "M6", "stat": "야간 비중(%)"}, "chase_ratio": {"metric": "M3", "stat": "추격 매수 비율(%)"}, "averaging_ratio": {"metric": "M4", "stat": "해당 비율(%)"}, "revenge_count": {"metric": "M5", "stat": "2시간 내 재진입"}, "fee_budget": {"overview": "total_fee"}, "win_hold_gap": {"metric": "M2", "stat": "손실 평균 보유(h)"}}, "saved_targets": {}, "notice": "원칙은 서비스가 정해 드리지 않습니다. 직접 세운 기준선과 과거 거래 기록을 대조해 보여드립니다."}, "market": {"notice": "아래 정보는 공개된 일반 정보와 예시 데이터이며, 특정 종목의 매매를 권유하지 않습니다. 참여 전 반드시 각 거래소 공식 공지 원문을 확인하세요.", "assets": {"notice": "본 정보는 각 프로젝트가 공개한 일반 개요이며 투자 판단의 근거로 제공되지 않습니다. 최신 내용은 반드시 공식 채널에서 확인하세요.", "updated_at": "2026-08-09", "assets": [{"symbol": "APT", "name": "앱토스", "category": "스마트컨트랙트 플랫폼", "consensus": "지분증명(AptosBFT)", "launched": "2022", "summary": "Move 언어를 사용하는 레이어1 블록체인으로 병렬 실행 구조를 채택했습니다.", "official": "https://aptosfoundation.org", "whitepaper": "https://aptos.dev", "krw_markets": ["업비트", "빗썸"], "in_my_history": true}, {"symbol": "ARB", "name": "아비트럼", "category": "이더리움 레이어2", "consensus": "Optimistic Rollup", "launched": "2021", "summary": "이더리움 트랜잭션을 오프체인에서 처리하고 결과를 메인넷에 정산하는 롤업 네트워크입니다.", "official": "https://arbitrum.io", "whitepaper": "https://docs.arbitrum.io", "krw_markets": ["업비트", "빗썸"], "in_my_history": true}, {"symbol": "BTC", "name": "비트코인", "category": "결제·가치저장 네트워크", "consensus": "작업증명(PoW)", "launched": "2009", "summary": "탈중앙 P2P 전자화폐를 목표로 만들어진 최초의 퍼블릭 블록체인입니다. 총 발행량이 2,100만 개로 프로토콜에 고정되어 있습니다.", "official": "https://bitcoin.org", "whitepaper": "https://bitcoin.org/bitcoin.pdf", "krw_markets": ["업비트", "빗썸", "코인원"], "in_my_history": true}, {"symbol": "DOGE", "name": "도지코인", "category": "결제 네트워크(밈 기원)", "consensus": "작업증명(Scrypt, 라이트코인 병합채굴)", "launched": "2013", "summary": "라이트코인 코드베이스에서 파생된 결제용 네트워크입니다. 발행량 상한이 없고 매년 고정량이 신규 발행됩니다.", "official": "https://dogecoin.com", "whitepaper": "https://github.com/dogecoin/dogecoin", "krw_markets": ["업비트", "빗썸"], "in_my_history": true}, {"symbol": "ETH", "name": "이더리움", "category": "스마트컨트랙트 플랫폼", "consensus": "지분증명(PoS)", "launched": "2015", "summary": "스마트컨트랙트를 실행하는 범용 블록체인 플랫폼입니다. 2022년 The Merge를 통해 PoW에서 PoS로 전환했습니다.", "official": "https://ethereum.org", "whitepaper": "https://ethereum.org/en/whitepaper/", "krw_markets": ["업비트", "빗썸", "코인원"], "in_my_history": true}, {"symbol": "SAND", "name": "샌드박스", "category": "메타버스·게임 토큰", "consensus": "이더리움/폴리곤 기반 ERC-20", "launched": "2020", "summary": "사용자 제작 콘텐츠 기반 가상 세계 플랫폼에서 사용되는 유틸리티 토큰입니다.", "official": "https://sandbox.game", "whitepaper": "https://installers.sandbox.game/The_Sandbox_Whitepaper_2020.pdf", "krw_markets": ["업비트", "빗썸"], "in_my_history": true}, {"symbol": "SOL", "name": "솔라나", "category": "스마트컨트랙트 플랫폼", "consensus": "PoS + Proof of History", "launched": "2020", "summary": "고처리량을 목표로 Proof of History 타임스탬프 구조를 결합한 레이어1 블록체인입니다.", "official": "https://solana.com", "whitepaper": "https://solana.com/solana-whitepaper.pdf", "krw_markets": ["업비트", "빗썸", "코인원"], "in_my_history": true}, {"symbol": "XRP", "name": "리플", "category": "송금·결제 네트워크", "consensus": "XRP Ledger Consensus Protocol", "launched": "2012", "summary": "국가 간 송금 정산을 목적으로 설계된 원장 네트워크입니다. 블록 생성 대신 검증자 합의로 원장을 확정합니다.", "official": "https://xrpl.org", "whitepaper": "https://xrpl.org/docs/concepts/consensus-protocol", "krw_markets": ["업비트", "빗썸", "코인원"], "in_my_history": true}, {"symbol": "ADA", "name": "카르다노", "category": "스마트컨트랙트 플랫폼", "consensus": "지분증명(Ouroboros)", "launched": "2017", "summary": "학술 논문 심사 기반 개발 프로세스를 표방하는 레이어1 블록체인입니다.", "official": "https://cardano.org", "whitepaper": "https://docs.cardano.org", "krw_markets": ["업비트", "빗썸", "코인원"], "in_my_history": false}, {"symbol": "AVAX", "name": "아발란체", "category": "스마트컨트랙트 플랫폼", "consensus": "Avalanche Consensus(PoS)", "launched": "2020", "summary": "X/P/C 세 개 체인 구조와 서브넷을 통해 확장을 시도하는 레이어1 네트워크입니다.", "official": "https://avax.network", "whitepaper": "https://www.avalabs.org/whitepapers", "krw_markets": ["업비트", "빗썸"], "in_my_history": false}, {"symbol": "LINK", "name": "체인링크", "category": "오라클 미들웨어", "consensus": "이더리움 등 기반 체인에 의존", "launched": "2017", "summary": "블록체인 외부 데이터를 스마트컨트랙트에 전달하는 탈중앙 오라클 네트워크입니다.", "official": "https://chain.link", "whitepaper": "https://chain.link/whitepaper", "krw_markets": ["업비트", "빗썸", "코인원"], "in_my_history": false}, {"symbol": "TRX", "name": "트론", "category": "스마트컨트랙트 플랫폼", "consensus": "위임지분증명(DPoS)", "launched": "2017", "summary": "콘텐츠·스테이블코인 전송이 활발한 DPoS 기반 레이어1 네트워크입니다.", "official": "https://tron.network", "whitepaper": "https://tron.network/static/doc/white_paper_v_2_0.pdf", "krw_markets": ["업비트", "빗썸"], "in_my_history": false}], "missing_symbols": []}, "events": {"notice": "실제 참여 여부·조건·기간은 반드시 각 거래소 공식 공지에서 직접 확인하세요. 본 목록은 참여를 권유하지 않으며, 이벤트 참여는 손실 위험을 포함할 수 있습니다.", "is_sample": true, "updated_at": "2026-08-09", "notice_boards": {"업비트": "https://upbit.com/service_center/notice", "빗썸": "https://feed.bithumb.com/notice", "코인원": "https://coinone.co.kr/info/notice", "바이낸스": "https://www.binance.com/en/support/announcement"}, "exchanges": ["바이낸스", "빗썸", "업비트", "코인원"], "events": [{"id": "ev-listing-arb", "exchange": "빗썸", "title": "신규 원화마켓 추가 상장 안내 (예시)", "type": "상장/마켓 변경", "related_symbols": ["ARB"], "period": "공지일", "requirement": "해당 없음", "reward_form": "해당 없음 (정보성 공지)", "risk_note": "상장 직후에는 가격 변동성과 유동성 편차가 커질 수 있습니다.", "notice_url": "https://feed.bithumb.com/notice", "matches_my_history": true}, {"id": "ev-airdrop-apt", "exchange": "업비트", "title": "네트워크 업그레이드에 따른 에어드랍 지원 (예시)", "type": "에어드랍", "related_symbols": ["APT"], "period": "공지일 기준 스냅샷", "requirement": "스냅샷 시점 거래소 지갑 내 보유", "reward_form": "신규 토큰 배분", "risk_note": "지원 여부와 배분 비율은 거래소 정책에 따라 달라지며 취소될 수 있습니다.", "notice_url": "https://upbit.com/service_center/notice", "matches_my_history": true}, {"id": "ev-staking-eth", "exchange": "업비트", "title": "이더리움 스테이킹 서비스 참여 안내 (예시)", "type": "스테이킹", "related_symbols": ["ETH"], "period": "상시", "requirement": "거래소 계정 인증 완료 및 최소 수량 보유", "reward_form": "네트워크 보상 지급 (변동)", "risk_note": "락업 기간 중 출금이 제한될 수 있고, 보상률은 네트워크 상황에 따라 변동합니다.", "notice_url": "https://upbit.com/service_center/notice", "matches_my_history": true}, {"id": "ev-hardfork-doge", "exchange": "업비트", "title": "지갑 시스템 업그레이드 안내 (예시)", "type": "지갑 점검", "related_symbols": ["DOGE", "TRX"], "period": "점검 시간 동안", "requirement": "해당 없음", "reward_form": "해당 없음 (운영 공지)", "risk_note": "점검 중 입출금 지연이 발생할 수 있습니다.", "notice_url": "https://upbit.com/service_center/notice", "matches_my_history": true}, {"id": "ev-deposit-pause-sol", "exchange": "코인원", "title": "네트워크 점검에 따른 입출금 일시 중단 (예시)", "type": "입출금 점검", "related_symbols": ["SOL"], "period": "점검 시간 동안", "requirement": "해당 없음", "reward_form": "해당 없음 (운영 공지)", "risk_note": "점검 시간에는 입출금이 제한되므로 이동 계획이 있다면 시간을 확인해야 합니다.", "notice_url": "https://coinone.co.kr/info/notice", "matches_my_history": true}, {"id": "ev-learn-earn", "exchange": "바이낸스", "title": "Learn & Earn 학습 참여 프로그램 (예시)", "type": "학습 참여형", "related_symbols": ["LINK", "AVAX"], "period": "회차별 상이", "requirement": "본인확인 완료 계정, 퀴즈 참여", "reward_form": "소액 토큰 바우처", "risk_note": "지역별로 참여가 제한될 수 있으며, 국내 이용자는 이용 가능 여부를 먼저 확인해야 합니다.", "notice_url": "https://www.binance.com/en/support/announcement", "matches_my_history": false}, {"id": "ev-fee-krw", "exchange": "빗썸", "title": "원화마켓 거래 수수료 정책 변경 안내 (예시)", "type": "수수료 정책", "related_symbols": [], "period": "정책 시행일 이후", "requirement": "별도 신청 없음", "reward_form": "수수료율 변경 적용", "risk_note": "수수료율 변경은 거래 비용 계산에 직접 영향을 줍니다. 시행일을 확인하세요.", "notice_url": "https://feed.bithumb.com/notice", "matches_my_history": false}]}, "disclaimer": "본 솔루션은 행동 요약 및 투자 습관 기록용 웰니스 도구이며, 어떠한 투자 조언이나 원금 보장 약속도 포함하지 않습니다."}};</script>
+<script>
+/* coinmirror 데모 프론트엔드 (의존성 없음)
+ *
+ * 두 가지 모드로 동작한다.
+ *  - 서버 모드 : FastAPI(app/main.py)에서 서빙. CSV 업로드 분석 가능.
+ *  - 정적 모드 : build_static.py가 만든 단일 HTML. window.__COINMIRROR__에 예시 결과가 심어져 있고
+ *               서버가 없으므로 예시 데이터 열람 전용.
+ */
+'use strict';
+
+const BOOT = typeof window !== 'undefined' ? window.__COINMIRROR__ || null : null;
+const STATIC_MODE = !!BOOT;
+
+const state = {
+  report: null,
+  sessionId: null,
+  goalTemplates: [],
+  savedTargets: {},
+  assetFilter: 'mine',
+  eventFilter: '',
+  marketInfo: null,
+};
+
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+const won = (n) => (n === null || n === undefined ? '-' : Number(n).toLocaleString('ko-KR') + '원');
+const num = (n) => Number(n).toLocaleString('ko-KR');
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+/* ---------- 공통 UI ---------- */
+function toast(message, isError) {
+  const el = $('#toast');
+  el.textContent = message;
+  el.className = 'toast show' + (isError ? ' err' : '');
+  clearTimeout(el._timer);
+  el._timer = setTimeout(() => (el.className = 'toast'), 3200);
+}
+
+function goStep(step) {
+  $$('.panel').forEach((p) => p.classList.toggle('active', p.id === `panel-${step}`));
+  $$('.step-btn').forEach((b) => b.classList.toggle('active', b.dataset.step === String(step)));
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function unlockSteps() {
+  $$('.step-btn').forEach((b) => (b.disabled = false));
+}
+
+$$('.step-btn').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    if (btn.disabled) return;
+    const step = btn.dataset.step;
+    goStep(step);
+    if (step === '3') ensureGoals();
+    if (step === '4') ensureMarketInfo();
+  });
+});
+
+/* ---------- 1단계: 데이터 불러오기 ---------- */
+async function runSample(button) {
+  const original = button.innerHTML;
+  button.disabled = true;
+  button.innerHTML = '<span class="spinner"></span>분석 중...';
+  try {
+    if (STATIC_MODE) {
+      applyAnalysis(BOOT.report);
+    } else {
+      const res = await fetch('/api/analyze/sample', { method: 'POST' });
+      await handleAnalysisResponse(res);
+    }
+  } catch (err) {
+    toast(err.message, true);
+  } finally {
+    button.disabled = false;
+    button.innerHTML = original;
+  }
+}
+
+async function uploadCsv(file) {
+  if (STATIC_MODE) {
+    return toast('이 HTML 파일은 예시 데이터 열람 전용입니다. 내 CSV 분석은 로컬 서버(run_server.ps1)를 실행해 주세요.', true);
+  }
+  if (!file) return;
+  if (!/\.csv$/i.test(file.name)) return toast('CSV 파일만 올릴 수 있습니다.', true);
+  const form = new FormData();
+  form.append('file', file);
+  toast(`${file.name} 분석 중...`);
+  try {
+    const res = await fetch('/api/analyze', { method: 'POST', body: form });
+    await handleAnalysisResponse(res);
+  } catch (err) {
+    toast(err.message, true);
+  }
+}
+
+async function handleAnalysisResponse(res) {
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.detail || '분석에 실패했습니다.');
+  applyAnalysis(body);
+}
+
+function applyAnalysis(report) {
+  state.report = report;
+  state.sessionId = report.session_id || 'static';
+  state.marketInfo = STATIC_MODE ? BOOT.market : null;
+  renderAnalysis(report);
+  unlockSteps();
+  goStep(2);
+  toast(`${num(report.overview.trade_count)}건의 거래를 분석했습니다.`);
+}
+
+$('#btn-sample').addEventListener('click', (e) => runSample(e.currentTarget));
+$('#btn-upload').addEventListener('click', () => $('#file-input').click());
+$('#file-input').addEventListener('change', (e) => uploadCsv(e.target.files[0]));
+$('#btn-reset').addEventListener('click', () => goStep(1));
+
+const dropzone = $('#dropzone');
+['dragenter', 'dragover'].forEach((evt) =>
+  dropzone.addEventListener(evt, (e) => {
+    e.preventDefault();
+    dropzone.classList.add('over');
+  })
+);
+['dragleave', 'drop'].forEach((evt) =>
+  dropzone.addEventListener(evt, (e) => {
+    e.preventDefault();
+    dropzone.classList.remove('over');
+  })
+);
+dropzone.addEventListener('drop', (e) => uploadCsv(e.dataTransfer.files[0]));
+
+/* ---------- 2단계: 스코어 및 분석 ---------- */
+function renderAnalysis(data) {
+  const o = data.overview;
+
+  $('#sample-flag').innerHTML = data.is_sample ? '<span class="sample-flag">예시 데이터</span>' : '';
+  $('#period-desc').textContent =
+    `${o.period_start} ~ ${o.period_end} (${o.period_days}일) · ${o.exchange.toUpperCase()} · ${num(o.trade_count)}건 체결 · ${o.symbol_count}개 종목`;
+
+  $('#narrative-card').innerHTML = data.narrative
+    .map((line) => `<p class="headline" style="margin-bottom:10px">${esc(line)}</p>`)
+    .join('');
+
+  const pnlClass = o.realized_pnl > 0 ? 'pos' : o.realized_pnl < 0 ? 'neg' : '';
+  const tiles = [
+    { k: '총 거래대금', v: won(o.gross_volume), sub: `매수 ${o.buy_count}건 · 매도 ${o.sell_count}건` },
+    { k: '실현손익 (FIFO, 수수료 반영)', v: won(o.realized_pnl), sub: `청산 ${o.realized_count}건 · 승률 ${o.win_rate}%`, cls: pnlClass },
+    { k: '누적 수수료', v: won(o.total_fee), sub: o.fee_to_pnl_pct === null ? '실현손익 없음' : `실현손익 절대값의 ${o.fee_to_pnl_pct}%` },
+    { k: '미청산 보유', v: `${data.open_positions.length}종목`, sub: won(data.open_positions.reduce((a, p) => a + p.cost, 0)) + ' 취득원가' },
+  ];
+  $('#overview-grid').innerHTML = tiles
+    .map((t) => `<div class="stat"><div class="k">${esc(t.k)}</div><div class="v ${t.cls || ''}">${esc(t.v)}</div><div class="sub">${esc(t.sub)}</div></div>`)
+    .join('');
+
+  $('#metric-grid').innerHTML = data.metrics.map(metricCard).join('');
+  $('#hour-chart').innerHTML = barChart(data.hourly, (i) => `${i}`, (i) => i < 6);
+  $('#weekday-chart').innerHTML = barChart(data.weekday, (i) => ['월', '화', '수', '목', '금', '토', '일'][i], () => false);
+
+  $('#symbol-table').innerHTML =
+    '<thead><tr><th>종목</th><th>거래대금</th><th>체결</th></tr></thead><tbody>' +
+    o.top_symbols.map((s) => `<tr><td><b>${esc(s.symbol)}</b></td><td>${won(s.volume)}</td><td>${s.count}건</td></tr>`).join('') +
+    '</tbody>';
+
+  $('#realized-table').innerHTML =
+    '<thead><tr><th>청산일</th><th>종목</th><th>손익</th><th>수익률</th><th>보유</th></tr></thead><tbody>' +
+    data.realized_sample
+      .map((r) => {
+        const cls = r.pnl > 0 ? 'pos' : r.pnl < 0 ? 'neg' : '';
+        return `<tr><td>${esc(r.exit_at.slice(0, 10))}</td><td><b>${esc(r.symbol)}</b></td>
+          <td class="${cls}">${num(Math.round(r.pnl))}</td><td class="${cls}">${r.pnl_pct > 0 ? '+' : ''}${r.pnl_pct}%</td>
+          <td>${r.holding_hours < 48 ? r.holding_hours + 'h' : Math.round(r.holding_hours / 24) + '일'}</td></tr>`;
+      })
+      .join('') +
+    '</tbody>';
+
+  $('#disclaimer').textContent = data.disclaimer;
+}
+
+function scoreLevel(metric) {
+  if (metric.score === null) return '';
+  if (metric.kind === 'skill') return metric.score >= 70 ? '' : metric.score >= 40 ? 'lv-mid' : 'lv-high';
+  if (metric.score >= 75) return 'lv-danger';
+  if (metric.score >= 50) return 'lv-high';
+  if (metric.score >= 30) return 'lv-mid';
+  return '';
+}
+
+const KIND_LABEL = { risk: '위험도형', skill: '역량형', observation: '관찰형' };
+
+function metricCard(metric) {
+  const statChips = Object.entries(metric.stats)
+    .map(([k, v]) => `<span>${esc(k)} <b>${typeof v === 'number' ? num(v) : esc(v)}</b></span>`)
+    .join('');
+  const evidence = metric.evidence.length
+    ? `<div class="evidence">${metric.evidence
+        .map((e) => `<div class="row"><span class="when">${esc(e.when)}</span><span class="sym">${esc(e.symbol)}</span><span>${esc(e.fact)}</span></div>`)
+        .join('')}</div>`
+    : '';
+
+  return `<div class="card metric ${metric.measured ? '' : 'pending'}">
+    <div class="metric-head">
+      <div>
+        <h4>${esc(metric.id)}. ${esc(metric.name)}</h4>
+        <span class="kind ${metric.kind}">${KIND_LABEL[metric.kind]} · 표본 ${num(metric.sample_size)}건</span>
+      </div>
+      <div style="text-align:right">
+        <div class="score-num">${metric.score === null ? '–' : metric.score}<small>${metric.score === null ? '' : '/100'}</small></div>
+        <div class="score-band">${esc(metric.band)}</div>
+      </div>
+    </div>
+    <div class="bar"><i class="${scoreLevel(metric)}" style="width:${metric.score === null ? 0 : metric.score}%"></i></div>
+    <p class="headline">${esc(metric.headline)}</p>
+    <div class="kv">${statChips}</div>
+    ${evidence}
+    ${metric.question ? `<div class="question">회고 질문 · ${esc(metric.question)}</div>` : ''}
+    ${metric.limitation ? `<div class="limitation">계산 한계 · ${esc(metric.limitation)}</div>` : ''}
+  </div>`;
+}
+
+function barChart(values, labelFn, highlightFn) {
+  const max = Math.max(...values, 1);
+  return values
+    .map(
+      (v, i) =>
+        `<div class="col ${highlightFn(i) ? 'night' : ''}" title="${labelFn(i)} · ${v}건">
+           <i style="height:${(v / max) * 100}%"></i><small>${labelFn(i)}</small>
+         </div>`
+    )
+    .join('');
+}
+
+/* ---------- 3단계: 목표 세팅 및 진행 현황 ---------- */
+async function ensureGoals() {
+  if (state.goalTemplates.length) return;
+  const body = STATIC_MODE ? BOOT.goals : await (await fetch('/api/goals/templates')).json();
+  state.goalTemplates = body.templates;
+  state.savedTargets = STATIC_MODE
+    ? JSON.parse(localStorage.getItem('coinmirror.targets') || '{}')
+    : body.saved_targets || {};
+  $('#goal-notice').textContent = body.notice;
+  renderGoalForm();
+  applyGoals(false);
+}
+
+function renderGoalForm() {
+  $('#goal-form').innerHTML = state.goalTemplates
+    .map((t) => {
+      const value = state.savedTargets[t.id] ?? t.default_target;
+      return `<div class="goal-row">
+        <div>
+          <h5>${esc(t.label)}</h5>
+          <p>${esc(t.description)}</p>
+          <span class="src">근거: ${esc(t.source)}</span>
+        </div>
+        <div class="input-unit">
+          <input type="number" step="any" min="0" data-goal="${esc(t.id)}" value="${value}">
+          <span>${esc(t.unit)} 이하</span>
+        </div>
+      </div>`;
+    })
+    .join('');
+}
+
+function collectTargets() {
+  const targets = {};
+  $$('#goal-form input[data-goal]').forEach((input) => {
+    if (input.value !== '') targets[input.dataset.goal] = Number(input.value);
+  });
+  return targets;
+}
+
+/* 정적 모드용 진행 현황 계산 — src/coinmirror/goals.py의 evaluate_goal과 같은 규칙 */
+function currentValueOf(report, goalId) {
+  const spec = (BOOT.goals.value_spec || {})[goalId];
+  if (!spec) return null;
+  if (spec.overview) {
+    const value = report.overview[spec.overview];
+    return typeof value === 'number' ? value : null;
+  }
+  const metric = report.metrics.find((m) => m.id === spec.metric);
+  if (!metric || !metric.measured) return null;
+  const value = metric.stats[spec.stat];
+  return typeof value === 'number' ? value : null;
+}
+
+function evaluateGoalsLocally(targets) {
+  const fmt = (v) => Number(v.toFixed(2)).toLocaleString('ko-KR');
+  const progress = state.goalTemplates
+    .filter((t) => targets[t.id] !== undefined)
+    .map((t) => {
+      const target = Number(targets[t.id]);
+      const current = currentValueOf(state.report, t.id);
+      if (current === null) {
+        return { id: t.id, label: t.label, unit: t.unit, target, current: null, achieved: null,
+          progress_pct: 0, note: "해당 지표가 아직 '측정 중'이라 대조할 수 없습니다." };
+      }
+      const shown = Number(current.toFixed(2));
+      const achieved = current <= target;
+      const pct = achieved ? 100 : current > 0 && target > 0 ? Math.max(0, Math.min(100, (target / current) * 100)) : 0;
+      return {
+        id: t.id, label: t.label, unit: t.unit, target, current: shown, achieved,
+        progress_pct: Math.round(pct * 10) / 10,
+        note: `내 기준 ${fmt(target)}${t.unit} ${achieved ? '이하 · 실제' : '대비 실제'} ${fmt(shown)}${t.unit}`,
+      };
+    });
+  return {
+    progress,
+    achieved_count: progress.filter((p) => p.achieved === true).length,
+    total_count: progress.filter((p) => p.achieved !== null).length,
+    weekly: state.report.weekly || [],
+  };
+}
+
+async function applyGoals(save) {
+  if (!state.sessionId) return toast('먼저 2단계 분석을 실행해 주세요.', true);
+
+  let body;
+  if (STATIC_MODE) {
+    body = evaluateGoalsLocally(collectTargets());
+    if (save) localStorage.setItem('coinmirror.targets', JSON.stringify(collectTargets()));
+  } else {
+    const res = await fetch('/api/goals/evaluate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: state.sessionId, targets: collectTargets(), save: !!save }),
+    });
+    body = await res.json();
+    if (!res.ok) return toast(body.detail || '계산에 실패했습니다.', true);
+  }
+
+  $('#goal-summary').textContent = `측정 가능한 ${body.total_count}개 중 ${body.achieved_count}개 충족`;
+  $('#progress-grid').innerHTML = body.progress.map(progressCard).join('');
+  renderWeekly(body.weekly);
+  if (save) toast('내 원칙을 저장했습니다.');
+}
+
+function progressCard(p) {
+  const pill = p.achieved === null ? '<span class="pill na">측정 중</span>'
+    : p.achieved ? '<span class="pill ok">기준 충족</span>'
+    : '<span class="pill no">기준 초과</span>';
+  const level = p.achieved === null ? '' : p.achieved ? '' : p.progress_pct >= 50 ? 'lv-mid' : 'lv-high';
+  const current = p.current === null ? '–' : `${num(p.current)}${p.unit}`;
+  return `<div class="prog">
+    <div class="top"><h5>${esc(p.label)}</h5>${pill}</div>
+    <div class="note">${esc(p.note)}</div>
+    <div class="bar"><i class="${level}" style="width:${p.progress_pct}%"></i></div>
+    <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11.5px;color:var(--muted)">
+      <span>내 기준 ${num(p.target)}${esc(p.unit)}</span><span>실제 ${current}</span>
+    </div>
+  </div>`;
+}
+
+function renderWeekly(weeks) {
+  if (!weeks || !weeks.length) {
+    $('#weekly-chart').innerHTML = '<p class="section-desc">표시할 주간 데이터가 없습니다.</p>';
+    return;
+  }
+  const w = 900, h = 220, padL = 38, padR = 38, padT = 14, padB = 26;
+  const maxCount = Math.max(...weeks.map((x) => x.trade_count), 1);
+  const stepX = weeks.length > 1 ? (w - padL - padR) / (weeks.length - 1) : 0;
+  const x = (i) => padL + stepX * i;
+  const yCount = (v) => padT + (1 - v / maxCount) * (h - padT - padB);
+  const yRatio = (v) => padT + (1 - Math.min(v, 100) / 100) * (h - padT - padB);
+
+  const bars = weeks
+    .map((week, i) => {
+      const bw = Math.max(4, Math.min(20, stepX * 0.5));
+      const y = yCount(week.trade_count);
+      return `<rect x="${x(i) - bw / 2}" y="${y}" width="${bw}" height="${h - padB - y}" rx="3" fill="#bbf7d0">
+        <title>${week.label} · ${week.trade_count}건 체결 · 야간 ${week.night_ratio}%</title></rect>`;
+    })
+    .join('');
+
+  const line = weeks.map((week, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${yRatio(week.night_ratio).toFixed(1)}`).join(' ');
+  const dots = weeks.map((week, i) => `<circle cx="${x(i)}" cy="${yRatio(week.night_ratio)}" r="3" fill="#0ea5e9"><title>${week.label} · 야간 ${week.night_ratio}%</title></circle>`).join('');
+  const labels = weeks
+    .map((week, i) => (weeks.length <= 14 || i % 2 === 0 ? `<text x="${x(i)}" y="${h - 8}" font-size="9.5" fill="#94a3b8" text-anchor="middle">${week.label}</text>` : ''))
+    .join('');
+
+  $('#weekly-chart').innerHTML = `
+    <div class="scroll-x">
+      <svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" role="img" aria-label="주간 행동 추이">
+        <line x1="${padL}" y1="${h - padB}" x2="${w - padR}" y2="${h - padB}" stroke="#e2e8f0"/>
+        ${bars}${dots}
+        <path d="${line}" fill="none" stroke="#0ea5e9" stroke-width="2"/>
+        <text x="4" y="${padT + 8}" font-size="10" fill="#94a3b8">${maxCount}건</text>
+        <text x="${w - 32}" y="${padT + 8}" font-size="10" fill="#0ea5e9">100%</text>
+        ${labels}
+      </svg>
+    </div>
+    <div style="display:flex;gap:16px;font-size:12px;color:var(--muted);margin-top:6px">
+      <span><i style="display:inline-block;width:10px;height:10px;background:#bbf7d0;border-radius:2px"></i> 주간 체결 건수</span>
+      <span><i style="display:inline-block;width:10px;height:10px;background:#0ea5e9;border-radius:50%"></i> 야간(00~06시) 거래 비중</span>
+    </div>`;
+}
+
+$('#btn-goal-apply').addEventListener('click', () => applyGoals(false));
+$('#btn-goal-save').addEventListener('click', () => applyGoals(true));
+$('#btn-goal-reset').addEventListener('click', () => {
+  state.savedTargets = {};
+  renderGoalForm();
+  applyGoals(false);
+});
+
+/* 워크시트: 브라우저 로컬 저장만 */
+$$('.worksheet textarea').forEach((area) => {
+  const key = 'coinmirror.worksheet.' + area.dataset.ws;
+  area.value = localStorage.getItem(key) || '';
+  area.addEventListener('input', () => localStorage.setItem(key, area.value));
+});
+
+/* ---------- 4단계: 종목 정보 및 거래소 이벤트 ---------- */
+async function ensureMarketInfo() {
+  if (!state.marketInfo) {
+    if (STATIC_MODE) {
+      state.marketInfo = BOOT.market;
+    } else {
+      const symbols = (state.report?.symbols || []).join(',');
+      state.marketInfo = await (await fetch(`/api/market/info?symbols=${encodeURIComponent(symbols)}`)).json();
+    }
+  }
+  renderMarketInfo();
+}
+
+function renderMarketInfo() {
+  const info = state.marketInfo;
+  $('#info-notice').textContent = `${info.events.is_sample ? '이벤트 목록은 유형을 보여주기 위한 예시 데이터입니다. ' : ''}${info.notice}`;
+
+  renderAssets();
+
+  const exchanges = info.events.exchanges;
+  $('#event-filters').innerHTML =
+    `<button class="chip ${state.eventFilter === '' ? 'active' : ''}" data-exchange="">전체</button>` +
+    exchanges.map((ex) => `<button class="chip ${state.eventFilter === ex ? 'active' : ''}" data-exchange="${esc(ex)}">${esc(ex)}</button>`).join('');
+  $$('#event-filters .chip').forEach((chip) =>
+    chip.addEventListener('click', () => {
+      state.eventFilter = chip.dataset.exchange;
+      renderMarketInfo();
+    })
+  );
+
+  const events = info.events.events.filter((e) => !state.eventFilter || e.exchange === state.eventFilter);
+  $('#event-grid').innerHTML = events.length ? events.map(eventCard).join('') : '<div class="empty">해당 거래소의 예시 이벤트가 없습니다.</div>';
+
+  $('#notice-boards').innerHTML = Object.entries(info.events.notice_boards)
+    .map(([name, url]) => `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(name)} 공지 ↗</a>`)
+    .join('');
+}
+
+function renderAssets() {
+  const info = state.marketInfo.assets;
+  const all = info.assets;
+  const list = state.assetFilter === 'mine' ? all.filter((a) => a.in_my_history) : all;
+  $('#asset-grid').innerHTML = list.length
+    ? list.map(assetCard).join('')
+    : '<div class="empty">분석한 거래 종목 중 정보 사전에 등록된 항목이 없습니다. "전체"를 눌러 확인해 보세요.</div>';
+  $('#asset-missing').textContent = info.missing_symbols.length
+    ? `정보 사전에 아직 없는 거래 종목: ${info.missing_symbols.join(', ')}`
+    : '';
+}
+
+function assetCard(a) {
+  return `<div class="asset ${a.in_my_history ? 'mine' : ''}">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+      <div><div class="sym">${esc(a.symbol)}</div><div class="nm">${esc(a.name)}</div></div>
+      <span class="cat">${esc(a.category)}</span>
+    </div>
+    <p>${esc(a.summary)}</p>
+    <div class="kv">
+      <span>합의 <b>${esc(a.consensus)}</b></span>
+      <span>출시 <b>${esc(a.launched)}</b></span>
+      <span>원화마켓 <b>${esc((a.krw_markets || []).join(', '))}</b></span>
+      ${a.in_my_history ? '<span><b>내 거래 종목</b></span>' : ''}
+    </div>
+    <div class="links" style="margin-top:10px">
+      <a href="${esc(a.official)}" target="_blank" rel="noopener noreferrer">공식 사이트 ↗</a>
+      <a href="${esc(a.whitepaper)}" target="_blank" rel="noopener noreferrer">기술 문서 ↗</a>
+    </div>
+  </div>`;
+}
+
+function eventCard(e) {
+  return `<div class="event ${e.matches_my_history ? 'mine' : ''}">
+    <div class="head">
+      <h5>${esc(e.title)}</h5>
+      <span class="ex">${esc(e.exchange)}</span>
+    </div>
+    <dl>
+      <dt>유형</dt><dd>${esc(e.type)}</dd>
+      <dt>관련 종목</dt><dd>${e.related_symbols.length ? esc(e.related_symbols.join(', ')) : '해당 없음'}${e.matches_my_history ? ' · <b>내 거래 종목 포함</b>' : ''}</dd>
+      <dt>기간</dt><dd>${esc(e.period)}</dd>
+      <dt>참여 조건</dt><dd>${esc(e.requirement)}</dd>
+      <dt>제공 형태</dt><dd>${esc(e.reward_form)}</dd>
+    </dl>
+    <div class="risk">확인 사항 · ${esc(e.risk_note)}</div>
+    <a href="${esc(e.notice_url)}" target="_blank" rel="noopener noreferrer" style="font-size:12.5px">공식 공지 게시판에서 확인 ↗</a>
+  </div>`;
+}
+
+$$('#asset-filters .chip').forEach((chip) =>
+  chip.addEventListener('click', () => {
+    state.assetFilter = chip.dataset.assetFilter;
+    $$('#asset-filters .chip').forEach((c) => c.classList.toggle('active', c === chip));
+    renderAssets();
+  })
+);
+
+/* ---------- 정적 HTML 모드 초기화 ---------- */
+if (STATIC_MODE) {
+  const link = $('a[href="/api/sample/csv"]');
+  if (link && BOOT.sample_csv) {
+    link.href = URL.createObjectURL(new Blob(['﻿' + BOOT.sample_csv], { type: 'text/csv;charset=utf-8' }));
+    link.download = 'sample_upbit_trades.csv';
+  }
+  $('#dropzone').innerHTML =
+    '<b>이 파일은 예시 데이터 열람 전용입니다</b>' +
+    '<p>내 CSV를 분석하려면 로컬 서버를 실행하세요 · <code>.\\run_server.ps1</code> → http://127.0.0.1:8000</p>';
+  $('#btn-upload').textContent = '내 CSV 분석 방법';
+}
+
+</script>
+</body>
+</html>
