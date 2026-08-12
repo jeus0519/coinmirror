@@ -1,7 +1,6 @@
-import * as DocumentPicker from 'expo-document-picker';
 import { router } from 'expo-router';
-import { Check, Upload } from 'lucide-react-native';
-import { Alert, ScrollView, View } from 'react-native';
+import { Check } from 'lucide-react-native';
+import { ScrollView, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
@@ -34,22 +33,8 @@ const FLOW_STEPS = [
 ];
 
 export function Step1Start() {
-  const runSample = useFlowStore((s) => s.runSample);
-  const uploadCsv = useFlowStore((s) => s.uploadCsv);
+  const setStep = useFlowStore((s) => s.setStep);
 
-  async function handleUpload() {
-    const result = await DocumentPicker.getDocumentAsync({
-      type: '*/*',
-      copyToCacheDirectory: false,
-    });
-    if (result.canceled) return;
-    const file = result.assets[0];
-    if (!file?.name?.toLowerCase().endsWith('.csv')) {
-      Alert.alert('CSV 파일이 아니에요', '업비트 원화마켓 거래내역 CSV 파일을 선택해 주세요.');
-      return;
-    }
-    uploadCsv(file.name);
-  }
 
   return (
     <ScrollView className="flex-1" contentContainerClassName="gap-10 p-4 pb-12">
@@ -68,16 +53,16 @@ export function Step1Start() {
 
         <Text className="text-center text-[15px] leading-6 text-muted-foreground">
           거래소에서 내려받은 거래내역 CSV 하나로 6가지 행동 패턴을 사후 분석합니다. 무엇을 사거나
-          팔라고 말하지 않습니다. 이미 지나간 내 거래가 어떤 모양이었는지만 그대로 보여드립니다.
+          팔라고 말하지 않습니다. 이미 지나간 내 거래가 어떤 모양이었는지만 그대로 보여드립니다. 먼저 짧은 성향 진단으로
+ 스코어 해석 기준을 개인화한 뒤 거래내역을 불러옵니다.
         </Text>
 
         <View className="w-full gap-2.5">
-          <Button onPress={runSample}>
-            <Text>예시 데이터로 바로 체험하기</Text>
+          <Button onPress={() => setStep(2)}>
+            <Text>투자 성향 진단 시작하기</Text>
           </Button>
-          <Button variant="outline" onPress={handleUpload}>
-            <Icon as={Upload} size={16} className="text-foreground" />
-            <Text>내 CSV 업로드</Text>
+          <Button variant="outline" onPress={() => setStep(2)}>
+            <Text>진단 후 거래내역 불러오기</Text>
           </Button>
           <Button variant="ghost" onPress={() => router.push('/entry/new')}>
             <Text className="text-muted-foreground">직접 입력하기</Text>

@@ -312,10 +312,12 @@ table.tbl td.neg { color: var(--danger-500); font-weight: 700; }
       </div>
     </div>
     <nav class="steps">
-      <button class="step-btn active" data-step="1"><span class="num">1</span>시작하기</button>
-      <button class="step-btn" data-step="2" disabled><span class="num">2</span>스코어 · 분석</button>
-      <button class="step-btn" data-step="3" disabled><span class="num">3</span>목표 · 진행</button>
-      <button class="step-btn" data-step="4" disabled><span class="num">4</span>정보 · 이벤트</button>
+      <button class="step-btn active" data-step="1"><span class="num">1</span>소개</button>
+      <button class="step-btn" data-step="2"><span class="num">2</span>성향 진단</button>
+      <button class="step-btn" data-step="3" disabled><span class="num">3</span>거래내역</button>
+      <button class="step-btn" data-step="4" disabled><span class="num">4</span>스코어 · 분석</button>
+      <button class="step-btn" data-step="5" disabled><span class="num">5</span>목표 · 진행</button>
+      <button class="step-btn" data-step="6" disabled><span class="num">6</span>정보 · 이벤트</button>
     </nav>
   </div>
 </header>
@@ -329,18 +331,12 @@ table.tbl td.neg { color: var(--danger-500); font-weight: 700; }
       <h1>당신의 매매 기록은,<br><em>당신의 습관</em>을 이미 알고 있습니다.</h1>
       <p class="lead">
         거래소에서 내려받은 거래내역 CSV 하나로 6가지 행동 패턴을 사후 분석합니다.
-        무엇을 사거나 팔라고 말하지 않습니다. 이미 지나간 내 거래가 어떤 모양이었는지만 그대로 보여드립니다.
+        무엇을 사거나 팔라고 말하지 않습니다. 먼저 짧은 질문으로 투자 성향과 목표를 확인한 뒤,
+        이미 지나간 내 거래가 어떤 모양이었는지만 그대로 보여드립니다.
       </p>
       <div class="cta-row">
-        <button class="btn btn-primary" id="btn-sample">예시 데이터로 바로 체험하기</button>
-        <button class="btn btn-ghost" id="btn-upload">내 CSV 업로드</button>
-        <a class="btn btn-ghost" href="/api/sample/csv" download>예시 CSV 내려받기</a>
-      </div>
-      <input type="file" id="file-input" accept=".csv,text/csv" hidden>
-
-      <div class="dropzone" id="dropzone">
-        <b>여기에 CSV 파일을 끌어다 놓으세요</b>
-        <p>업비트 원화마켓 거래내역 CSV · 파일은 서버에 저장되지 않고 메모리에서만 분석됩니다</p>
+        <button class="btn btn-primary" id="btn-start-diagnosis">투자 성향 진단 시작하기</button>
+        <button class="btn btn-ghost" id="btn-start-diagnosis-2">진단 후 거래내역 불러오기</button>
       </div>
     </div>
 
@@ -374,17 +370,60 @@ table.tbl td.neg { color: var(--danger-500); font-weight: 700; }
 
     <div class="section">
       <h3 class="section-title">진행 방식</h3>
-      <p class="section-desc">4단계로 이어집니다. 지금은 로컬 데모라 모든 단계를 바로 확인할 수 있습니다.</p>
+      <p class="section-desc">진단 → 거래내역 → 분석 → 목표 설정으로 이어집니다. 지금은 로컬 데모라 모든 단계를 바로 확인할 수 있습니다.</p>
       <div class="flow">
-        <div class="step"><div class="n">1</div><h4>거래내역 불러오기</h4><p>예시 데이터 또는 내 CSV를 올립니다.</p></div>
-        <div class="step"><div class="n">2</div><h4>스코어 · 분석 확인</h4><p>6개 지표와 근거 거래를 봅니다.</p></div>
-        <div class="step"><div class="n">3</div><h4>내 원칙 세우고 대조</h4><p>직접 정한 기준선 대비 진행 현황을 봅니다.</p></div>
+        <div class="step"><div class="n">1</div><h4>투자 성향·목표 진단</h4><p>스코어 해석 기준과 우선 확인할 패턴을 정합니다.</p></div>
+        <div class="step"><div class="n">2</div><h4>거래내역 불러오기</h4><p>예시 데이터 또는 내 CSV를 올립니다.</p></div>
+        <div class="step"><div class="n">3</div><h4>스코어 · 분석 확인</h4><p>6개 지표와 개인화된 회고 질문을 봅니다.</p></div>
       </div>
     </div>
   </section>
 
-  <!-- ============ STEP 2 : 스코어 및 분석 ============ -->
+
+
+  <!-- ============ STEP 2 : 투자 성향·목표 진단 ============ -->
   <section class="panel" id="panel-2">
+    <div class="section">
+      <h3 class="section-title">내 투자 거울 설정</h3>
+      <p class="section-desc">거래내역을 보기 전에, 코인미러가 어떤 기준으로 당신의 매매 습관을 비춰볼지 먼저 알려주세요. 추천이나 예측이 아니라 스코어 해석과 목표 템플릿 개인화에만 사용됩니다.</p>
+      <div class="card" id="diagnosis-summary"></div>
+    </div>
+    <div class="section">
+      <div class="grid g2" id="diagnosis-form"></div>
+    </div>
+    <div class="section">
+      <div class="trust">
+        <h3>다음 단계</h3>
+        <p id="diagnosis-count">답변을 바탕으로 CSV 분석 결과의 우선순위와 회고 질문을 개인화합니다.</p>
+        <button class="btn btn-primary" id="btn-save-diagnosis">진단 저장하고 거래내역 불러오기</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ STEP 3 : 거래내역 불러오기 ============ -->
+  <section class="panel" id="panel-3">
+    <div class="section">
+      <h3 class="section-title">거래내역 불러오기</h3>
+      <p class="section-desc">진단 답변을 저장했습니다. 이제 예시 데이터나 CSV 거래내역을 불러와 스코어를 계산합니다.</p>
+      <div class="card" id="data-diagnosis-summary"></div>
+    </div>
+    <div class="section">
+      <div class="card" style="text-align:center">
+        <div class="cta-row">
+          <button class="btn btn-primary" id="btn-sample">예시 데이터로 바로 체험하기</button>
+          <button class="btn btn-ghost" id="btn-upload">내 CSV 업로드</button>
+          <a class="btn btn-ghost" href="/api/sample/csv" download>예시 CSV 내려받기</a>
+        </div>
+        <input type="file" id="file-input" accept=".csv,text/csv" hidden>
+        <div class="dropzone" id="dropzone">
+          <b>여기에 CSV 파일을 끌어다 놓으세요</b>
+          <p>업비트 원화마켓 거래내역 CSV · 파일은 서버에 저장되지 않고 메모리에서만 분석됩니다</p>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- ============ STEP 4 : 스코어 및 분석 ============ -->
+  <section class="panel" id="panel-4">
     <div class="section">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
         <div>
@@ -433,8 +472,8 @@ table.tbl td.neg { color: var(--danger-500); font-weight: 700; }
     </div>
   </section>
 
-  <!-- ============ STEP 3 : 목표 세팅 및 진행 현황 ============ -->
-  <section class="panel" id="panel-3">
+  <!-- ============ STEP 5 : 목표 세팅 및 진행 현황 ============ -->
+  <section class="panel" id="panel-5">
     <div class="section">
       <h3 class="section-title">내 원칙 세우기</h3>
       <p class="section-desc" id="goal-notice"></p>
@@ -486,8 +525,8 @@ table.tbl td.neg { color: var(--danger-500); font-weight: 700; }
     </div>
   </section>
 
-  <!-- ============ STEP 4 : 종목 정보 및 거래소 이벤트 ============ -->
-  <section class="panel" id="panel-4">
+  <!-- ============ STEP 6 : 종목 정보 및 거래소 이벤트 ============ -->
+  <section class="panel" id="panel-6">
     <div class="section">
       <h3 class="section-title">종목 정보 및 거래소 이벤트</h3>
       <p class="section-desc">내가 실제로 거래한 종목을 앞쪽에 배치했습니다. 추천 순위가 아닙니다.</p>
@@ -635,10 +674,12 @@ function applyAnalysis(report) {
   toast(`${num(report.overview.trade_count)}건의 거래를 분석했습니다.`);
 }
 
+$('#btn-start-diagnosis').addEventListener('click', () => goStep(2));
+$('#btn-start-diagnosis-2').addEventListener('click', () => goStep(2));
 $('#btn-sample').addEventListener('click', (e) => runSample(e.currentTarget));
 $('#btn-upload').addEventListener('click', () => $('#file-input').click());
 $('#file-input').addEventListener('change', (e) => uploadCsv(e.target.files[0]));
-$('#btn-reset').addEventListener('click', () => goStep(1));
+$('#btn-reset').addEventListener('click', () => goStep(3));
 
 const dropzone = $('#dropzone');
 ['dragenter', 'dragover'].forEach((evt) =>
@@ -656,8 +697,40 @@ const dropzone = $('#dropzone');
 dropzone.addEventListener('drop', (e) => uploadCsv(e.dataTransfer.files[0]));
 
 /* ---------- 2단계: 스코어 및 분석 ---------- */
+function diagnosisSummaryText() {
+  const a = state.diagnosisAnswers;
+  return `${a.style} 성향으로 보이며, 우선 '${a.painPoint}' 패턴을 '${a.goal}' 목표와 연결해 확인합니다.`;
+}
+
+function renderDiagnosis() {
+  $('#diagnosis-summary').innerHTML = `<h4 style="margin:0 0 8px;font-size:15px">진단 요약 미리보기</h4><p class="headline">${esc(diagnosisSummaryText())}</p>`;
+  $('#data-diagnosis-summary').innerHTML = `<h4 style="margin:0 0 8px;font-size:15px">이번 분석의 개인화 기준</h4><p class="headline">${esc(diagnosisSummaryText())}</p><button class="btn btn-ghost btn-sm" onclick="goStep(2)" style="margin-top:10px">진단 답변 수정하기</button>`;
+  $('#diagnosis-count').textContent = `${Object.keys(state.diagnosisAnswers).length}/${DIAGNOSIS_QUESTIONS.length}개 답변을 바탕으로 CSV 분석 결과의 우선순위와 회고 질문을 개인화합니다.`;
+  $('#diagnosis-form').innerHTML = DIAGNOSIS_QUESTIONS.map((q, idx) => `
+    <div class="card">
+      <div class="tag">Q${idx + 1} · 스코어 진단 기준</div>
+      <h4 style="margin:6px 0 4px;font-size:15px">${esc(q.title)}</h4>
+      <p class="section-desc">${esc(q.desc)}</p>
+      <div class="grid" style="gap:8px">
+        ${q.options.map((opt) => `<button class="btn ${state.diagnosisAnswers[q.id] === opt ? 'btn-primary' : 'btn-ghost'} btn-sm" data-q="${q.id}" data-a="${esc(opt)}" style="text-align:left;justify-content:flex-start">${esc(opt)}</button>`).join('')}
+      </div>
+    </div>`).join('');
+  $$('[data-q]').forEach((btn) => btn.addEventListener('click', () => {
+    state.diagnosisAnswers[btn.dataset.q] = btn.dataset.a;
+    renderDiagnosis();
+  }));
+}
+
+$('#btn-save-diagnosis').addEventListener('click', () => {
+  state.hasDiagnosis = true;
+  unlockDiagnosis();
+  renderDiagnosis();
+  goStep(3);
+});
+
 function renderAnalysis(data) {
   const o = data.overview;
+  const personalized = diagnosisSummaryText();
 
   $('#sample-flag').innerHTML = data.is_sample ? '<span class="sample-flag">예시 데이터</span>' : '';
   $('#period-desc').textContent =

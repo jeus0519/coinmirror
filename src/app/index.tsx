@@ -2,7 +2,9 @@ import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Step1Start } from '@/components/steps/step-1-start';
+import { Step2Diagnosis } from '@/components/steps/step-2-diagnosis';
 import { Step2Analysis } from '@/components/steps/step-2-analysis';
+import { Step3DataImport } from '@/components/steps/step-3-data-import';
 import { Step3Goals } from '@/components/steps/step-3-goals';
 import { Step4Info } from '@/components/steps/step-4-info';
 import { StepNav } from '@/components/steps/step-nav';
@@ -27,9 +29,11 @@ export default function AppScreen() {
       <StepNav />
 
       {currentStep === 1 && <Step1Start />}
-      {currentStep === 2 && <Step2Analysis />}
-      {currentStep === 3 && <Step3Goals />}
-      {currentStep === 4 && <Step4Info />}
+      {currentStep === 2 && <Step2Diagnosis />}
+      {currentStep === 3 && <Step3DataImport />}
+      {currentStep === 4 && <Step2Analysis />}
+      {currentStep === 5 && <Step3Goals />}
+      {currentStep === 6 && <Step4Info />}
     </SafeAreaView>
   );
 }

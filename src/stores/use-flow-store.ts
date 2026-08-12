@@ -1,33 +1,47 @@
 import { create } from 'zustand';
 
+import { type DiagnosisQuestionId } from '@/lib/onboarding-diagnosis';
+
 /**
- * docs/coinmirror_demo.html의 4단계 스테퍼 상태를 대응한다.
- * hasAnalyzed가 true여야 2~4단계 진입이 가능하다(데모의 step-btn disabled 로직과 동일).
+ * docs/coinmirror_demo.html의 5단계 스테퍼 상태를 대응한다.
+ * hasDiagnosis가 true여야 데이터 불러오기 단계로, hasAnalyzed가 true여야 분석 이후 단계로 진입한다.
  */
-export type FlowStep = 1 | 2 | 3 | 4;
+export type FlowStep = 1 | 2 | 3 | 4 | 5 | 6;
 export type DataSource = 'sample' | 'csv' | null;
 export type SubscriptionTier = 'free' | 'pro';
+export type DiagnosisAnswers = Partial<Record<DiagnosisQuestionId, string>>;
 
 interface FlowState {
   currentStep: FlowStep;
+  hasDiagnosis: boolean;
   hasAnalyzed: boolean;
   dataSource: DataSource;
   subscriptionTier: SubscriptionTier;
+  diagnosisAnswers: DiagnosisAnswers;
   setStep: (step: FlowStep) => void;
+  saveDiagnosis: (answers: Record<DiagnosisQuestionId, string>) => void;
   runSample: () => void;
   uploadCsv: (fileName: string) => void;
   toggleSubscription: () => void;
 }
 
+function canEnterStep(state: FlowState, step: FlowStep) {
+  if (step === 1 || step === 2) return true;
+  if (step === 3) return state.hasDiagnosis;
+  return state.hasAnalyzed;
+}
+
 export const useFlowStore = create<FlowState>((set) => ({
   currentStep: 1,
+  hasDiagnosis: false,
   hasAnalyzed: false,
   dataSource: null,
   subscriptionTier: 'free',
-  setStep: (step) =>
-    set((state) => ({ currentStep: step === 1 || state.hasAnalyzed ? step : state.currentStep })),
-  runSample: () => set({ hasAnalyzed: true, dataSource: 'sample', currentStep: 2 }),
-  uploadCsv: (_fileName) => set({ hasAnalyzed: true, dataSource: 'csv', currentStep: 2 }),
+  diagnosisAnswers: {},
+  setStep: (step) => set((state) => ({ currentStep: canEnterStep(state, step) ? step : state.currentStep })),
+  saveDiagnosis: (answers) => set({ hasDiagnosis: true, diagnosisAnswers: answers, currentStep: 3 }),
+  runSample: () => set({ hasAnalyzed: true, dataSource: 'sample', currentStep: 4 }),
+  uploadCsv: (_fileName) => set({ hasAnalyzed: true, dataSource: 'csv', currentStep: 4 }),
   toggleSubscription: () =>
     set((state) => ({ subscriptionTier: state.subscriptionTier === 'free' ? 'pro' : 'free' })),
 }));

@@ -84,7 +84,7 @@ export function Step2Analysis() {
               </Badge>
             )}
           </View>
-          <Button size="sm" variant="ghost" onPress={() => setStep(1)}>
+          <Button size="sm" variant="ghost" onPress={() => setStep(3)}>
             <Text className="text-xs text-muted-foreground">다른 데이터로 다시 분석</Text>
           </Button>
         </View>
