@@ -1,6 +1,6 @@
 # 코인미러 (coinmirror)
 
-사용자의 과거 거래 내역을 거울처럼 비춰 주는 투자 행동 회고 앱. 매수/매도를 추천하지 않고, 이미 실행한 거래와 직접 입력한 계획·감정·근거를 바탕으로 뇌동매매·손절 규율·계획 준수 습관을 시각화한다. Expo(RN) 모바일 앱, 신규 프로젝트. 상세 제품 정의는 [docs/v1.0_expo_app_development_prd.md](docs/v1.0_expo_app_development_prd.md) 참고.
+사용자의 과거 거래 내역을 거울처럼 비춰 주는 투자 행동 회고 앱. 매수/매도를 추천하지 않고, 온보딩 설문 1회와 거래소 데이터로 반복 행동·자기인식 차이·원칙 준수를 시각화한다. 반복 수동 입력은 핵심 스코어의 필수 조건이 아니다. 상세 제품 정의는 [docs/v2.0_coinmirror_product_prd.md](docs/v2.0_coinmirror_product_prd.md) 참고.
 
 **이 파일은 지도(map)다, 백과사전이 아니다.** 여기 없는 답은 아래 링크된 `docs/`에 있다. 없으면 만들고 여기에 링크를 추가한다.
 
@@ -26,6 +26,11 @@
 
 | 문서 | 언제 보나 |
 |---|---|
+| [docs/v1.0_documentation_map.md](docs/v1.0_documentation_map.md) | 어떤 문서가 현재 기준인지 판단할 때 |
+| [docs/v2.0_coinmirror_product_prd.md](docs/v2.0_coinmirror_product_prd.md) | 제품 범위·사용자 흐름·요금제·로드맵 |
+| [docs/product-specs/v5.0_score-system-and-onboarding-survey.md](docs/product-specs/v5.0_score-system-and-onboarding-survey.md) | 설문·스코어 계산·최소 표본 기준 |
+| [docs/v7.0_business_proposal.md](docs/v7.0_business_proposal.md) | 사업 모델·전환 구조·KPI |
+| [docs/v2.0_regulatory_and_technical_risks_spec.md](docs/v2.0_regulatory_and_technical_risks_spec.md) | 규제·데이터·보안·출시 게이트 |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | 레이어/폴더 구조가 헷갈릴 때 |
 | [docs/FRONTEND.md](docs/FRONTEND.md) | 화면/컴포넌트/상태관리 컨벤션 |
 | [docs/DESIGN.md](docs/DESIGN.md) | 디자인 시스템, Reusables 커스터마이징 |

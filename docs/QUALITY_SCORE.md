@@ -4,13 +4,13 @@
 
 | 영역 | 상태 | 비고 |
 |---|---|---|
-| UI (src/app, src/components) | 🟡 목업 | 4단계 스테퍼(`docs/coinmirror_demo.html` 기준) 전 화면 목업 완료, 전부 mock 데이터. 상세: `docs/exec-plans/active/001-coinmirror-mvp-stepper-mockup.md` |
-| 상태관리 (src/stores) | 🟡 부분 | `use-flow-store`(스테퍼 상태)는 실사용 중. `use-journal-store`는 1차 목업 잔재로 미사용 — 정리 대상 |
-| 로컬 영속화 | 🟡 부분 | 3단계 워크시트만 `AsyncStorage`로 실제 저장. Trade/JournalEntry는 아직 `expo-sqlite` 미도입 |
+| UI (src/app, src/components) | 🟡 목업 | 6단계 스테퍼와 7문항 진단이 구현됨. 최신 v5.0 스펙은 8문항(A/B 블록), 예상 vs 실제, F1~F10 방향 통일을 요구하므로 구현 드리프트가 있음. |
+| 상태관리 (src/stores) | 🟡 부분 | `use-flow-store`는 실사용 중. 진단 데이터 모델이 v5.0 `DiagnosisProfile`과 다름. `use-journal-store`는 초기 목업 잔재. |
+| 로컬 영속화 | 🔴 미착수 | 핵심 CSV/분석 데이터와 설문 프로필 영속화가 없음. 과거 워크시트 저장은 새 P7 프리셋 방향으로 대체 필요. |
 | Supabase 연동 (src/lib/supabase.ts) | 🔴 미착수 | 클라이언트만 존재, 스키마/RLS 미정, 어디서도 호출 안 함 |
-| CSV 파싱·스코어 계산 | 🔴 미착수 | M1~M6 전부 mock 값. 실제 백엔드 로직 이식 여부 확인 필요 |
+| CSV 파싱·스코어 계산 | 🔴 미착수 | M1~M6는 이전 프로토타입 mock. 현재 기준은 F1~F10이며 실제 엔진과 테스트가 없음. |
 | 테스트 | 🔴 없음 | MVP 단계 — 핵심 로직 생기면 추가 |
-| git 커밋 | 🔴 없음 | 이 저장소는 아직 한 번도 커밋된 적 없음(워킹트리만 존재) |
-| 문서 최신성 | 🟡 주의 | `docs/product-specs/001-trade-journal.md`가 1차(4탭) 구조 기준이라 현재 구조와 어긋남 — 갱신 필요 |
+| git 커밋 | 🟢 양호 | 초기 목업, 온보딩, v5.0 스코어 스펙이 커밋으로 구분됨. |
+| 문서 최신성 | 🟢 정리 | 현재 기준 지도·v2.0 PRD·v7.0 proposal·v2.0 risk와 v5.0 Product Spec을 기준으로 통합. 과거 문서는 `docs/history/`로 격리. |
 
 상태 기준: 🟢 양호 · 🟡 진행 중/주의 · 🔴 미흡/부재

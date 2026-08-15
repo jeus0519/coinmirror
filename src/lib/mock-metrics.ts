@@ -136,7 +136,7 @@ export type LockedMetricPreview = {
   teaser: string;
 };
 
-// docs/v1.0_personalized_score_system_spec.md 확장 스코어 중 일부를 구독 잠금 미리보기로.
+// docs/product-specs/v5.0_score-system-and-onboarding-survey.md의 구독 스코어를 반영할 때 교체할 이전 목업 지표.
 export const lockedMetrics: LockedMetricPreview[] = [
   {
     id: 'S06',
