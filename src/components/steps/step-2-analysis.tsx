@@ -10,7 +10,8 @@ import { MetricCard } from '@/components/ui/metric-card';
 import { Text } from '@/components/ui/text';
 import { formatKrw } from '@/lib/format';
 import { mockRecords } from '@/lib/mock-data';
-import { baseMetrics, KIND_LABEL, lockedMetrics } from '@/lib/mock-metrics';
+import { buildExpectationComparisons } from '@/lib/onboarding-diagnosis';
+import { baseMetrics, lockedMetrics } from '@/lib/mock-metrics';
 import { useFlowStore } from '@/stores/use-flow-store';
 
 const HOUR_BUCKETS = [2, 1, 0, 0, 1, 0, 3, 5, 6, 8, 7, 9, 10, 11, 9, 8, 7, 6, 8, 9, 7, 5, 4, 3];
@@ -60,6 +61,14 @@ export function Step2Analysis() {
   const subscriptionTier = useFlowStore((s) => s.subscriptionTier);
   const toggleSubscription = useFlowStore((s) => s.toggleSubscription);
   const setStep = useFlowStore((s) => s.setStep);
+  const diagnosisAnswers = useFlowStore((s) => s.diagnosisAnswers);
+  const expectationComparisons = useMemo(
+    () => buildExpectationComparisons(diagnosisAnswers),
+    [diagnosisAnswers]
+  );
+  const compositeMetric = baseMetrics.find((metric) => metric.id === 'F10');
+  const recoveryMetric = baseMetrics.find((metric) => metric.id === 'F5');
+  const concentrationMetric = baseMetrics.find((metric) => metric.id === 'F8');
 
   const symbolTotals = useMemo(() => {
     const totals = new Map<string, number>();
@@ -91,8 +100,10 @@ export function Step2Analysis() {
         <Card>
           <CardContent className="pt-2">
             <Text className="leading-6 text-foreground">
-              최근 30일 거래 27건을 분석했어요. 과매매(M1)와 손실 후 재진입(M5) 지표가 주의
-              구간이고, 야간 거래(M6)는 아직 표본이 부족해 측정 중이에요.
+              거래 기록만으로 계산한 {compositeMetric?.name}(F10)는{' '}
+              {compositeMetric?.score ?? '측정 중'}점이에요. {recoveryMetric?.name}(F5)는{' '}
+              {recoveryMetric?.band} 구간이고, {concentrationMetric?.name}(F8)은{' '}
+              {concentrationMetric?.limitation ?? '실측값을 보여드려요.'}
             </Text>
           </CardContent>
         </Card>
@@ -114,9 +125,51 @@ export function Step2Analysis() {
 
       <View className="gap-3">
         <View className="gap-1">
-          <Text className="text-base font-extrabold text-foreground">행동 지표 6종</Text>
+          <Text className="text-base font-extrabold text-foreground">내 예상 vs 실제 기록</Text>
           <Text className="text-xs text-muted-foreground">
-            위험도형은 높을수록 해당 행동의 빈도가 높다는 뜻이며, 좋고 나쁨의 평가가 아닙니다.
+            맞고 틀림을 판단하지 않고, 답한 항목의 차이만 보여드려요.
+          </Text>
+        </View>
+        {expectationComparisons.length ? (
+          <View className="gap-2.5">
+            {expectationComparisons.map((item) => (
+              <Card key={item.questionId}>
+                <CardContent className="gap-2 pt-2">
+                  <Text className="text-sm font-bold text-foreground">{item.label}</Text>
+                  <View className="flex-row gap-2">
+                    <View className="flex-1 rounded-xl bg-muted p-3">
+                      <Text className="text-[11px] text-muted-foreground">내 예상</Text>
+                      <Text className="text-[13px] font-bold text-foreground">{item.expected}</Text>
+                    </View>
+                    <View className="flex-1 rounded-xl bg-primary/10 p-3">
+                      <Text className="text-[11px] text-primary">실제 기록</Text>
+                      <Text className="text-[13px] font-bold text-foreground">{item.actual}</Text>
+                    </View>
+                  </View>
+                  <Text className="text-xs text-muted-foreground">{item.observation}</Text>
+                </CardContent>
+              </Card>
+            ))}
+          </View>
+        ) : (
+          <Card>
+            <CardContent className="pt-2">
+              <Text className="text-xs text-muted-foreground">
+                자기 예상 문항은 건너뛰었어요. 거래 기반 점수는 그대로 확인할 수 있습니다.
+              </Text>
+            </CardContent>
+          </Card>
+        )}
+      </View>
+
+      <View className="gap-3">
+        <View className="gap-1">
+          <Text className="text-base font-extrabold text-foreground">
+            Free 행동 점수 9종 + 종합점수
+          </Text>
+          <Text className="text-xs text-muted-foreground">
+            모든 점수는 0~100점이며 높을수록 절제·규율 상태가 안정적이에요. 수익률이나 투자 실력
+            평가는 아닙니다.
           </Text>
         </View>
         <View className="gap-3">
@@ -152,9 +205,6 @@ export function Step2Analysis() {
                   </Text>
                   {!unlocked && <Icon as={Lock} size={14} className="text-muted-foreground" />}
                 </View>
-                <Text className="text-[11px] font-bold text-muted-foreground">
-                  {KIND_LABEL[m.kind]}
-                </Text>
                 <Text className="text-[13px] text-foreground">{m.teaser}</Text>
                 {unlocked && (
                   <Text className="text-xs font-semibold text-primary">

@@ -1,8 +1,8 @@
-// docs/coinmirror_demo.html의 metricCard() 데이터 구조를 그대로 따르는 목업.
-export type MetricKind = 'risk' | 'skill' | 'observation';
+export type MetricKind = 'habit' | 'composite';
+export type ScoreLevel = 'stable' | 'observe' | 'caution' | 'measuring';
 
 export type Metric = {
-  id: string;
+  id: `F${number}`;
   name: string;
   kind: MetricKind;
   sampleSize: number;
@@ -17,143 +17,154 @@ export type Metric = {
 };
 
 export const KIND_LABEL: Record<MetricKind, string> = {
-  risk: '위험도형',
-  skill: '역량형',
-  observation: '관찰형',
+  habit: '자동 분석',
+  composite: '종합',
 };
 
-// skill 타입은 낮을수록 위험, risk/observation은 높을수록 위험 (데모 scoreLevel() 규칙 그대로)
-export function scoreLevel(metric: Metric): 'low' | 'mid' | 'high' | 'danger' | 'none' {
-  if (metric.score === null) return 'none';
-  if (metric.kind === 'skill') {
-    if (metric.score >= 70) return 'low';
-    if (metric.score >= 40) return 'mid';
-    return 'high';
-  }
-  if (metric.score >= 75) return 'danger';
-  if (metric.score >= 50) return 'high';
-  if (metric.score >= 30) return 'mid';
-  return 'low';
+export function scoreLevel(score: number | null): ScoreLevel {
+  if (score === null) return 'measuring';
+  if (score >= 80) return 'stable';
+  if (score >= 55) return 'observe';
+  return 'caution';
 }
 
 export const baseMetrics: Metric[] = [
   {
-    id: 'M1',
-    name: '과매매 지표',
-    kind: 'risk',
-    sampleSize: 46,
+    id: 'F1',
+    name: '손절 습관',
+    kind: 'habit',
+    sampleSize: 72,
     measured: true,
-    score: 58,
-    band: '주의',
-    headline: '최근 30일 일평균 3.2건 체결, 당일 왕복 거래가 22%를 차지해요.',
-    stats: {
-      '일평균 체결': '3.2건',
-      '당일 왕복 비율': '22%',
-      '수수료/실현손익': '11%',
-    },
-    evidence: [
-      { when: '08-09 14:32', symbol: 'BTC', fact: '매수 후 47분 만에 재매도' },
-      { when: '08-08 21:10', symbol: 'DOGE', fact: '같은 날 3회 왕복 체결' },
-    ],
-    question: '하루에 몇 번까지 거래하는 게 적당하다고 생각하시나요?',
-    limitation: '수수료는 거래소가 제공한 값을 그대로 사용했어요.',
+    score: 61,
+    band: '관찰',
+    headline: '손실 거래를 이익 거래보다 조금 더 오래 보유했어요.',
+    stats: { '손실 보유 중앙값': '16.1일', '깊은 손실 비중': '13%' },
+    evidence: [{ when: '07-15', symbol: 'ARB', fact: '손실 구간 21일 보유 후 청산' }],
   },
   {
-    id: 'M2',
-    name: '익절·손절 비대칭',
-    kind: 'skill',
-    sampleSize: 31,
+    id: 'F2',
+    name: '익절 습관',
+    kind: 'habit',
+    sampleSize: 99,
     measured: true,
-    score: 34,
-    band: '개선 여지 큼',
-    headline: '평균 익절률 +4.1%, 평균 손절률 -9.8%로 손실 쪽이 2배 이상 커요.',
-    stats: {
-      '평균 익절률': '+4.1%',
-      '평균 손절률': '-9.8%',
-      '이익 보유시간': '2.1일',
-      '손실 보유시간': '6.4일',
-    },
-    evidence: [{ when: '08-05 10:02', symbol: 'ETH', fact: '손실 포지션 9일 보유 후 청산' }],
-    question: '손실 포지션을 더 오래 들고 있는 이유가 있을까요?',
+    score: 82,
+    band: '안정',
+    headline: '작은 이익을 지나치게 빨리 확정하는 패턴은 많지 않았어요.',
+    stats: { '이익 보유 중앙값': '15.0일', '초단기 익절': '8%' },
+    evidence: [],
   },
   {
-    id: 'M3',
-    name: '추격 진입 지표',
-    kind: 'risk',
+    id: 'F3',
+    name: '추격매수',
+    kind: 'habit',
+    sampleSize: 113,
+    measured: true,
+    score: 73,
+    band: '관찰',
+    headline: '급등 직후 높은 가격에서 이어진 매수는 14%였어요.',
+    stats: { '추격 진입 비중': '14%', '평균 추격폭': '+7.8%' },
+    evidence: [{ when: '06-21', symbol: 'SOL', fact: '24시간 상승 뒤 추가 매수' }],
+  },
+  {
+    id: 'F4',
+    name: '물타기',
+    kind: 'habit',
+    sampleSize: 34,
+    measured: true,
+    score: 67,
+    band: '관찰',
+    headline: '하락 구간 추가매수 9건 중 3건은 규모가 이전 매수보다 컸어요.',
+    stats: { '하락 추가매수': '9건', '규모 확대': '3건' },
+    evidence: [],
+  },
+  {
+    id: 'F5',
+    name: '복구매수',
+    kind: 'habit',
     sampleSize: 22,
     measured: true,
-    score: 47,
-    band: '보통',
-    headline: '직전 체결가 대비 7% 이상 높은 가격에서 재매수한 비율이 18%예요.',
-    stats: { '추격 재매수 비율': '18%', '평균 추격폭': '+11.4%' },
-    evidence: [{ when: '08-09 14:32', symbol: 'BTC', fact: '직전가 대비 +13% 지점 매수' }],
-  },
-  {
-    id: 'M4',
-    name: '물타기 지표',
-    kind: 'risk',
-    sampleSize: 18,
-    measured: true,
-    score: 41,
-    band: '보통',
-    headline: '평단 대비 -10% 이하 구간 추가매수가 5건, 총 320만원 투입됐어요.',
-    stats: { '추가매수 건수': '5건', '투입 금액': '320만원' },
-    evidence: [{ when: '08-07 23:58', symbol: 'DOGE', fact: '평단 대비 -14% 구간 추가매수' }],
-    limitation: '분할매수를 사전에 계획했는지는 아직 반영하지 않았어요.',
-  },
-  {
-    id: 'M5',
-    name: '손실 후 재진입',
-    kind: 'risk',
-    sampleSize: 12,
-    measured: true,
-    score: 63,
+    score: 48,
     band: '주의',
-    headline: '손실 확정 2시간 내 재진입이 7건, 평균 베팅 규모가 1.4배로 커졌어요.',
-    stats: { '2시간 내 재진입': '7건', '평균 베팅 배율': '1.4배' },
-    evidence: [{ when: '08-09 09:40', symbol: 'XRP', fact: '손절 92분 후 같은 종목 재매수' }],
-    question: '손실 직후 다시 들어가고 싶어지는 순간은 언제인가요?',
+    headline: '손실 확정 후 2시간 안에 다시 진입한 거래가 7건 있었어요.',
+    stats: { '2시간 내 재진입': '7건', '베팅 확대': '1.4배' },
+    evidence: [{ when: '08-09', symbol: 'XRP', fact: '손실 청산 92분 뒤 재매수' }],
   },
   {
-    id: 'M6',
-    name: '야간 거래 지표',
-    kind: 'observation',
-    sampleSize: 4,
+    id: 'F6',
+    name: '과매매',
+    kind: 'habit',
+    sampleSize: 214,
+    measured: true,
+    score: 71,
+    band: '관찰',
+    headline: '최근 자기 기준보다 거래가 급증한 주가 두 번 있었어요.',
+    stats: { '월평균 주문': '35.7회', '누적 수수료': '120,633원' },
+    evidence: [],
+  },
+  {
+    id: 'F7',
+    name: '새벽거래',
+    kind: 'habit',
+    sampleSize: 214,
+    measured: true,
+    score: 86,
+    band: '안정',
+    headline: '00~06시 거래대금 비중은 6%로 낮은 편이었어요.',
+    stats: { '새벽 거래 비중': '6%', '직전 4주': '7%' },
+    evidence: [],
+  },
+  {
+    id: 'F8',
+    name: '몰빵',
+    kind: 'habit',
+    sampleSize: 8,
     measured: false,
     score: null,
     band: '측정 중',
-    headline: '00~06시 거래가 아직 4건뿐이라 신뢰할 만한 격차를 보여드리기 어려워요.',
-    stats: { '야간 거래 비중': '9%' },
+    headline: '선언한 종목 한도가 없어 실측 집중도만 보여드려요.',
+    stats: { '최대 종목 비중': '24%' },
     evidence: [],
-    limitation: '표본 10건 이상부터 야간·주간 승률 격차를 계산해요.',
+    limitation: 'A4에서 한도를 선택하면 다음 분석부터 대조할 수 있어요.',
+  },
+  {
+    id: 'F9',
+    name: '본전 탈출',
+    kind: 'habit',
+    sampleSize: 18,
+    measured: true,
+    score: 64,
+    band: '관찰',
+    headline: '손실 후 본전 부근에서 바로 정리한 패턴이 일부 있었어요.',
+    stats: { '본전 부근 청산': '5건', '중앙 보유시간': '9.2일' },
+    evidence: [],
+  },
+  {
+    id: 'F10',
+    name: '투자 체력 종합점수',
+    kind: 'composite',
+    sampleSize: 214,
+    measured: true,
+    score: 69,
+    band: '관찰',
+    headline: '측정 가능한 8개 습관 점수를 거래 기록만으로 종합했어요.',
+    stats: { '측정 점수': '8/9', 신뢰도: '높음' },
+    evidence: [],
+    limitation: '수익률이나 투자 실력을 평가하는 점수가 아니에요.',
   },
 ];
 
 export type LockedMetricPreview = {
-  id: string;
+  id: `P${number}`;
   name: string;
-  kind: MetricKind;
   teaser: string;
 };
 
-// docs/product-specs/v5.0_score-system-and-onboarding-survey.md의 구독 스코어를 반영할 때 교체할 이전 목업 지표.
 export const lockedMetrics: LockedMetricPreview[] = [
-  {
-    id: 'S06',
-    name: '포트폴리오 집중도',
-    kind: 'risk',
-    teaser: '종목 쏠림·섹터 편중을 HHI 지수로 보여드려요.',
-  },
-  {
-    id: 'S09',
-    name: '계획 준수율',
-    kind: 'skill',
-    teaser: '기록한 목표가·손절가와 실제 실행의 일치도예요.',
-  },
-  {
-    id: 'S11',
-    name: '리벤지 트레이딩 지수',
-    kind: 'risk',
-    teaser: '손실 후 보복성 매매 성향을 따로 떼어 봐요.',
-  },
+  { id: 'P1', name: '습관 변화 그래프', teaser: '최대 12주의 점수 변화를 같은 기준으로 추적해요.' },
+  { id: 'P2', name: '회복탄력성 지수', teaser: '손실 뒤 거래 속도와 규모가 안정되는 시간을 봐요.' },
+  { id: 'P3', name: '하락장 적응력', teaser: '하락 국면에서 평소 습관이 어떻게 달라졌는지 봐요.' },
+  { id: 'P4', name: '또래 거울', teaser: '익명 집단과 비교하되 순위나 경쟁을 만들지 않아요.' },
+  { id: 'P5', name: '자기인식 갭', teaser: '내 예상과 실제 기록의 차이를 장기 추적해요.' },
+  { id: 'P6', name: '운·규율 분해', teaser: '분기 리포트에서 결과와 행동의 관계를 분리해 봐요.' },
+  { id: 'P7', name: '원칙 지키기', teaser: '고른 프리셋 원칙을 다음 분석에서 자동 확인해요.' },
 ];

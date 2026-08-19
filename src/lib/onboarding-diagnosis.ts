@@ -1,138 +1,221 @@
-export type DiagnosisQuestionId =
-  | 'experience'
-  | 'style'
-  | 'painPoint'
-  | 'goal'
-  | 'lossLimit'
-  | 'tradeTime'
-  | 'planning';
+export type DiagnosisQuestionId = 'A1' | 'A2' | 'A3' | 'A4' | 'B1' | 'B2' | 'B3' | 'B4';
+export type DiagnosisBlock = 'context' | 'expectation';
 
-export type DiagnosisAnswer = {
-  questionId: DiagnosisQuestionId;
-  optionId: string;
-};
+export type DiagnosisProfile = Partial<{
+  A1: string;
+  A2: string[];
+  A3: string;
+  A4: string;
+  B1: string;
+  B2: string;
+  B3: string;
+  B4: string;
+}>;
 
+export type DiagnosisOption = { id: string; label: string };
 export type DiagnosisQuestion = {
   id: DiagnosisQuestionId;
+  block: DiagnosisBlock;
   title: string;
   description: string;
-  options: {
-    id: string;
-    label: string;
-    scoreLinks: string[];
-  }[];
+  multiple?: boolean;
+  maxSelections?: number;
+  options: DiagnosisOption[];
+};
+
+export type ExpectationComparison = {
+  questionId: 'B1' | 'B2' | 'B3' | 'B4';
+  label: string;
+  expected: string;
+  actual: string;
+  observation: string;
 };
 
 export const diagnosisQuestions: DiagnosisQuestion[] = [
   {
-    id: 'experience',
-    title: '크립토 투자를 시작한 지 얼마나 되셨나요?',
-    description: '경험 기간은 스코어 설명의 깊이와 용어 수준을 조절하는 데 사용합니다.',
+    id: 'A1',
+    block: 'context',
+    title: '평소 투자 스타일에 가장 가까운 것은?',
+    description: '점수를 바꾸지 않고 결과 설명의 맥락으로만 사용해요.',
     options: [
-      { id: 'under_3m', label: '3개월 미만', scoreLinks: ['기본 설명 강화', '면책 안내'] },
-      { id: '3m_1y', label: '3개월~1년', scoreLinks: ['기본 지표', '반복 패턴'] },
-      { id: '1y_3y', label: '1~3년', scoreLinks: ['행동 패턴 비교', '목표 관리'] },
-      { id: 'over_3y', label: '3년 이상', scoreLinks: ['심화 지표', '장기 추이'] },
+      { id: 'day', label: '하루 안에 사고파는 편' },
+      { id: 'swing', label: '며칠~몇 주 보유' },
+      { id: 'long', label: '몇 달 이상 길게 보유' },
+      { id: 'momentum', label: '급등할 때만 들어가는 편' },
+      { id: 'unknown', label: '아직 잘 모르겠다' },
     ],
   },
   {
-    id: 'style',
-    title: '평소 투자 스타일에 가장 가까운 것은 무엇인가요?',
-    description: '같은 거래 빈도라도 단기형과 장기형의 해석 기준은 달라질 수 있습니다.',
+    id: 'A2',
+    block: 'context',
+    title: '투자할 때 가장 자주 반복되는 고민은?',
+    description: '최대 2개를 골라 관련 카드를 먼저 보여드려요.',
+    multiple: true,
+    maxSelections: 2,
     options: [
-      { id: 'swing', label: '단기 매매 / 스윙', scoreLinks: ['M1 과매매', 'M6 야간 거래'] },
-      { id: 'long_term', label: '중장기 보유', scoreLinks: ['M2 손익 비대칭', '보유시간'] },
-      { id: 'momentum', label: '급등 종목 대응', scoreLinks: ['M3 추격 진입', 'M5 손실 후 재진입'] },
-      { id: 'unclear', label: '아직 명확한 스타일이 없음', scoreLinks: ['진단 질문', '목표 설정'] },
+      { id: 'chase', label: '오르는 코인을 따라 산다' },
+      { id: 'hold_loss', label: '손절을 못 하고 버틴다' },
+      { id: 'averaging', label: '물타기를 자주 한다' },
+      { id: 'overtrade', label: '거래가 너무 잦다' },
+      { id: 'night', label: '새벽에 충동 매매한다' },
+      { id: 'concentration', label: '한 종목에 몰아넣는다' },
     ],
   },
   {
-    id: 'painPoint',
-    title: '투자할 때 가장 자주 반복되는 고민은 무엇인가요?',
-    description: '가장 먼저 확인할 위험 행동 지표를 정합니다.',
-    options: [
-      { id: 'chase', label: '급등하면 늦게라도 따라 산다', scoreLinks: ['M3 추격 진입'] },
-      { id: 'hold_loss', label: '손실 중인 종목을 오래 들고 간다', scoreLinks: ['M2 손익 비대칭'] },
-      { id: 'revenge', label: '손절 후 다시 급하게 진입한다', scoreLinks: ['M5 손실 후 재진입'] },
-      { id: 'overtrade', label: '거래 횟수가 너무 많다', scoreLinks: ['M1 과매매'] },
-      { id: 'no_plan', label: '계획 없이 매수/매도한다', scoreLinks: ['목표 설정', '워크시트'] },
-    ],
-  },
-  {
-    id: 'goal',
-    title: '코인미러를 통해 가장 확인하고 싶은 것은 무엇인가요?',
-    description: '분석 리포트의 첫 문장과 목표 템플릿 추천에 반영됩니다.',
-    options: [
-      { id: 'reduce_impulse', label: '뇌동매매를 줄이고 싶다', scoreLinks: ['M1 과매매', 'M3 추격 진입'] },
-      { id: 'follow_stop', label: '손절 규칙을 지키고 싶다', scoreLinks: ['M2 손익 비대칭'] },
-      { id: 'reduce_count', label: '매매 횟수를 줄이고 싶다', scoreLinks: ['M1 과매매'] },
-      { id: 'objective_view', label: '내 투자 습관을 객관적으로 보고 싶다', scoreLinks: ['전체 스코어'] },
-      { id: 'principle', label: '장기적으로 원칙 매매를 만들고 싶다', scoreLinks: ['목표·진행', '워크시트'] },
-    ],
-  },
-  {
-    id: 'lossLimit',
+    id: 'A3',
+    block: 'context',
     title: '한 종목에서 어느 정도 손실이면 점검이 필요하다고 느끼나요?',
-    description: '손실 관련 지표와 내 원칙의 기본값을 개인화합니다.',
+    description: '실제 손실 기록과 나란히 비교하며 점수 계산에는 사용하지 않아요.',
     options: [
-      { id: '5', label: '-5%', scoreLinks: ['손실 기준', '보수형'] },
-      { id: '10', label: '-10%', scoreLinks: ['M4 물타기', '손절 기준'] },
-      { id: '20', label: '-20%', scoreLinks: ['M2 손익 비대칭'] },
-      { id: '30', label: '-30% 이상', scoreLinks: ['고위험 구간 점검'] },
-      { id: 'none', label: '아직 기준이 없다', scoreLinks: ['목표 설정'] },
+      { id: '5', label: '-5%' },
+      { id: '10', label: '-10%' },
+      { id: '20', label: '-20%' },
+      { id: '30', label: '-30% 이상' },
+      { id: 'none', label: '기준을 정해둔 적 없다' },
     ],
   },
   {
-    id: 'tradeTime',
-    title: '주로 언제 거래하시나요?',
-    description: '야간 거래와 감정적 진입 가능성을 해석할 때 참고합니다.',
+    id: 'A4',
+    block: 'context',
+    title: '한 종목에 최대 몇 %까지 담아도 괜찮다고 보나요?',
+    description: '선언한 한도가 있을 때만 집중도 실측값과 대조해요.',
     options: [
-      { id: 'commute', label: '출근/업무 전후', scoreLinks: ['시간대 분포'] },
-      { id: 'work', label: '업무 중간', scoreLinks: ['과매매 빈도'] },
-      { id: 'night', label: '밤/새벽', scoreLinks: ['M6 야간 거래'] },
-      { id: 'alert', label: '급등 알림을 봤을 때', scoreLinks: ['M3 추격 진입'] },
-      { id: 'none', label: '정해진 시간 없음', scoreLinks: ['M1 과매매', '목표 설정'] },
+      { id: '10', label: '10% 이내' },
+      { id: '30', label: '30% 이내' },
+      { id: '50', label: '절반 이내' },
+      { id: 'all_in', label: '확신 있으면 다 넣을 수도 있다' },
+      { id: 'none', label: '생각해본 적 없다' },
     ],
   },
   {
-    id: 'planning',
-    title: '매수 전 목표가나 손절가를 정하는 편인가요?',
-    description: '거래 기록 입력과 4주 원칙 워크시트의 기본 질문을 조정합니다.',
+    id: 'B1',
+    block: 'expectation',
+    title: '한 달에 몇 번 정도 거래한다고 생각하세요?',
+    description: '업로드 후 월평균 주문 수와 비교해요.',
     options: [
-      { id: 'always', label: '항상 정한다', scoreLinks: ['계획 준수율'] },
-      { id: 'sometimes', label: '가끔 정한다', scoreLinks: ['워크시트'] },
-      { id: 'think_only', label: '생각은 하지만 기록하지 않는다', scoreLinks: ['기록 습관'] },
-      { id: 'rarely', label: '거의 정하지 않는다', scoreLinks: ['목표 설정'] },
+      { id: 'under_10', label: '10회 이하' },
+      { id: '11_30', label: '11~30회' },
+      { id: '31_100', label: '31~100회' },
+      { id: 'over_100', label: '100회 넘게' },
+    ],
+  },
+  {
+    id: 'B2',
+    block: 'expectation',
+    title: '주로 언제 거래한다고 생각하세요?',
+    description: '거래대금 기준 실제 최빈 시간대와 비교해요.',
+    options: [
+      { id: 'day', label: '아침·낮' },
+      { id: 'evening', label: '저녁' },
+      { id: 'night', label: '밤 11시~새벽' },
+      { id: 'irregular', label: '일정하지 않다' },
+    ],
+  },
+  {
+    id: 'B3',
+    block: 'expectation',
+    title: '이익과 손실 중 어느 쪽을 더 빨리 정리한다고 생각하세요?',
+    description: '청산 거래의 실제 보유시간과 비교해요.',
+    options: [
+      { id: 'profit_first', label: '이익을 더 빨리' },
+      { id: 'loss_first', label: '손실을 더 빨리' },
+      { id: 'similar', label: '비슷하다' },
+      { id: 'unknown', label: '모르겠다' },
+    ],
+  },
+  {
+    id: 'B4',
+    block: 'expectation',
+    title: '청산한 거래 중 이익으로 끝난 비율은 어느 정도일 것 같나요?',
+    description: '실제 승률과 비교하되 수익 능력을 평가하지 않아요.',
+    options: [
+      { id: 'under_30', label: '30% 이하' },
+      { id: '31_50', label: '31~50%' },
+      { id: '51_70', label: '51~70%' },
+      { id: 'over_70', label: '70% 넘게' },
     ],
   },
 ];
 
-export const defaultDiagnosisAnswers: Record<DiagnosisQuestionId, string> = {
-  experience: '1y_3y',
-  style: 'swing',
-  painPoint: 'chase',
-  goal: 'reduce_impulse',
-  lossLimit: '10',
-  tradeTime: 'night',
-  planning: 'think_only',
+export function selectDiagnosisOption(
+  profile: DiagnosisProfile,
+  questionId: DiagnosisQuestionId,
+  optionId: string
+): DiagnosisProfile {
+  const question = diagnosisQuestions.find((item) => item.id === questionId);
+  if (!question?.multiple) return { ...profile, [questionId]: optionId };
+
+  const currentValue = profile[questionId];
+  const current = Array.isArray(currentValue) ? currentValue : [];
+  const next = current.includes(optionId)
+    ? current.filter((item) => item !== optionId)
+    : [...current, optionId].slice(-(question.maxSelections ?? 1));
+  return { ...profile, [questionId]: next } as DiagnosisProfile;
+}
+
+export function answeredDiagnosisCount(profile: DiagnosisProfile) {
+  return diagnosisQuestions.filter((question) => {
+    const value = profile[question.id];
+    return Array.isArray(value) ? value.length > 0 : Boolean(value);
+  }).length;
+}
+
+export function optionLabel(questionId: DiagnosisQuestionId, optionId?: string) {
+  if (!optionId) return '미응답';
+  return (
+    diagnosisQuestions
+      .find((question) => question.id === questionId)
+      ?.options.find((option) => option.id === optionId)?.label ?? '미응답'
+  );
+}
+
+const SAMPLE_ACTUALS: Record<
+  'B1' | 'B2' | 'B3' | 'B4',
+  Omit<ExpectationComparison, 'questionId' | 'expected'>
+> = {
+  B1: {
+    label: '월 거래 횟수',
+    actual: '월평균 35.7회',
+    observation: '내가 생각한 범위와 실제 월평균 주문 수를 나란히 보여드려요.',
+  },
+  B2: {
+    label: '주 거래 시간',
+    actual: '오후·저녁(14~22시)',
+    observation: '새벽보다 오후와 저녁 거래대금이 더 컸어요.',
+  },
+  B3: {
+    label: '청산 속도',
+    actual: '이익 15.0일 · 손실 16.1일',
+    observation: '손실 거래를 조금 더 오래 보유했어요.',
+  },
+  B4: {
+    label: '청산 승률',
+    actual: '57.9%',
+    observation: '예상과 실제의 차이만 확인하고 좋고 나쁨은 판단하지 않아요.',
+  },
 };
 
-export function summarizeDiagnosis(answers: Record<DiagnosisQuestionId, string>) {
-  const findLabel = (questionId: DiagnosisQuestionId) => {
-    const q = diagnosisQuestions.find((item) => item.id === questionId);
-    return q?.options.find((option) => option.id === answers[questionId])?.label ?? '미응답';
-  };
+export function buildExpectationComparisons(profile: DiagnosisProfile): ExpectationComparison[] {
+  return (['B1', 'B2', 'B3', 'B4'] as const).flatMap((questionId) => {
+    const answer = profile[questionId];
+    if (typeof answer !== 'string') return [];
+    return [
+      { questionId, expected: optionLabel(questionId, answer), ...SAMPLE_ACTUALS[questionId] },
+    ];
+  });
+}
 
-  const pain = findLabel('painPoint');
-  const goal = findLabel('goal');
-  const style = findLabel('style');
-  const tradeTime = findLabel('tradeTime');
-
+export function summarizeDiagnosis(profile: DiagnosisProfile) {
+  const style = optionLabel('A1', profile.A1);
+  const concerns = (profile.A2 ?? []).map((id) => optionLabel('A2', id));
+  const answered = answeredDiagnosisCount(profile);
   return {
-    primaryFocus: pain,
-    goal,
     style,
-    tradeTime,
-    headline: `${style} 성향으로 보이며, 우선 '${pain}' 패턴을 '${goal}' 목표와 연결해 확인합니다.`,
+    concerns,
+    answered,
+    headline:
+      answered === 0
+        ? '아직 답하지 않아도 괜찮아요. 거래 기록만으로 먼저 살펴볼 수 있어요.'
+        : `${profile.A1 ? `${style} 맥락에서 ` : ''}${concerns.length ? concerns.join(' · ') : '선택한 기준'} 관련 카드를 먼저 보여드려요. 점수 자체는 거래 기록으로만 계산합니다.`,
   };
 }

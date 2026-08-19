@@ -1,6 +1,6 @@
 # 002 — v5.0 스코어·온보딩 구현 정합화
 
-- **상태**: 제안 — 착수 전 범위 확인 필요
+- **상태**: 완료 (2026-08-15)
 - **기준 문서**: [v2.0 PRD](../../v2.0_coinmirror_product_prd.md), [v5.0 Product Spec](../../product-specs/v5.0_score-system-and-onboarding-survey.md)
 
 ## 목표
@@ -12,7 +12,7 @@
 1. 7문항 진단을 A/B 블록 8문항 `DiagnosisProfile`로 교체
 2. `나중에 답하기`, A2 최대 2개 선택 구현
 3. 예상 vs 실제 카드 UI 및 샘플 데이터 구현
-4. M1~M6 위험도형 카드를 F1~F10 양호도 점수 카드로 교체
+4. M1~~M6 위험도형 카드를 F1~~F10 양호도 점수 카드로 교체
 5. 목표 숫자 입력과 자유 워크시트를 P7 프리셋 원칙으로 교체
 6. Expo와 `coinmirror_demo.html`의 문구·순서·상태 동일화
 7. 목업 데이터 타입과 스토어를 v5.0 ID/데이터 모델로 변경
@@ -37,3 +37,10 @@
 ## 후속 계획
 
 이 작업 완료 후 별도 Exec Plan으로 업비트 CSV 파싱 → 주문 병합 → FIFO RoundTrip → F3/F5/F6/F7/F10 순서의 실제 엔진 구현을 진행한다.
+
+## 완료 증거
+
+- `npm test`: 순수 모델 6개 + HTML 클릭 흐름 1개 통과
+- `npm run lint`: 통과
+- `npm run typecheck`: 통과
+- HTML 클릭 흐름: 8문항 → A2 최대 2개 → 샘플 분석 → 예상 vs 실제 → F1~F10 → P7 선택 및 로컬 저장

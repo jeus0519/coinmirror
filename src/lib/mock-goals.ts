@@ -1,84 +1,58 @@
-// docs/coinmirror_demo.html renderGoalForm()/progressCard() 데이터 구조.
-export type GoalTemplate = {
+export type PrinciplePreset = {
   id: string;
   label: string;
   description: string;
-  source: string;
-  defaultTarget: number;
-  unit: string;
-};
-
-export type GoalProgress = {
-  label: string;
-  note: string;
-  target: number;
-  unit: string;
-  current: number | null;
-  progressPct: number;
+  check: string;
+  current: string;
   achieved: boolean | null;
 };
 
-// PRD §6.8 목표 예시를 그대로 템플릿화.
-export const goalTemplates: GoalTemplate[] = [
+export const principlePresets: PrinciplePreset[] = [
   {
-    id: 'no-reason-buy-ratio',
-    label: '근거 없는 매수 비율',
-    description: '"그냥/느낌" 태그로만 기록된 매수 비율',
-    source: 'M1 과매매 지표',
-    defaultTarget: 30,
-    unit: '%',
-  },
-  {
-    id: 'stop-loss-recorded-ratio',
-    label: '손절가 입력 거래 비율',
-    description: '매수 시점에 손절가를 미리 기록한 비율(반대로 이건 이상)',
-    source: 'M2 익절·손절 비대칭',
-    defaultTarget: 80,
-    unit: '%',
-  },
-  {
-    id: 'unplanned-averaging-count',
-    label: '무계획 물타기 횟수',
-    description: '사전 분할매수 계획 없이 발생한 추가매수',
-    source: 'M4 물타기 지표',
-    defaultTarget: 0,
-    unit: '회',
-  },
-];
-
-export const goalProgress: GoalProgress[] = [
-  {
-    label: '근거 없는 매수 비율',
-    note: '이번 주 매수 12건 중 5건이 근거 태그 없이 기록됐어요.',
-    target: 30,
-    unit: '%',
-    current: 42,
-    progressPct: 71,
+    id: 'cooldown-after-loss',
+    label: '손실 뒤 2시간 쉬기',
+    description: '손실 청산 직후 같은 종목에 급히 다시 들어가지 않아요.',
+    check: '다음 분석에서 2시간 내 복구매수 건수 확인',
+    current: '최근 7건',
     achieved: false,
   },
   {
-    label: '손절가 입력 거래 비율',
-    note: '기록된 매수 중 손절가를 함께 남긴 비율이에요.',
-    target: 80,
-    unit: '%',
-    current: 61,
-    progressPct: 76,
-    achieved: false,
-  },
-  {
-    label: '무계획 물타기 횟수',
-    note: '평단 대비 -10% 이하 구간의 무계획 추가매수예요.',
-    target: 0,
-    unit: '회',
-    current: 0,
-    progressPct: 100,
+    id: 'no-dawn-trade',
+    label: '새벽 매매 줄이기',
+    description: '00~06시에는 새 주문을 만들지 않아요.',
+    check: '다음 분석에서 새벽 거래대금 비중 확인',
+    current: '최근 6%',
     achieved: true,
+  },
+  {
+    id: 'one-position-limit',
+    label: '한 종목 집중 피하기',
+    description: '한 종목 비중이 스스로 정한 범위를 넘는지 확인해요.',
+    check: '다음 분석에서 최대 종목 집중도 확인',
+    current: '최근 24%',
+    achieved: null,
+  },
+  {
+    id: 'one-day-off',
+    label: '주 1회 매매 없는 날',
+    description: '거래하지 않는 하루를 정해 과열된 리듬을 끊어봐요.',
+    check: '다음 분석에서 주간 비활동일 확인',
+    current: '최근 주 2일',
+    achieved: true,
+  },
+  {
+    id: 'avoid-chasing',
+    label: '급등 직후 따라 사지 않기',
+    description: '급등한 종목은 바로 진입하지 않고 한 번 더 관찰해요.',
+    check: '다음 분석에서 추격매수 비중 확인',
+    current: '최근 14%',
+    achieved: false,
   },
 ];
 
 export const weeklyTrend = [
-  { week: '7/14', tradeCount: 9, nightRatio: 4 },
-  { week: '7/21', tradeCount: 14, nightRatio: 8 },
-  { week: '7/28', tradeCount: 11, nightRatio: 6 },
-  { week: '8/4', tradeCount: 12, nightRatio: 9 },
+  { week: '7/14', compositeScore: 62, tradeCount: 9 },
+  { week: '7/21', compositeScore: 65, tradeCount: 14 },
+  { week: '7/28', compositeScore: 67, tradeCount: 11 },
+  { week: '8/4', compositeScore: 69, tradeCount: 12 },
 ];

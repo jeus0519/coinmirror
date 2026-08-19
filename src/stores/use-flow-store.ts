@@ -1,15 +1,14 @@
 import { create } from 'zustand';
 
-import { type DiagnosisQuestionId } from '@/lib/onboarding-diagnosis';
+import { type DiagnosisProfile } from '@/lib/onboarding-diagnosis';
 
 /**
- * docs/coinmirror_demo.html의 5단계 스테퍼 상태를 대응한다.
+ * docs/coinmirror_demo.html의 6단계 스테퍼 상태를 대응한다.
  * hasDiagnosis가 true여야 데이터 불러오기 단계로, hasAnalyzed가 true여야 분석 이후 단계로 진입한다.
  */
 export type FlowStep = 1 | 2 | 3 | 4 | 5 | 6;
 export type DataSource = 'sample' | 'csv' | null;
 export type SubscriptionTier = 'free' | 'pro';
-export type DiagnosisAnswers = Partial<Record<DiagnosisQuestionId, string>>;
 
 interface FlowState {
   currentStep: FlowStep;
@@ -17,9 +16,9 @@ interface FlowState {
   hasAnalyzed: boolean;
   dataSource: DataSource;
   subscriptionTier: SubscriptionTier;
-  diagnosisAnswers: DiagnosisAnswers;
+  diagnosisAnswers: DiagnosisProfile;
   setStep: (step: FlowStep) => void;
-  saveDiagnosis: (answers: Record<DiagnosisQuestionId, string>) => void;
+  saveDiagnosis: (answers: DiagnosisProfile) => void;
   runSample: () => void;
   uploadCsv: (fileName: string) => void;
   toggleSubscription: () => void;
@@ -38,8 +37,10 @@ export const useFlowStore = create<FlowState>((set) => ({
   dataSource: null,
   subscriptionTier: 'free',
   diagnosisAnswers: {},
-  setStep: (step) => set((state) => ({ currentStep: canEnterStep(state, step) ? step : state.currentStep })),
-  saveDiagnosis: (answers) => set({ hasDiagnosis: true, diagnosisAnswers: answers, currentStep: 3 }),
+  setStep: (step) =>
+    set((state) => ({ currentStep: canEnterStep(state, step) ? step : state.currentStep })),
+  saveDiagnosis: (answers) =>
+    set({ hasDiagnosis: true, diagnosisAnswers: answers, currentStep: 3 }),
   runSample: () => set({ hasAnalyzed: true, dataSource: 'sample', currentStep: 4 }),
   uploadCsv: (_fileName) => set({ hasAnalyzed: true, dataSource: 'csv', currentStep: 4 }),
   toggleSubscription: () =>

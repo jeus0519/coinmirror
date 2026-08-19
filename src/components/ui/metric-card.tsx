@@ -7,26 +7,23 @@ import { cn } from '@/lib/utils';
 import { KIND_LABEL, type Metric, scoreLevel } from '@/lib/mock-metrics';
 
 const KIND_STYLE: Record<Metric['kind'], string> = {
-  risk: 'bg-warning/15',
-  skill: 'bg-primary/15',
-  observation: 'bg-secondary/15',
+  habit: 'bg-primary/15',
+  composite: 'bg-secondary/15',
 };
 const KIND_TEXT_STYLE: Record<Metric['kind'], string> = {
-  risk: 'text-warning',
-  skill: 'text-primary',
-  observation: 'text-secondary',
+  habit: 'text-primary',
+  composite: 'text-secondary',
 };
 
 const LEVEL_BAR_STYLE: Record<ReturnType<typeof scoreLevel>, string> = {
-  low: 'bg-primary',
-  mid: 'bg-warning/60',
-  high: 'bg-warning',
-  danger: 'bg-destructive',
-  none: 'bg-muted',
+  stable: 'bg-primary',
+  observe: 'bg-warning',
+  caution: 'bg-destructive',
+  measuring: 'bg-muted',
 };
 
 export function MetricCard({ metric }: { metric: Metric }) {
-  const level = scoreLevel(metric);
+  const level = scoreLevel(metric.score);
 
   return (
     <Card className={cn(!metric.measured && 'opacity-70')}>

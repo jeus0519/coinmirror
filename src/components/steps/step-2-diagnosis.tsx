@@ -5,27 +5,26 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Text } from '@/components/ui/text';
 import {
-  defaultDiagnosisAnswers,
+  answeredDiagnosisCount,
   diagnosisQuestions,
+  selectDiagnosisOption,
   summarizeDiagnosis,
+  type DiagnosisProfile,
   type DiagnosisQuestionId,
 } from '@/lib/onboarding-diagnosis';
 import { cn } from '@/lib/utils';
 import { useFlowStore } from '@/stores/use-flow-store';
 
 export function Step2Diagnosis() {
-  const savedAnswers = useFlowStore((s) => s.diagnosisAnswers);
-  const saveDiagnosis = useFlowStore((s) => s.saveDiagnosis);
-  const [answers, setAnswers] = useState<Record<DiagnosisQuestionId, string>>({
-    ...defaultDiagnosisAnswers,
-    ...savedAnswers,
-  });
+  const savedAnswers = useFlowStore((state) => state.diagnosisAnswers);
+  const saveDiagnosis = useFlowStore((state) => state.saveDiagnosis);
+  const [profile, setProfile] = useState<DiagnosisProfile>(savedAnswers);
 
-  const summary = useMemo(() => summarizeDiagnosis(answers), [answers]);
-  const answeredCount = diagnosisQuestions.filter((q) => answers[q.id]).length;
+  const summary = useMemo(() => summarizeDiagnosis(profile), [profile]);
+  const answeredCount = answeredDiagnosisCount(profile);
 
   function choose(questionId: DiagnosisQuestionId, optionId: string) {
-    setAnswers((prev) => ({ ...prev, [questionId]: optionId }));
+    setProfile((current) => selectDiagnosisOption(current, questionId, optionId));
   }
 
   return (
@@ -33,78 +32,73 @@ export function Step2Diagnosis() {
       <View className="gap-2">
         <Text className="text-lg font-extrabold text-foreground">내 투자 거울 설정</Text>
         <Text className="text-[13px] leading-5 text-muted-foreground">
-          거래내역을 보기 전에, 코인미러가 어떤 기준으로 당신의 매매 습관을 비춰볼지 먼저
-          알려주세요. 이 답변은 추천이나 예측이 아니라 스코어 해석과 목표 템플릿 개인화에만
-          사용됩니다.
+          정답이나 위험등급을 매기는 설문이 아니에요. 4개의 해석 기준과 4개의 자기 예상을 받아 실제
+          거래 기록과 중립적으로 비교합니다. 답변은 거래 기반 점수를 바꾸지 않아요.
         </Text>
       </View>
 
       <Card>
         <CardContent className="gap-2 pt-2">
-          <Text className="text-sm font-bold text-foreground">진단 요약 미리보기</Text>
+          <Text className="text-sm font-bold text-foreground">설정 미리보기</Text>
           <Text className="text-[13px] leading-5 text-foreground">{summary.headline}</Text>
-          <View className="flex-row flex-wrap gap-1.5">
-            {[`스타일: ${summary.style}`, `목표: ${summary.goal}`, `주요 고민: ${summary.primaryFocus}`].map(
-              (item) => (
-                <View key={item} className="rounded-full bg-primary/10 px-2.5 py-1">
-                  <Text className="text-[11px] font-bold text-primary">{item}</Text>
-                </View>
-              )
-            )}
-          </View>
+          <Text className="text-[11px] text-muted-foreground">
+            {answeredCount}/8개 응답 · 언제든 수정하거나 나중에 답할 수 있어요.
+          </Text>
         </CardContent>
       </Card>
 
       <View className="gap-4">
-        {diagnosisQuestions.map((question, index) => (
-          <View key={question.id} className="gap-2.5 rounded-2xl border border-border bg-card p-4">
-            <View className="gap-1">
-              <Text className="text-[11px] font-extrabold text-primary">
-                Q{index + 1} · 스코어 진단 기준
-              </Text>
-              <Text className="text-[15px] font-extrabold text-foreground">{question.title}</Text>
-              <Text className="text-xs leading-5 text-muted-foreground">{question.description}</Text>
-            </View>
-            <View className="gap-2">
-              {question.options.map((option) => {
-                const selected = answers[question.id] === option.id;
-                return (
-                  <Button
-                    key={option.id}
-                    variant={selected ? 'default' : 'outline'}
-                    className={cn('justify-start', selected && 'border-primary')}
-                    onPress={() => choose(question.id, option.id)}
-                  >
-                    <View className="flex-1 items-start gap-0.5">
+        {diagnosisQuestions.map((question, index) => {
+          const current = profile[question.id];
+          return (
+            <View
+              key={question.id}
+              className="gap-2.5 rounded-2xl border border-border bg-card p-4"
+            >
+              <View className="gap-1">
+                <Text className="text-[11px] font-extrabold text-primary">
+                  {question.block === 'context' ? 'A · 해석 기준' : 'B · 내 예상'} {index + 1}/8
+                  {question.multiple ? ' · 최대 2개' : ''}
+                </Text>
+                <Text className="text-[15px] font-extrabold text-foreground">{question.title}</Text>
+                <Text className="text-xs leading-5 text-muted-foreground">
+                  {question.description}
+                </Text>
+              </View>
+              <View className="gap-2">
+                {question.options.map((option) => {
+                  const selected = Array.isArray(current)
+                    ? current.includes(option.id)
+                    : current === option.id;
+                  return (
+                    <Button
+                      key={option.id}
+                      variant={selected ? 'default' : 'outline'}
+                      className={cn('justify-start', selected && 'border-primary')}
+                      onPress={() => choose(question.id, option.id)}
+                    >
                       <Text className={selected ? 'text-primary-foreground' : 'text-foreground'}>
                         {option.label}
                       </Text>
-                      <Text
-                        className={cn(
-                          'text-[11px]',
-                          selected ? 'text-primary-foreground/75' : 'text-muted-foreground'
-                        )}
-                      >
-                        연결: {option.scoreLinks.join(' · ')}
-                      </Text>
-                    </View>
-                  </Button>
-                );
-              })}
+                    </Button>
+                  );
+                })}
+              </View>
             </View>
-          </View>
-        ))}
+          );
+        })}
       </View>
 
       <View className="gap-2 rounded-2xl bg-foreground p-5">
-        <Text className="text-base font-extrabold text-background">다음 단계</Text>
+        <Text className="text-base font-extrabold text-background">거래 기록과 비교해 볼까요?</Text>
         <Text className="text-[13px] leading-5 text-background/75">
-          {answeredCount}/{diagnosisQuestions.length}개 답변을 바탕으로 CSV 분석 결과의 우선순위와
-          회고 질문을 개인화합니다. 이후 예시 데이터 또는 내 CSV를 불러오면 바로 스코어를 볼 수
-          있습니다.
+          응답한 자기 예상만 분석 결과에 나타납니다. 미응답 문항은 점수나 이용에 불이익이 없어요.
         </Text>
-        <Button onPress={() => saveDiagnosis(answers)}>
-          <Text>진단 저장하고 거래내역 불러오기</Text>
+        <Button onPress={() => saveDiagnosis(profile)}>
+          <Text>저장하고 거래내역 불러오기</Text>
+        </Button>
+        <Button variant="ghost" onPress={() => saveDiagnosis(profile)}>
+          <Text className="text-background/75">나중에 답하기</Text>
         </Button>
       </View>
     </ScrollView>

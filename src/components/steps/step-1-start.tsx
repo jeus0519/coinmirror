@@ -1,4 +1,3 @@
-import { router } from 'expo-router';
 import { Check } from 'lucide-react-native';
 import { ScrollView, View } from 'react-native';
 
@@ -7,15 +6,6 @@ import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { baseMetrics, KIND_LABEL } from '@/lib/mock-metrics';
 import { useFlowStore } from '@/stores/use-flow-store';
-
-const METRIC_TEASERS: Record<string, string> = {
-  M1: '일평균 체결 횟수, 당일 왕복 비율, 실현손익 대비 누적 수수료 비중',
-  M2: '평균 익절률과 손절률, 이익·손실 포지션의 평균 보유시간 차이',
-  M3: '직전 본인 체결가보다 7% 이상 높은 가격에서 이뤄진 재매수 비율',
-  M4: '보유 평단 대비 -10% 이하 구간에서 발생한 추가 매수 비율과 금액',
-  M5: '손실을 확정한 뒤 2시간 안에 이뤄진 매수 비율과 그때의 베팅 배율',
-  M6: '00~06시 거래 비중과 야간·주간 청산 손익률 격차',
-};
 
 const BOUNDARIES = [
   '매수 · 매도를 권하지 않습니다',
@@ -27,14 +17,14 @@ const BOUNDARIES = [
 ];
 
 const FLOW_STEPS = [
-  { n: 1, title: '거래내역 불러오기', desc: '예시 데이터 또는 내 CSV를 올립니다.' },
-  { n: 2, title: '스코어 · 분석 확인', desc: '6개 지표와 근거 거래를 봅니다.' },
-  { n: 3, title: '내 원칙 세우고 대조', desc: '직접 정한 기준선 대비 진행 현황을 봅니다.' },
+  { n: 1, title: '내 투자 거울 설정', desc: '8문항에 답하거나 나중으로 건너뜁니다.' },
+  { n: 2, title: '거래내역 불러오기', desc: '예시 데이터 또는 내 CSV를 올립니다.' },
+  { n: 3, title: '예상·실제와 점수 확인', desc: 'F1~F10과 자기인식 차이를 봅니다.' },
+  { n: 4, title: '프리셋 원칙 선택', desc: '다음 분석에서 자동 확인할 원칙을 하나 고릅니다.' },
 ];
 
 export function Step1Start() {
   const setStep = useFlowStore((s) => s.setStep);
-
 
   return (
     <ScrollView className="flex-1" contentContainerClassName="gap-10 p-4 pb-12">
@@ -52,9 +42,10 @@ export function Step1Start() {
         </Text>
 
         <Text className="text-center text-[15px] leading-6 text-muted-foreground">
-          거래소에서 내려받은 거래내역 CSV 하나로 6가지 행동 패턴을 사후 분석합니다. 무엇을 사거나
-          팔라고 말하지 않습니다. 이미 지나간 내 거래가 어떤 모양이었는지만 그대로 보여드립니다. 먼저 짧은 성향 진단으로
- 스코어 해석 기준을 개인화한 뒤 거래내역을 불러옵니다.
+          거래소에서 내려받은 거래내역 CSV 하나로 9가지 행동 점수와 종합점수를 사후 분석합니다.
+          무엇을 사거나 팔라고 말하지 않습니다. 이미 지나간 내 거래가 어떤 모양이었는지만 그대로
+          보여드립니다. 먼저 짧은 성향 진단으로 스코어 해석 기준을 개인화한 뒤 거래내역을
+          불러옵니다.
         </Text>
 
         <View className="w-full gap-2.5">
@@ -62,17 +53,16 @@ export function Step1Start() {
             <Text>투자 성향 진단 시작하기</Text>
           </Button>
           <Button variant="outline" onPress={() => setStep(2)}>
-            <Text>진단 후 거래내역 불러오기</Text>
-          </Button>
-          <Button variant="ghost" onPress={() => router.push('/entry/new')}>
-            <Text className="text-muted-foreground">직접 입력하기</Text>
+            <Text>설명 먼저 보고 시작하기</Text>
           </Button>
         </View>
       </View>
 
       <View className="gap-3">
         <View className="gap-1">
-          <Text className="text-lg font-extrabold text-foreground">6가지 행동 지표</Text>
+          <Text className="text-lg font-extrabold text-foreground">
+            Free 행동 점수 9종 + 종합점수
+          </Text>
           <Text className="text-[13px] text-muted-foreground">
             모두 CSV만으로 계산 가능한 항목입니다. 표본이 부족하면 점수를 만들지 않고 &lsquo;측정
             중&rsquo;으로 남깁니다.
@@ -85,7 +75,7 @@ export function Step1Start() {
                 {m.id} · {KIND_LABEL[m.kind]}
               </Text>
               <Text className="mb-1 mt-1 text-[15px] font-bold text-foreground">{m.name}</Text>
-              <Text className="text-[13px] text-muted-foreground">{METRIC_TEASERS[m.id]}</Text>
+              <Text className="text-[13px] text-muted-foreground">{m.headline}</Text>
             </View>
           ))}
         </View>
@@ -110,7 +100,8 @@ export function Step1Start() {
         <View className="gap-1">
           <Text className="text-lg font-extrabold text-foreground">진행 방식</Text>
           <Text className="text-[13px] text-muted-foreground">
-            4단계로 이어집니다. 지금은 데모라 모든 단계를 바로 확인할 수 있습니다.
+            초기 이용 흐름은 4단계로 이어집니다. 지금은 목업 데이터로 전체 흐름을 확인할 수
+            있습니다.
           </Text>
         </View>
         <View className="gap-2.5">
