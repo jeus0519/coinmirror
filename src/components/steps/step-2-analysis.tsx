@@ -157,6 +157,33 @@ export function Step2Analysis() {
           <Text className="text-xs leading-5 text-muted-foreground">
             {investmentType.comparisonCopy}
           </Text>
+          <View className="gap-2 rounded-2xl bg-muted p-3">
+            <Text className="text-xs font-extrabold text-foreground">장점</Text>
+            {investmentType.strengths.map((item) => (
+              <Text key={item} className="text-[11px] leading-4 text-muted-foreground">
+                • {item}
+              </Text>
+            ))}
+          </View>
+          <View className="gap-2 rounded-2xl bg-muted p-3">
+            <Text className="text-xs font-extrabold text-foreground">주의할 점</Text>
+            {investmentType.watchouts.map((item) => (
+              <Text key={item} className="text-[11px] leading-4 text-muted-foreground">
+                • {item}
+              </Text>
+            ))}
+          </View>
+          <View className="gap-2 rounded-2xl bg-primary/5 p-3">
+            <Text className="text-xs font-extrabold text-primary">개선하면 좋은 편향</Text>
+            {investmentType.biasSuggestions.map((item) => (
+              <Text key={item.metricId} className="text-[11px] leading-4 text-muted-foreground">
+                • {item.title}: {item.suggestion}
+              </Text>
+            ))}
+          </View>
+          <Text className="text-xs leading-5 text-muted-foreground">
+            {investmentType.similarMbtiCopy}
+          </Text>
           <Text className="text-[11px] leading-4 text-muted-foreground">
             {investmentType.disclaimer} 매수·매도 추천이나 성격 단정이 아닙니다.
           </Text>

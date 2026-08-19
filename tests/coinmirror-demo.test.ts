@@ -58,6 +58,17 @@ test('HTML 데모는 8문항에서 분석과 P7 원칙까지 클릭으로 진행
     document.querySelector('#investment-type-card')?.textContent ?? '',
     /점수 계산에 사용되지/
   );
+  assert.match(document.querySelector('#investment-type-card')?.textContent ?? '', /장점/);
+  assert.match(document.querySelector('#investment-type-card')?.textContent ?? '', /주의할 점/);
+  assert.match(
+    document.querySelector('#investment-type-card')?.textContent ?? '',
+    /개선하면 좋은 편향/
+  );
+  assert.match(
+    document.querySelector('#investment-type-card')?.textContent ?? '',
+    /유사 MBTI 비유/
+  );
+  assert.match(document.querySelector('#investment-type-card')?.textContent ?? '', /ISTJ|INTJ/);
   assert.match(
     document.querySelector('#metric-grid')?.textContent ?? '',
     /F10\. 투자 체력 종합점수/

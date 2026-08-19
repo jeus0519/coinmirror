@@ -92,6 +92,11 @@ test('v5.1 투자 성향 타입은 F점수 기반 요약 레이어로 산출된�
   );
   assert.equal(profile.axes.find((axis) => axis.axis === 'allocation')?.confidence, 'insufficient');
   assert.match(profile.comparisonCopy ?? '', /점수 계산에 사용되지 않/);
+  assert.ok(profile.strengths.length >= 2);
+  assert.ok(profile.watchouts.length >= 2);
+  assert.ok(profile.biasSuggestions.some((item) => item.metricId === 'F5'));
+  assert.deepEqual(profile.similarMbtiCodes, ['ISTJ', 'INTJ']);
+  assert.match(profile.similarMbtiCopy, /재미용 비유/);
 });
 
 test('일반 MBTI는 선택 입력이며 투자 타입 계산에는 쓰지 않는다', () => {

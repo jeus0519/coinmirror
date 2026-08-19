@@ -826,7 +826,22 @@ function investmentTypeProfile() {
   const comparison = mbti && mbti.length === 4
     ? `평소 MBTI(${mbti})는 점수 계산에 사용되지 않습니다. 최근 거래 기록에서는 ${title} 패턴이 요약되어, 자기인식과 실제 행동을 나란히 볼 수 있습니다.`
     : '평소 MBTI를 입력하지 않아도 괜찮습니다. 투자거울 타입은 거래 기록만으로 산출됩니다.';
-  return { title, code: axes.map((a) => a.code).join('-'), axes, mbti, comparison };
+  const strengths = [
+    '급등 직후 따라 들어가는 비중이 과도하게 높지는 않아, 한 번 더 보고 들어가는 여지가 있습니다.',
+    '거래 빈도가 극단적으로 흔들리기보다 관찰 가능한 리듬 안에 머무는 편입니다.',
+    '측정되지 않은 축은 단정하지 않고 보류해, 과잉 해석을 피합니다.',
+  ];
+  const watchouts = [
+    '손실 직후 빠르게 다시 진입하는 복구매수 패턴은 먼저 줄었는지 확인하면 좋습니다.',
+    '한 종목 최대 비중 기준이 없어 자금 배분 축은 아직 확정하지 않았습니다.',
+  ];
+  const biases = [
+    ['손실회피·만회 심리', '손실을 확정한 뒤 2시간은 같은 종목 재진입을 쉬는 원칙을 다음 분석에서 확인해 보세요.'],
+    ['FOMO·주의 기반 매수', '급등을 본 직후에는 바로 매수하지 않고 30분 뒤에도 같은 판단인지 확인해 보세요.'],
+  ];
+  const similarMbti = labels.has('대기형') && labels.has('장기보유형') ? ['ISTJ','INTJ'] : ['ESTP','ENTP'];
+  const similarMbtiCopy = `유사 MBTI 비유는 재미용 비유입니다. 최근 거래 리듬만 놓고 보면 ${similarMbti.join('·')}의 신중한 관찰 이미지와 가깝게 설명할 수 있습니다.`;
+  return { title, code: axes.map((a) => a.code).join('-'), axes, mbti, comparison, strengths, watchouts, biases, similarMbti, similarMbtiCopy };
 }
 
 function renderInvestmentTypeCard() {
@@ -839,6 +854,12 @@ function renderInvestmentTypeCard() {
     </div>
     <div class="cta-row" style="margin-top:12px">${profile.axes.map((axis) => `<span class="badge">${esc(axis.code)} · ${esc(axis.label)}</span>`).join('')}</div>
     <p class="section-desc" style="margin-top:12px">${esc(profile.comparison)}</p>
+    <div class="grid g3" style="margin-top:14px">
+      <div class="stat"><div class="k">장점</div><div class="sub">${profile.strengths.map((item) => `• ${esc(item)}`).join('<br>')}</div></div>
+      <div class="stat"><div class="k">주의할 점</div><div class="sub">${profile.watchouts.map((item) => `• ${esc(item)}`).join('<br>')}</div></div>
+      <div class="stat"><div class="k">개선하면 좋은 편향</div><div class="sub">${profile.biases.map(([title, item]) => `• ${esc(title)}: ${esc(item)}`).join('<br>')}</div></div>
+    </div>
+    <p class="section-desc" style="margin-top:12px"><b>유사 MBTI 비유</b> · ${esc(profile.similarMbti.join(' · '))}<br>${esc(profile.similarMbtiCopy)}</p>
     <p class="section-desc" style="margin-top:8px">이 타입은 성격검사가 아니라, 최근 거래 기록에 나타난 행동 패턴 요약입니다. 매수·매도 추천이나 성격 단정이 아닙니다.</p>`;
 }
 
