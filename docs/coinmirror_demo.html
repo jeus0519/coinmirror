@@ -392,6 +392,14 @@ table.tbl td.neg { color: var(--danger-500); font-weight: 700; }
       <div class="grid g2" id="diagnosis-form"></div>
     </div>
     <div class="section">
+      <div class="card">
+        <div class="tag">선택 · 평소 MBTI</div>
+        <h4 style="margin:6px 0 4px;font-size:15px">평소 MBTI를 알고 있다면 골라 주세요</h4>
+        <p class="section-desc">입력하지 않아도 괜찮습니다. 이 값은 투자 점수 계산에 쓰지 않고, 거래 기록 기반 투자거울 타입과 비교하는 데만 사용합니다.</p>
+        <div class="grid g4" id="mbti-form" style="gap:8px"></div>
+      </div>
+    </div>
+    <div class="section">
       <div class="trust">
         <h3>다음 단계</h3>
         <p id="diagnosis-count">답변을 바탕으로 CSV 분석 결과의 우선순위와 회고 질문을 개인화합니다.</p>
@@ -440,6 +448,10 @@ table.tbl td.neg { color: var(--danger-500); font-weight: 700; }
       <h3 class="section-title">거래 개요</h3>
       <p class="section-desc">분할 체결은 가중평균 1건으로 병합했고, 실현손익은 FIFO 기준으로 수수료를 반영해 계산했습니다.</p>
       <div class="grid g4" id="overview-grid"></div>
+    </div>
+
+    <div class="section">
+      <div class="card" id="investment-type-card"></div>
     </div>
 
     <div class="section">
@@ -573,6 +585,8 @@ const DIAGNOSIS_QUESTIONS = [
   { id:'B3', block:'B · 내 예상', title:'이익과 손실 중 어느 쪽을 더 빨리 정리한다고 생각하세요?', desc:'청산 거래의 실제 보유시간과 비교해요.', options:[['profit_first','이익을 더 빨리'],['loss_first','손실을 더 빨리'],['similar','비슷하다'],['unknown','모르겠다']] },
   { id:'B4', block:'B · 내 예상', title:'청산한 거래 중 이익으로 끝난 비율은 어느 정도일 것 같나요?', desc:'실제 승률과 비교하되 수익 능력을 평가하지 않아요.', options:[['under_30','30% 이하'],['31_50','31~50%'],['51_70','51~70%'],['over_70','70% 넘게']] },
 ];
+
+const GENERAL_MBTI_OPTIONS = ['INTJ','INTP','ENTJ','ENTP','INFJ','INFP','ENFJ','ENFP','ISTJ','ISFJ','ESTJ','ESFJ','ISTP','ISFP','ESTP','ESFP','unknown','no_input'];
 
 const V5_METRICS = [
   ['F1','손절 습관',61,'관찰','손실 거래를 이익 거래보다 조금 더 오래 보유했어요.','손실 보유 16.1일 · 깊은 손실 13%'],
@@ -719,16 +733,33 @@ function diagnosisOptionLabel(questionId, optionId) {
 
 function diagnosisSummaryText() {
   const a = state.diagnosisAnswers;
-  const count = Object.values(a).filter((v) => Array.isArray(v) ? v.length : v).length;
+  const count = Object.entries(a).filter(([key, v]) => key !== 'generalMbti' && (Array.isArray(v) ? v.length : v)).length;
   if (!count) return '아직 답하지 않아도 괜찮아요. 거래 기록만으로 먼저 살펴볼 수 있어요.';
   const style = diagnosisOptionLabel('A1', a.A1);
   const concerns = (a.A2 || []).map((id) => diagnosisOptionLabel('A2', id)).join(' · ');
-  return `${style} 맥락에서 ${concerns || '선택한 기준'} 관련 카드를 먼저 보여드려요. 점수 자체는 거래 기록으로만 계산합니다.`;
+  return `${a.A1 ? style + ' 맥락에서 ' : ''}${concerns || '선택한 기준'} 관련 카드를 먼저 보여드려요. 점수 자체는 거래 기록으로만 계산합니다.`;
+}
+
+function mbtiLabel(value) {
+  if (value === 'unknown') return '모르겠어요';
+  if (value === 'no_input') return '입력하지 않기';
+  return value;
+}
+
+function renderMbtiSelector() {
+  $('#mbti-form').innerHTML = GENERAL_MBTI_OPTIONS.map((mbti) => {
+    const selected = state.diagnosisAnswers.generalMbti === mbti;
+    return `<button class="btn ${selected ? 'btn-primary' : 'btn-ghost'} btn-sm" data-mbti="${mbti}">${esc(mbtiLabel(mbti))}</button>`;
+  }).join('');
+  $$('[data-mbti]').forEach((btn) => btn.addEventListener('click', () => {
+    state.diagnosisAnswers.generalMbti = btn.dataset.mbti;
+    renderDiagnosis();
+  }));
 }
 
 function renderDiagnosis() {
-  const answered = Object.values(state.diagnosisAnswers).filter((v) => Array.isArray(v) ? v.length : v).length;
-  $('#diagnosis-summary').innerHTML = `<h4 style="margin:0 0 8px;font-size:15px">설정 미리보기</h4><p class="headline">${esc(diagnosisSummaryText())}</p>`;
+  const answered = Object.entries(state.diagnosisAnswers).filter(([key, v]) => key !== 'generalMbti' && (Array.isArray(v) ? v.length : v)).length;
+  $('#diagnosis-summary').innerHTML = `<h4 style="margin:0 0 8px;font-size:15px">설정 미리보기</h4><p class="headline">${esc(diagnosisSummaryText())}</p><p class="section-desc" style="margin-top:8px">평소 MBTI: ${esc(mbtiLabel(state.diagnosisAnswers.generalMbti || 'no_input'))}</p>`;
   $('#data-diagnosis-summary').innerHTML = `<h4 style="margin:0 0 8px;font-size:15px">이번 분석의 해석 기준</h4><p class="headline">${esc(diagnosisSummaryText())}</p><button class="btn btn-ghost btn-sm" onclick="goStep(2)" style="margin-top:10px">설문 수정하기</button>`;
   $('#diagnosis-count').textContent = `${answered}/8개 응답 · 미응답 문항은 점수나 이용에 불이익이 없습니다.`;
   $('#diagnosis-form').innerHTML = DIAGNOSIS_QUESTIONS.map((q, idx) => `
@@ -754,6 +785,7 @@ function renderDiagnosis() {
     } else state.diagnosisAnswers[q.id] = btn.dataset.a;
     renderDiagnosis();
   }));
+  renderMbtiSelector();
 }
 
 function completeDiagnosis() {
@@ -764,6 +796,51 @@ function completeDiagnosis() {
 }
 $('#btn-save-diagnosis').addEventListener('click', completeDiagnosis);
 $('#btn-skip-diagnosis').addEventListener('click', completeDiagnosis);
+
+function metric(id) {
+  return V5_METRICS.find((item) => item.id === id);
+}
+
+function typeAxis(axis, metricId, lowCode, highCode, lowLabel, highLabel, missingLabel) {
+  const m = metric(metricId);
+  if (!m || !m.measured || m.score === null) return { axis, code:'?', label:missingLabel, confidence:'insufficient' };
+  return m.score < 55
+    ? { axis, code:lowCode, label:lowLabel, confidence:'measured' }
+    : { axis, code:highCode, label:highLabel, confidence:'measured' };
+}
+
+function investmentTypeProfile() {
+  const axes = [
+    typeAxis('entry','F3','C','W','추격형','대기형','진입 방식 측정 중'),
+    typeAxis('tempo','F6','R','H','단기반응형','장기보유형','거래 속도 측정 중'),
+    typeAxis('loss','F1','L','X','손실보류형','손실정리형','손실 대응 측정 중'),
+    typeAxis('allocation','F8','N','D','집중형','분산형','자금 배분 측정 중'),
+  ];
+  const labels = new Set(axes.filter((a) => a.confidence !== 'insufficient').map((a) => a.label));
+  let title = '측정 중 관찰가';
+  if (labels.has('추격형') && labels.has('단기반응형')) title = '추격형 단기 반응가';
+  else if (labels.has('집중형') && labels.has('손실보류형')) title = '집중형 손실 보류가';
+  else if (labels.has('대기형') && labels.has('장기보유형')) title = '분산형 안정 관찰가';
+  else title = `${axes.find((a) => a.confidence !== 'insufficient')?.label || '측정 중'} 관찰가`;
+  const mbti = state.diagnosisAnswers.generalMbti;
+  const comparison = mbti && mbti.length === 4
+    ? `평소 MBTI(${mbti})는 점수 계산에 사용되지 않습니다. 최근 거래 기록에서는 ${title} 패턴이 요약되어, 자기인식과 실제 행동을 나란히 볼 수 있습니다.`
+    : '평소 MBTI를 입력하지 않아도 괜찮습니다. 투자거울 타입은 거래 기록만으로 산출됩니다.';
+  return { title, code: axes.map((a) => a.code).join('-'), axes, mbti, comparison };
+}
+
+function renderInvestmentTypeCard() {
+  const profile = investmentTypeProfile();
+  $('#investment-type-card').innerHTML = `
+    <div class="tag">투자거울 타입</div>
+    <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-top:8px">
+      <div><h4 style="margin:0 0 4px;font-size:22px">${esc(profile.title)}</h4><p class="section-desc">코드 ${esc(profile.code)} · 최근 거래 기록 기준</p></div>
+      <span class="badge">MBTI ${esc(profile.mbti && profile.mbti.length === 4 ? profile.mbti : '선택 안 함')}</span>
+    </div>
+    <div class="cta-row" style="margin-top:12px">${profile.axes.map((axis) => `<span class="badge">${esc(axis.code)} · ${esc(axis.label)}</span>`).join('')}</div>
+    <p class="section-desc" style="margin-top:12px">${esc(profile.comparison)}</p>
+    <p class="section-desc" style="margin-top:8px">이 타입은 성격검사가 아니라, 최근 거래 기록에 나타난 행동 패턴 요약입니다. 매수·매도 추천이나 성격 단정이 아닙니다.</p>`;
+}
 
 function expectationCards() {
   const actual = {
@@ -803,6 +880,7 @@ function renderAnalysis(data) {
     .map((t) => `<div class="stat"><div class="k">${esc(t.k)}</div><div class="v ${t.cls || ''}">${esc(t.v)}</div><div class="sub">${esc(t.sub)}</div></div>`)
     .join('');
 
+  renderInvestmentTypeCard();
   $('#expectation-grid').innerHTML = expectationCards();
   $('#metric-grid').innerHTML = V5_METRICS.map(metricCard).join('');
   $('#hour-chart').innerHTML = barChart(data.hourly, (i) => `${i}`, (i) => i < 6);

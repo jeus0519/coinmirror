@@ -40,6 +40,8 @@ test('HTML 데모는 8문항에서 분석과 P7 원칙까지 클릭으로 진행
   a2Buttons[1].click();
   a2Buttons[2].click();
   assert.equal(document.querySelectorAll('[data-q="A2"].btn-primary').length, 2);
+  (document.querySelector('[data-mbti="INTP"]') as HTMLElement).click();
+  assert.equal(document.querySelectorAll('[data-mbti].btn-primary').length, 1);
 
   (document.querySelector('[data-q="B1"]') as HTMLElement).click();
   (document.querySelector('#btn-save-diagnosis') as HTMLElement).click();
@@ -50,6 +52,12 @@ test('HTML 데모는 8문항에서 분석과 P7 원칙까지 클릭으로 진행
   assert.ok(document.querySelector('#panel-4')?.classList.contains('active'));
   assert.equal(document.querySelectorAll('#metric-grid .metric').length, 10);
   assert.equal(document.querySelectorAll('#expectation-grid .card').length, 1);
+  assert.match(document.querySelector('#investment-type-card')?.textContent ?? '', /투자거울 타입/);
+  assert.match(document.querySelector('#investment-type-card')?.textContent ?? '', /INTP/);
+  assert.match(
+    document.querySelector('#investment-type-card')?.textContent ?? '',
+    /점수 계산에 사용되지/
+  );
   assert.match(
     document.querySelector('#metric-grid')?.textContent ?? '',
     /F10\. 투자 체력 종합점수/

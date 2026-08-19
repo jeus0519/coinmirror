@@ -12,6 +12,7 @@ import {
   type DiagnosisProfile,
   type DiagnosisQuestionId,
 } from '@/lib/onboarding-diagnosis';
+import { GENERAL_MBTI_OPTIONS, type GeneralMbti } from '@/lib/investment-type';
 import { cn } from '@/lib/utils';
 import { useFlowStore } from '@/stores/use-flow-store';
 
@@ -25,6 +26,10 @@ export function Step2Diagnosis() {
 
   function choose(questionId: DiagnosisQuestionId, optionId: string) {
     setProfile((current) => selectDiagnosisOption(current, questionId, optionId));
+  }
+
+  function chooseMbti(mbti: GeneralMbti) {
+    setProfile((current) => ({ ...current, generalMbti: mbti }));
   }
 
   return (
@@ -87,6 +92,39 @@ export function Step2Diagnosis() {
             </View>
           );
         })}
+      </View>
+
+      <View className="gap-2.5 rounded-2xl border border-dashed border-primary/30 bg-primary/5 p-4">
+        <View className="gap-1">
+          <Text className="text-[11px] font-extrabold text-primary">선택 · 평소 MBTI</Text>
+          <Text className="text-[15px] font-extrabold text-foreground">
+            평소 MBTI를 알고 있다면 골라 주세요
+          </Text>
+          <Text className="text-xs leading-5 text-muted-foreground">
+            입력하지 않아도 괜찮아요. 이 값은 투자 점수 계산에 쓰지 않고, 거래 기록 기반 투자거울
+            타입과 비교하는 데만 사용합니다.
+          </Text>
+        </View>
+        <View className="flex-row flex-wrap gap-2">
+          {GENERAL_MBTI_OPTIONS.map((mbti) => {
+            const selected = profile.generalMbti === mbti;
+            const label =
+              mbti === 'unknown' ? '모르겠어요' : mbti === 'no_input' ? '입력하지 않기' : mbti;
+            return (
+              <Button
+                key={mbti}
+                size="sm"
+                variant={selected ? 'default' : 'outline'}
+                className={cn('min-w-[22%]', selected && 'border-primary')}
+                onPress={() => chooseMbti(mbti)}
+              >
+                <Text className={selected ? 'text-primary-foreground' : 'text-foreground'}>
+                  {label}
+                </Text>
+              </Button>
+            );
+          })}
+        </View>
       </View>
 
       <View className="gap-2 rounded-2xl bg-foreground p-5">

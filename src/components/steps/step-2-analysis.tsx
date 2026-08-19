@@ -9,6 +9,7 @@ import { Icon } from '@/components/ui/icon';
 import { MetricCard } from '@/components/ui/metric-card';
 import { Text } from '@/components/ui/text';
 import { formatKrw } from '@/lib/format';
+import { buildSampleInvestmentTypeProfile } from '@/lib/investment-type';
 import { mockRecords } from '@/lib/mock-data';
 import { buildExpectationComparisons } from '@/lib/onboarding-diagnosis';
 import { baseMetrics, lockedMetrics } from '@/lib/mock-metrics';
@@ -69,6 +70,10 @@ export function Step2Analysis() {
   const compositeMetric = baseMetrics.find((metric) => metric.id === 'F10');
   const recoveryMetric = baseMetrics.find((metric) => metric.id === 'F5');
   const concentrationMetric = baseMetrics.find((metric) => metric.id === 'F8');
+  const investmentType = useMemo(
+    () => buildSampleInvestmentTypeProfile(baseMetrics, diagnosisAnswers.generalMbti),
+    [diagnosisAnswers.generalMbti]
+  );
 
   const symbolTotals = useMemo(() => {
     const totals = new Map<string, number>();
@@ -122,6 +127,41 @@ export function Step2Analysis() {
           <StatTile label="미청산 보유" value="3종목" />
         </View>
       </View>
+
+      <Card>
+        <CardContent className="gap-3 pt-2">
+          <View className="flex-row items-center justify-between gap-3">
+            <View className="flex-1 gap-1">
+              <Text className="text-xs font-bold text-primary">투자거울 타입</Text>
+              <Text className="text-xl font-extrabold text-foreground">{investmentType.title}</Text>
+              <Text className="text-xs text-muted-foreground">코드 {investmentType.code}</Text>
+            </View>
+            <View className="rounded-2xl bg-primary/10 px-3 py-2">
+              <Text className="text-xs font-bold text-primary">
+                MBTI{' '}
+                {investmentType.generalMbti && investmentType.generalMbti.length === 4
+                  ? investmentType.generalMbti
+                  : '선택 안 함'}
+              </Text>
+            </View>
+          </View>
+          <View className="flex-row flex-wrap gap-2">
+            {investmentType.axes.map((axis) => (
+              <View key={axis.axis} className="rounded-full bg-muted px-3 py-1.5">
+                <Text className="text-[11px] font-semibold text-foreground">
+                  {axis.code} · {axis.label}
+                </Text>
+              </View>
+            ))}
+          </View>
+          <Text className="text-xs leading-5 text-muted-foreground">
+            {investmentType.comparisonCopy}
+          </Text>
+          <Text className="text-[11px] leading-4 text-muted-foreground">
+            {investmentType.disclaimer} 매수·매도 추천이나 성격 단정이 아닙니다.
+          </Text>
+        </CardContent>
+      </Card>
 
       <View className="gap-3">
         <View className="gap-1">

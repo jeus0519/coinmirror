@@ -1,3 +1,5 @@
+import { type GeneralMbti } from './investment-type';
+
 export type DiagnosisQuestionId = 'A1' | 'A2' | 'A3' | 'A4' | 'B1' | 'B2' | 'B3' | 'B4';
 export type DiagnosisBlock = 'context' | 'expectation';
 
@@ -10,6 +12,7 @@ export type DiagnosisProfile = Partial<{
   B2: string;
   B3: string;
   B4: string;
+  generalMbti: GeneralMbti;
 }>;
 
 export type DiagnosisOption = { id: string; label: string };

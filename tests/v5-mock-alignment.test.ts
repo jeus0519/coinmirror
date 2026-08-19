@@ -10,6 +10,11 @@ import {
 } from '../src/lib/onboarding-diagnosis.ts';
 import { baseMetrics, lockedMetrics, scoreLevel } from '../src/lib/mock-metrics.ts';
 import { principlePresets } from '../src/lib/mock-goals.ts';
+import {
+  GENERAL_MBTI_OPTIONS,
+  buildMbtiComparisonCopy,
+  buildSampleInvestmentTypeProfile,
+} from '../src/lib/investment-type.ts';
 
 test('v5 온보딩은 해석 기준 4문항과 자기 예상 4문항으로 구성된다', () => {
   assert.equal(diagnosisQuestions.length, 8);
@@ -74,4 +79,25 @@ test('P7 원칙은 숫자 입력 없이 프리셋으로 선택한다', () => {
   assert.ok(principlePresets.length >= 4);
   assert.ok(principlePresets.every((preset) => preset.id && preset.label && preset.check));
   assert.ok(principlePresets.every((preset) => !('defaultTarget' in preset)));
+});
+
+test('v5.1 투자 성향 타입은 F점수 기반 요약 레이어로 산출된다', () => {
+  const profile = buildSampleInvestmentTypeProfile(baseMetrics, 'INTP');
+  assert.equal(profile.code, 'W-H-X-?');
+  assert.equal(profile.title, '분산형 안정 관찰가');
+  assert.equal(profile.generalMbti, 'INTP');
+  assert.deepEqual(
+    profile.axes.map((axis) => axis.axis),
+    ['entry', 'tempo', 'loss', 'allocation']
+  );
+  assert.equal(profile.axes.find((axis) => axis.axis === 'allocation')?.confidence, 'insufficient');
+  assert.match(profile.comparisonCopy ?? '', /점수 계산에 사용되지 않/);
+});
+
+test('일반 MBTI는 선택 입력이며 투자 타입 계산에는 쓰지 않는다', () => {
+  assert.equal(GENERAL_MBTI_OPTIONS.filter((option) => option.length === 4).length, 16);
+  const withoutMbti = buildSampleInvestmentTypeProfile(baseMetrics);
+  const withMbti = buildSampleInvestmentTypeProfile(baseMetrics, 'ENTJ');
+  assert.equal(withoutMbti.code, withMbti.code);
+  assert.match(buildMbtiComparisonCopy(undefined, withMbti.title), /입력하지 않아도/);
 });
