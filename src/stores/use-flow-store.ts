@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 
+import { type CsvAnalysisResult } from '@/lib/csv/analyze-csv';
 import { type DiagnosisProfile } from '@/lib/onboarding-diagnosis';
 
 /**
@@ -17,10 +18,13 @@ interface FlowState {
   dataSource: DataSource;
   subscriptionTier: SubscriptionTier;
   diagnosisAnswers: DiagnosisProfile;
+  csvAnalysis: CsvAnalysisResult | null;
   setStep: (step: FlowStep) => void;
   saveDiagnosis: (answers: DiagnosisProfile) => void;
   runSample: () => void;
-  uploadCsv: (fileName: string) => void;
+  setCsvAnalysisPreview: (analysis: CsvAnalysisResult) => void;
+  clearCsvAnalysis: () => void;
+  confirmCsvAnalysis: () => void;
   toggleSubscription: () => void;
 }
 
@@ -37,12 +41,17 @@ export const useFlowStore = create<FlowState>((set) => ({
   dataSource: null,
   subscriptionTier: 'free',
   diagnosisAnswers: {},
+  csvAnalysis: null,
   setStep: (step) =>
     set((state) => ({ currentStep: canEnterStep(state, step) ? step : state.currentStep })),
   saveDiagnosis: (answers) =>
     set({ hasDiagnosis: true, diagnosisAnswers: answers, currentStep: 3 }),
-  runSample: () => set({ hasAnalyzed: true, dataSource: 'sample', currentStep: 4 }),
-  uploadCsv: (_fileName) => set({ hasAnalyzed: true, dataSource: 'csv', currentStep: 4 }),
+  runSample: () =>
+    set({ hasAnalyzed: true, dataSource: 'sample', csvAnalysis: null, currentStep: 4 }),
+  setCsvAnalysisPreview: (analysis) =>
+    set({ hasAnalyzed: false, dataSource: null, csvAnalysis: analysis, currentStep: 3 }),
+  clearCsvAnalysis: () => set({ csvAnalysis: null, dataSource: null, hasAnalyzed: false }),
+  confirmCsvAnalysis: () => set({ hasAnalyzed: true, dataSource: 'csv', currentStep: 4 }),
   toggleSubscription: () =>
     set((state) => ({ subscriptionTier: state.subscriptionTier === 'free' ? 'pro' : 'free' })),
 }));

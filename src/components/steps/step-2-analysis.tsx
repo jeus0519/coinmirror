@@ -13,6 +13,7 @@ import { buildSampleInvestmentTypeProfile } from '@/lib/investment-type';
 import { mockRecords } from '@/lib/mock-data';
 import { buildExpectationComparisons } from '@/lib/onboarding-diagnosis';
 import { baseMetrics, lockedMetrics } from '@/lib/mock-metrics';
+import { buildInvestmentTypeShareCard } from '@/lib/share-card';
 import { useFlowStore } from '@/stores/use-flow-store';
 
 const HOUR_BUCKETS = [2, 1, 0, 0, 1, 0, 3, 5, 6, 8, 7, 9, 10, 11, 9, 8, 7, 6, 8, 9, 7, 5, 4, 3];
@@ -63,17 +64,23 @@ export function Step2Analysis() {
   const toggleSubscription = useFlowStore((s) => s.toggleSubscription);
   const setStep = useFlowStore((s) => s.setStep);
   const diagnosisAnswers = useFlowStore((s) => s.diagnosisAnswers);
+  const csvAnalysis = useFlowStore((s) => s.csvAnalysis);
   const expectationComparisons = useMemo(
     () => buildExpectationComparisons(diagnosisAnswers),
     [diagnosisAnswers]
   );
-  const compositeMetric = baseMetrics.find((metric) => metric.id === 'F10');
-  const recoveryMetric = baseMetrics.find((metric) => metric.id === 'F5');
-  const concentrationMetric = baseMetrics.find((metric) => metric.id === 'F8');
+  const visibleMetrics = dataSource === 'csv' && csvAnalysis ? csvAnalysis.metrics : baseMetrics;
+  const compositeMetric = visibleMetrics.find((metric) => metric.id === 'F10');
+  const recoveryMetric = visibleMetrics.find((metric) => metric.id === 'F5');
+  const concentrationMetric = visibleMetrics.find((metric) => metric.id === 'F8');
   const investmentType = useMemo(
-    () => buildSampleInvestmentTypeProfile(baseMetrics, diagnosisAnswers.generalMbti),
-    [diagnosisAnswers.generalMbti]
+    () =>
+      dataSource === 'csv' && csvAnalysis
+        ? csvAnalysis.investmentType
+        : buildSampleInvestmentTypeProfile(baseMetrics, diagnosisAnswers.generalMbti),
+    [csvAnalysis, dataSource, diagnosisAnswers.generalMbti]
   );
+  const recordedShareCard = buildInvestmentTypeShareCard(investmentType, 'recorded');
 
   const symbolTotals = useMemo(() => {
     const totals = new Map<string, number>();
@@ -97,6 +104,11 @@ export function Step2Analysis() {
                 <Text>샘플 데이터</Text>
               </Badge>
             )}
+            {dataSource === 'csv' && (
+              <Badge variant="outline">
+                <Text>내 CSV 분석</Text>
+              </Badge>
+            )}
           </View>
           <Button size="sm" variant="ghost" onPress={() => setStep(3)}>
             <Text className="text-xs text-muted-foreground">다른 데이터로 다시 분석</Text>
@@ -105,10 +117,9 @@ export function Step2Analysis() {
         <Card>
           <CardContent className="pt-2">
             <Text className="leading-6 text-foreground">
-              거래 기록만으로 계산한 {compositeMetric?.name}(F10)는{' '}
-              {compositeMetric?.score ?? '측정 중'}점이에요. {recoveryMetric?.name}(F5)는{' '}
-              {recoveryMetric?.band} 구간이고, {concentrationMetric?.name}(F8)은{' '}
-              {concentrationMetric?.limitation ?? '실측값을 보여드려요.'}
+              {dataSource === 'csv' && csvAnalysis
+                ? `CSV에서 정상 ${csvAnalysis.preview.normalRowCount}행을 읽어 F1/F3/F6/F8과 투자거울 타입을 계산했어요. 오류 ${csvAnalysis.preview.errorRowCount}행은 점수에 넣지 않았습니다.`
+                : `거래 기록만으로 계산한 ${compositeMetric?.name}(F10)는 ${compositeMetric?.score ?? '측정 중'}점이에요. ${recoveryMetric?.name}(F5)는 ${recoveryMetric?.band} 구간이고, ${concentrationMetric?.name}(F8)은 ${concentrationMetric?.limitation ?? '실측값을 보여드려요.'}`}
             </Text>
           </CardContent>
         </Card>
@@ -187,6 +198,24 @@ export function Step2Analysis() {
           <Text className="text-[11px] leading-4 text-muted-foreground">
             {investmentType.disclaimer} 매수·매도 추천이나 성격 단정이 아닙니다.
           </Text>
+          <View className="gap-2 rounded-2xl border border-dashed border-primary/30 bg-primary/5 p-3">
+            <Text className="text-xs font-extrabold text-primary">
+              캡처용 공유 카드 · 기록된 타입
+            </Text>
+            <Text className="text-lg font-extrabold text-foreground">
+              {recordedShareCard.title}
+            </Text>
+            <Text className="text-xs text-muted-foreground">
+              {recordedShareCard.label} · {recordedShareCard.code}
+            </Text>
+            <Text className="text-xs leading-5 text-muted-foreground">
+              {recordedShareCard.axisLine}
+            </Text>
+            <Text className="text-[11px] leading-4 text-muted-foreground">
+              {recordedShareCard.description} {recordedShareCard.compliance} ·{' '}
+              {recordedShareCard.watermark}
+            </Text>
+          </View>
         </CardContent>
       </Card>
 
@@ -240,7 +269,7 @@ export function Step2Analysis() {
           </Text>
         </View>
         <View className="gap-3">
-          {baseMetrics.map((m) => (
+          {visibleMetrics.map((m) => (
             <MetricCard key={m.id} metric={m} />
           ))}
         </View>
