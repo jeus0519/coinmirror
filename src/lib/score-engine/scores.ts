@@ -10,6 +10,7 @@ import {
 
 export type Phase1ScoreOptions = {
   maxSingleAssetWeightPct?: 10 | 30 | 50;
+  baselineDailyOrders?: number;
 };
 
 function clampScore(value: number) {
@@ -169,7 +170,19 @@ function dateKey(value: string) {
   return value.slice(0, 10);
 }
 
-function scoreF6(orders: Order[], roundTrips: RoundTrip[]) {
+function countSameDaySymbolRoundTrips(orders: Order[]) {
+  const sidesByDaySymbol = new Map<string, Set<string>>();
+  for (const order of orders) {
+    const key = `${dateKey(order.executedAt)}:${order.symbol}`;
+    const sides = sidesByDaySymbol.get(key) ?? new Set<string>();
+    sides.add(order.side);
+    sidesByDaySymbol.set(key, sides);
+  }
+  return [...sidesByDaySymbol.values()].filter((sides) => sides.has('buy') && sides.has('sell'))
+    .length;
+}
+
+function scoreF6(orders: Order[], roundTrips: RoundTrip[], options: Phase1ScoreOptions) {
   if (orders.length < SCORE_CONSTANTS.f6.minOrders) {
     return measuringMetric(
       'F6',
@@ -186,18 +199,31 @@ function scoreF6(orders: Order[], roundTrips: RoundTrip[]) {
     );
   const avgDailyOrders = orders.length / countsByDate.size;
   const sameDayRoundTripShare =
-    roundTrips.filter((rt) => rt.holdingHours <= 24).length / Math.max(1, countsByDate.size);
+    countSameDaySymbolRoundTrips(orders) / Math.max(1, countsByDate.size);
   const totalFee = orders.reduce((sum, order) => sum + order.fee, 0);
   const realizedPnl = roundTrips.reduce((sum, rt) => sum + rt.pnl, 0);
   const feeDrag = totalFee / Math.max(Math.abs(realizedPnl), totalFee || 1);
+  const baselineDailyOrders = options.baselineDailyOrders;
+  const baselinePenalty =
+    baselineDailyOrders === undefined
+      ? 0
+      : Math.min(
+          SCORE_CONSTANTS.f6.baselineSurgeCap,
+          (Math.max(0, avgDailyOrders - baselineDailyOrders) / Math.max(baselineDailyOrders, 1)) *
+            SCORE_CONSTANTS.f6.baselineSurgeMultiplier
+        );
+  const sameDayCap =
+    baselineDailyOrders === undefined
+      ? SCORE_CONSTANTS.f6.sameDayRoundTripCapFirstAnalysis
+      : SCORE_CONSTANTS.f6.sameDayRoundTripCap;
+  const feeDragCap =
+    baselineDailyOrders === undefined
+      ? SCORE_CONSTANTS.f6.feeDragCapFirstAnalysis
+      : SCORE_CONSTANTS.f6.feeDragCap;
   const penalty =
-    Math.max(0, avgDailyOrders - SCORE_CONSTANTS.f6.dailyOrderSoftCap) *
-      SCORE_CONSTANTS.f6.dailyOrderMultiplier +
-    Math.min(
-      SCORE_CONSTANTS.f6.sameDayRoundTripCap,
-      sameDayRoundTripShare * SCORE_CONSTANTS.f6.sameDayRoundTripMultiplier
-    ) +
-    Math.min(SCORE_CONSTANTS.f6.feeDragCap, feeDrag * SCORE_CONSTANTS.f6.feeDragMultiplier);
+    baselinePenalty +
+    Math.min(sameDayCap, sameDayRoundTripShare * SCORE_CONSTANTS.f6.sameDayRoundTripMultiplier) +
+    Math.min(feeDragCap, feeDrag * SCORE_CONSTANTS.f6.feeDragMultiplier);
   const score = clampScore(100 - penalty);
   return measuredMetric(
     'F6',
@@ -208,6 +234,10 @@ function scoreF6(orders: Order[], roundTrips: RoundTrip[]) {
     {
       '활동일 평균 주문': `${avgDailyOrders.toFixed(1)}건`,
       '당일 왕복 비중': `${Math.round(sameDayRoundTripShare * 100)}%`,
+      '자기 기준 급증':
+        baselineDailyOrders === undefined
+          ? '첫 분석 제외 · 당일 왕복/수수료 캡 재정규화'
+          : `${baselineDailyOrders.toFixed(1)}건 기준`,
     }
   );
 }
@@ -266,7 +296,7 @@ export function buildPhase1ScoreMetrics(
   return [
     scoreF1(roundTrips),
     scoreF3(orders),
-    scoreF6(orders, roundTrips),
+    scoreF6(orders, roundTrips, options),
     scoreF8(orders, options),
   ];
 }

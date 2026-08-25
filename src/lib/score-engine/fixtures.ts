@@ -70,9 +70,48 @@ function lossHolderFixture() {
   return rows;
 }
 
+function moderateFixture() {
+  const rows: RawExecution[] = [];
+  for (let i = 0; i < 6; i += 1) {
+    const symbol = ['BTC', 'ETH', 'SOL'][i % 3];
+    rows.push(trade(`m-pb-${i}`, i + 1, symbol, 'buy', 100, 1, 9));
+    rows.push(trade(`m-ps-${i}`, i + 3, symbol, 'sell', 109, 1, 10));
+  }
+  for (let i = 0; i < 6; i += 1) {
+    const symbol = ['ADA', 'ARB', 'SUI'][i % 3];
+    rows.push(trade(`m-lb-${i}`, i + 1, symbol, 'buy', 100, 1, 11));
+    rows.push(trade(`m-ls-${i}`, i + 5, symbol, 'sell', 92, 1, 11));
+  }
+  for (let i = 0; i < 3; i += 1) {
+    const symbol = ['BTC', 'ETH', 'SOL'][i];
+    rows.push(trade(`m-ref-${i}`, i + 12, symbol, 'buy', 100, 0.8, 9));
+    rows.push(trade(`m-chase-${i}`, i + 13, symbol, 'buy', 109, 5, 9));
+    rows.push(trade(`m-chase-s-${i}`, i + 13, symbol, 'sell', 112, 5.8, 15));
+  }
+  rows.push(trade('m-focus-1', 18, 'LINK', 'buy', 240, 15, 9));
+  rows.push(trade('m-small-1', 18, 'ETH', 'buy', 100, 1, 10));
+  return rows;
+}
+
+function concentratedFixture() {
+  const rows: RawExecution[] = [];
+  for (let i = 0; i < 8; i += 1) {
+    rows.push(trade(`ct-btc-b-${i}`, i + 1, 'BTC', 'buy', 100, 4, 9));
+    rows.push(trade(`ct-btc-s-${i}`, i + 4, 'BTC', 'sell', 108, 1, 10));
+  }
+  for (let i = 0; i < 6; i += 1) {
+    const symbol = ['ETH', 'SOL', 'XRP'][i % 3];
+    rows.push(trade(`ct-alt-b-${i}`, i + 1, symbol, 'buy', 100, 1, 12));
+    rows.push(trade(`ct-alt-s-${i}`, i + 4, symbol, 'sell', 105, 1, 13));
+  }
+  return rows;
+}
+
 export const syntheticFixtures = {
   chaser: chaserFixture(),
   lossHolder: lossHolderFixture(),
   normal: normalFixture(),
+  moderate: moderateFixture(),
+  concentrated: concentratedFixture(),
   insufficient: [trade('i-1', 1, 'BTC', 'buy', 100), trade('i-2', 2, 'BTC', 'sell', 90)],
 } as const;
