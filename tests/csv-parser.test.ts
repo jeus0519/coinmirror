@@ -101,4 +101,8 @@ test('analyzeCsvInput은 파싱 미리보기와 엔진 결과를 한 번에 만�
   assert.ok(result.preview.symbolCount >= 5);
   assert.match(result.preview.periodLabel, /2026\.01/);
   assert.match(result.investmentType.code, /^[CW]-[RH]-[LX]-[ND]$/);
+  assert.equal(result.expectationActuals.B1?.actual, '월평균 39.0회');
+  assert.match(result.expectationActuals.B2?.actual ?? '', /아침·낮/);
+  assert.match(result.expectationActuals.B3?.actual ?? '', /이익 .* · 손실 .*/);
+  assert.match(result.expectationActuals.B4?.actual ?? '', /%/);
 });

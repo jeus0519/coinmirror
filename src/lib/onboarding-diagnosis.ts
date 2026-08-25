@@ -32,7 +32,16 @@ export type ExpectationComparison = {
   expected: string;
   actual: string;
   observation: string;
+  source: 'sample' | 'csv';
 };
+
+export type ExpectationActual = Omit<
+  ExpectationComparison,
+  'questionId' | 'expected' | 'source' | 'label'
+> & {
+  label?: string;
+};
+export type ExpectationActuals = Partial<Record<'B1' | 'B2' | 'B3' | 'B4', ExpectationActual>>;
 
 export const diagnosisQuestions: DiagnosisQuestion[] = [
   {
@@ -172,10 +181,7 @@ export function optionLabel(questionId: DiagnosisQuestionId, optionId?: string) 
   );
 }
 
-const SAMPLE_ACTUALS: Record<
-  'B1' | 'B2' | 'B3' | 'B4',
-  Omit<ExpectationComparison, 'questionId' | 'expected'>
-> = {
+const SAMPLE_ACTUALS: Record<'B1' | 'B2' | 'B3' | 'B4', ExpectationActual> = {
   B1: {
     label: '월 거래 횟수',
     actual: '월평균 35.7회',
@@ -198,12 +204,22 @@ const SAMPLE_ACTUALS: Record<
   },
 };
 
-export function buildExpectationComparisons(profile: DiagnosisProfile): ExpectationComparison[] {
+export function buildExpectationComparisons(
+  profile: DiagnosisProfile,
+  actuals?: ExpectationActuals
+): ExpectationComparison[] {
   return (['B1', 'B2', 'B3', 'B4'] as const).flatMap((questionId) => {
     const answer = profile[questionId];
+    const actual = actuals?.[questionId] ?? SAMPLE_ACTUALS[questionId];
     if (typeof answer !== 'string') return [];
     return [
-      { questionId, expected: optionLabel(questionId, answer), ...SAMPLE_ACTUALS[questionId] },
+      {
+        questionId,
+        expected: optionLabel(questionId, answer),
+        ...actual,
+        label: actual.label ?? SAMPLE_ACTUALS[questionId].label ?? '실측 비교',
+        source: actuals ? 'csv' : 'sample',
+      },
     ];
   });
 }

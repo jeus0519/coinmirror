@@ -51,6 +51,35 @@ test('응답한 자기 예상 문항만 실제 샘플값과 비교한다', () =>
   );
   assert.match(comparisons[0].actual, /월평균/);
   assert.match(comparisons[1].actual, /낮|오후|저녁|밤|새벽/);
+  assert.equal(comparisons[0].source, 'sample');
+});
+
+test('예상 vs 실제 카드는 CSV 실측값을 받으면 하드코딩 샘플을 쓰지 않는다', () => {
+  const comparisons = buildExpectationComparisons(
+    { B1: 'under_10', B2: 'night', B3: 'profit_first', B4: 'under_30' },
+    {
+      B1: { actual: '월평균 26.0회', observation: '기록된 월평균 주문 수와 나란히 보여드려요.' },
+      B2: {
+        actual: '아침·낮(09시대)',
+        observation: '거래대금이 가장 컸던 시간대를 기준으로 표시해요.',
+      },
+      B3: {
+        actual: '이익 2.0일 · 손실 4.0일',
+        observation: '이익·손실 청산의 중앙 보유시간을 비교했어요.',
+      },
+      B4: { actual: '41.7%', observation: '청산 기록에서 이익으로 끝난 비율입니다.' },
+    }
+  );
+
+  assert.deepEqual(
+    comparisons.map((item) => item.actual),
+    ['월평균 26.0회', '아침·낮(09시대)', '이익 2.0일 · 손실 4.0일', '41.7%']
+  );
+  assert.equal(
+    comparisons.every((item) => item.source === 'csv'),
+    true
+  );
+  assert.doesNotMatch(comparisons.map((item) => item.actual).join(' '), /57\.9%/);
 });
 
 test('F 점수는 모두 높을수록 양호한 동일 밴드를 사용한다', () => {
