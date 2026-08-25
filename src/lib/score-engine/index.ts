@@ -1,3 +1,4 @@
+export { buildPhase1DerivedSeries } from './derived-series';
 export { syntheticFixtures } from './fixtures';
 export { SCORE_CONSTANTS, SCORE_BANDS } from './score-constants';
 export {
