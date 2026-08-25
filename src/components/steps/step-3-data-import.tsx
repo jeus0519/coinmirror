@@ -2,6 +2,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import { Upload } from 'lucide-react-native';
 import { Alert, ScrollView, View } from 'react-native';
 
+import { ShareCard } from '@/components/share-card';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Icon } from '@/components/ui/icon';
@@ -113,24 +114,7 @@ export function Step3DataImport() {
           <Text className="text-[11px] leading-4 text-muted-foreground">
             {expectedType.disclaimer}
           </Text>
-          <View className="gap-2 rounded-2xl border border-dashed border-primary/30 bg-primary/5 p-3">
-            <Text className="text-xs font-extrabold text-primary">
-              캡처용 공유 카드 · 예상 타입
-            </Text>
-            <Text className="text-lg font-extrabold text-foreground">
-              {expectedShareCard.title}
-            </Text>
-            <Text className="text-xs text-muted-foreground">
-              {expectedShareCard.label} · {expectedShareCard.code}
-            </Text>
-            <Text className="text-xs leading-5 text-muted-foreground">
-              {expectedShareCard.axisLine}
-            </Text>
-            <Text className="text-[11px] leading-4 text-muted-foreground">
-              {expectedShareCard.description} {expectedShareCard.compliance} ·{' '}
-              {expectedShareCard.watermark}
-            </Text>
-          </View>
+          <ShareCard card={expectedShareCard} />
         </CardContent>
       </Card>
 

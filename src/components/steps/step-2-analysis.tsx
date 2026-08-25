@@ -2,6 +2,7 @@ import { Lock } from 'lucide-react-native';
 import { useMemo } from 'react';
 import { ScrollView, View } from 'react-native';
 
+import { ShareCard } from '@/components/share-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -167,24 +168,7 @@ export function Step2Analysis() {
           <Text className="text-[11px] leading-4 text-muted-foreground">
             {analysis.investmentType.disclaimer} 매수·매도 추천이나 성격 단정이 아닙니다.
           </Text>
-          <View className="gap-2 rounded-2xl border border-dashed border-primary/30 bg-primary/5 p-3">
-            <Text className="text-xs font-extrabold text-primary">
-              캡처용 공유 카드 · 기록된 타입
-            </Text>
-            <Text className="text-lg font-extrabold text-foreground">
-              {recordedShareCard.title}
-            </Text>
-            <Text className="text-xs text-muted-foreground">
-              {recordedShareCard.label} · {recordedShareCard.code}
-            </Text>
-            <Text className="text-xs leading-5 text-muted-foreground">
-              {recordedShareCard.axisLine}
-            </Text>
-            <Text className="text-[11px] leading-4 text-muted-foreground">
-              {recordedShareCard.description} {recordedShareCard.compliance} ·{' '}
-              {recordedShareCard.watermark}
-            </Text>
-          </View>
+          <ShareCard card={recordedShareCard} />
         </CardContent>
       </Card>
 
