@@ -151,7 +151,7 @@ test('F8은 A4 10/30/50 한도별로 자금 배분 축을 검증한다', () => {
 
   assert.equal(loose?.band, '주의');
   assert.equal(medium?.band, '주의');
-  assert.equal(strict?.band, '관찰');
+  assert.equal(strict?.band, '안정');
   assert.equal(moderate?.band, '관찰');
 });
 

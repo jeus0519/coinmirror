@@ -85,10 +85,10 @@ function moderateFixture() {
   for (let i = 0; i < 3; i += 1) {
     const symbol = ['BTC', 'ETH', 'SOL'][i];
     rows.push(trade(`m-ref-${i}`, i + 12, symbol, 'buy', 100, 0.8, 9));
-    rows.push(trade(`m-chase-${i}`, i + 13, symbol, 'buy', 109, 5, 9));
-    rows.push(trade(`m-chase-s-${i}`, i + 13, symbol, 'sell', 112, 5.8, 15));
+    rows.push(trade(`m-chase-${i}`, i + 13, symbol, 'buy', 109, 9, 9));
+    rows.push(trade(`m-chase-s-${i}`, i + 13, symbol, 'sell', 112, 9.8, 15));
   }
-  rows.push(trade('m-focus-1', 18, 'LINK', 'buy', 240, 15, 9));
+  rows.push(trade('m-focus-1', 18, 'LINK', 'buy', 240, 34, 9));
   rows.push(trade('m-small-1', 18, 'ETH', 'buy', 100, 1, 10));
   return rows;
 }

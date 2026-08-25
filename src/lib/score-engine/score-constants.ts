@@ -37,7 +37,7 @@ export const SCORE_CONSTANTS = {
   f8: {
     minBuyOrders: 10,
     minSymbols: 2,
-    excessConcentrationMultiplier: 700,
+    excessConcentrationMultiplier: 200,
     excessConcentrationCap: 80,
     singleHoldingDayMultiplier: 40,
     singleHoldingDayCap: 20,

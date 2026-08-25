@@ -11,6 +11,7 @@ import {
 export type Phase1ScoreOptions = {
   maxSingleAssetWeightPct?: 10 | 30 | 50;
   baselineDailyOrders?: number;
+  excludeFeeDrag?: boolean;
 };
 
 function clampScore(value: number) {
@@ -202,7 +203,9 @@ function scoreF6(orders: Order[], roundTrips: RoundTrip[], options: Phase1ScoreO
     countSameDaySymbolRoundTrips(orders) / Math.max(1, countsByDate.size);
   const totalFee = orders.reduce((sum, order) => sum + order.fee, 0);
   const realizedPnl = roundTrips.reduce((sum, rt) => sum + rt.pnl, 0);
-  const feeDrag = totalFee / Math.max(Math.abs(realizedPnl), totalFee || 1);
+  const feeDrag = options.excludeFeeDrag
+    ? 0
+    : totalFee / Math.max(Math.abs(realizedPnl), totalFee || 1);
   const baselineDailyOrders = options.baselineDailyOrders;
   const baselinePenalty =
     baselineDailyOrders === undefined
@@ -216,13 +219,18 @@ function scoreF6(orders: Order[], roundTrips: RoundTrip[], options: Phase1ScoreO
     baselineDailyOrders === undefined
       ? SCORE_CONSTANTS.f6.sameDayRoundTripCapFirstAnalysis
       : SCORE_CONSTANTS.f6.sameDayRoundTripCap;
-  const feeDragCap =
+  const rawFeeDragCap =
     baselineDailyOrders === undefined
       ? SCORE_CONSTANTS.f6.feeDragCapFirstAnalysis
       : SCORE_CONSTANTS.f6.feeDragCap;
+  const feeDragCap = options.excludeFeeDrag ? 0 : rawFeeDragCap;
+  const sameDayCapAdjusted = options.excludeFeeDrag ? sameDayCap + rawFeeDragCap : sameDayCap;
   const penalty =
     baselinePenalty +
-    Math.min(sameDayCap, sameDayRoundTripShare * SCORE_CONSTANTS.f6.sameDayRoundTripMultiplier) +
+    Math.min(
+      sameDayCapAdjusted,
+      sameDayRoundTripShare * SCORE_CONSTANTS.f6.sameDayRoundTripMultiplier
+    ) +
     Math.min(feeDragCap, feeDrag * SCORE_CONSTANTS.f6.feeDragMultiplier);
   const score = clampScore(100 - penalty);
   return measuredMetric(
@@ -238,6 +246,7 @@ function scoreF6(orders: Order[], roundTrips: RoundTrip[], options: Phase1ScoreO
         baselineDailyOrders === undefined
           ? '첫 분석 제외 · 당일 왕복/수수료 캡 재정규화'
           : `${baselineDailyOrders.toFixed(1)}건 기준`,
+      '수수료 항': options.excludeFeeDrag ? '컬럼 없음 · 항 제외 후 캡 재정규화' : '포함',
     }
   );
 }
