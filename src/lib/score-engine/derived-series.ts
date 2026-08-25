@@ -3,6 +3,9 @@ import { type Order, type RoundTrip } from './preprocess';
 export type Phase1DerivedSeries = {
   orderCount: number;
   roundTripCount: number;
+  totalOrderAmount: number;
+  realizedPnl: number;
+  openPositionCount: number;
   hourlyAmount: number[];
   weekdayOrderCount: number[];
   perSymbolBuyShare: { symbol: string; buyAmount: number; share: number }[];
@@ -46,6 +49,7 @@ export function buildPhase1DerivedSeries(
   const hourlyAmount = Array.from({ length: 24 }, () => 0);
   const weekdayOrderCount = Array.from({ length: 7 }, () => 0);
   const buyAmountBySymbol = new Map<string, number>();
+  const netQuantityBySymbol = new Map<string, number>();
 
   for (const order of orders) {
     hourlyAmount[kstHour(order.executedAt)] += order.amount;
@@ -54,6 +58,15 @@ export function buildPhase1DerivedSeries(
       buyAmountBySymbol.set(
         order.symbol,
         (buyAmountBySymbol.get(order.symbol) ?? 0) + order.amount
+      );
+      netQuantityBySymbol.set(
+        order.symbol,
+        (netQuantityBySymbol.get(order.symbol) ?? 0) + order.quantity
+      );
+    } else {
+      netQuantityBySymbol.set(
+        order.symbol,
+        (netQuantityBySymbol.get(order.symbol) ?? 0) - order.quantity
       );
     }
   }
@@ -73,6 +86,10 @@ export function buildPhase1DerivedSeries(
   return {
     orderCount: orders.length,
     roundTripCount: roundTrips.length,
+    totalOrderAmount: orders.reduce((sum, order) => sum + order.amount, 0),
+    realizedPnl: roundTrips.reduce((sum, rt) => sum + rt.pnl, 0),
+    openPositionCount: [...netQuantityBySymbol.values()].filter((quantity) => quantity > 0.000001)
+      .length,
     hourlyAmount,
     weekdayOrderCount,
     perSymbolBuyShare,

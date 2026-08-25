@@ -8,6 +8,8 @@ import {
   type RoundTrip,
 } from './preprocess';
 
+type MetricEvidence = Metric['evidence'][number];
+
 export type Phase1ScoreOptions = {
   maxSingleAssetWeightPct?: 10 | 30 | 50;
   baselineDailyOrders?: number;
@@ -43,9 +45,10 @@ function measuredMetric(
   score: number,
   sampleSize: number,
   headline: string,
-  stats: Record<string, string>
+  stats: Record<string, string>,
+  evidence: MetricEvidence[] = []
 ): Metric {
-  return metric({ id, name, score, measured: true, sampleSize, headline, stats, evidence: [] });
+  return metric({ id, name, score, measured: true, sampleSize, headline, stats, evidence });
 }
 
 function measuringMetric(
@@ -65,6 +68,19 @@ function measuringMetric(
     evidence: [],
     limitation,
   });
+}
+
+function dateKey(value: string) {
+  return value.slice(0, 10);
+}
+
+function shortDate(value: string) {
+  return value.slice(5, 10);
+}
+
+function formatHoldingDays(hours: number) {
+  const days = hours / 24;
+  return days >= 1 ? `${days.toFixed(1)}일` : `${Math.round(hours)}시간`;
 }
 
 function scoreF1(roundTrips: RoundTrip[]) {
@@ -97,6 +113,14 @@ function scoreF1(roundTrips: RoundTrip[]) {
       deepLossShare * SCORE_CONSTANTS.f1.deepLossMultiplier
     );
   const score = clampScore(100 - penalty);
+  const evidence = [...lossRTs]
+    .sort((a, b) => b.holdingHours - a.holdingHours)
+    .slice(0, 3)
+    .map((rt) => ({
+      when: shortDate(rt.closedAt),
+      symbol: rt.symbol,
+      fact: `손실 상태로 ${formatHoldingDays(rt.holdingHours)} 보유 후 청산`,
+    }));
   return measuredMetric(
     'F1',
     '손절 습관',
@@ -106,7 +130,8 @@ function scoreF1(roundTrips: RoundTrip[]) {
     {
       '손실/이익 보유시간': `${asymmetry.toFixed(1)}배`,
       '깊은 손실 비중': `${Math.round(deepLossShare * 100)}%`,
-    }
+    },
+    evidence
   );
 }
 
@@ -122,6 +147,7 @@ function scoreF3(orders: Order[]) {
   }
   const lastPriceBySymbol = new Map<string, number>();
   const chaseBySymbol = new Map<string, number>();
+  const chaseEvidence: MetricEvidence[] = [];
   let chaseAmount = 0;
   let buyAmount = 0;
 
@@ -133,8 +159,16 @@ function scoreF3(orders: Order[]) {
         lastPrice &&
         order.price >= lastPrice * (1 + SCORE_CONSTANTS.f3.selfReferenceRisePct / 100)
       ) {
+        const risePct = Math.round(((order.price - lastPrice) / lastPrice) * 100);
         chaseAmount += order.amount;
         chaseBySymbol.set(order.symbol, (chaseBySymbol.get(order.symbol) ?? 0) + 1);
+        if (chaseEvidence.length < 3) {
+          chaseEvidence.push({
+            when: shortDate(order.executedAt),
+            symbol: order.symbol,
+            fact: `직전 본인 체결가보다 ${risePct}% 높은 가격에 매수`,
+          });
+        }
       }
     }
     lastPriceBySymbol.set(order.symbol, order.price);
@@ -163,24 +197,30 @@ function scoreF3(orders: Order[]) {
     {
       '추격 진입 비중': `${Math.round(chaseShare * 100)}%`,
       '반복 추격 종목': `${Math.round(repeatedSymbolShare * 100)}%`,
-    }
+    },
+    chaseEvidence
   );
 }
 
-function dateKey(value: string) {
-  return value.slice(0, 10);
-}
-
-function countSameDaySymbolRoundTrips(orders: Order[]) {
-  const sidesByDaySymbol = new Map<string, Set<string>>();
+function sameDaySymbolRoundTripEvidence(orders: Order[]) {
+  const sidesByDaySymbol = new Map<
+    string,
+    { sides: Set<string>; firstAt: string; symbol: string }
+  >();
   for (const order of orders) {
     const key = `${dateKey(order.executedAt)}:${order.symbol}`;
-    const sides = sidesByDaySymbol.get(key) ?? new Set<string>();
-    sides.add(order.side);
-    sidesByDaySymbol.set(key, sides);
+    const entry = sidesByDaySymbol.get(key) ?? {
+      sides: new Set<string>(),
+      firstAt: order.executedAt,
+      symbol: order.symbol,
+    };
+    entry.sides.add(order.side);
+    if (order.executedAt < entry.firstAt) entry.firstAt = order.executedAt;
+    sidesByDaySymbol.set(key, entry);
   }
-  return [...sidesByDaySymbol.values()].filter((sides) => sides.has('buy') && sides.has('sell'))
-    .length;
+  return [...sidesByDaySymbol.values()]
+    .filter((entry) => entry.sides.has('buy') && entry.sides.has('sell'))
+    .sort((a, b) => a.firstAt.localeCompare(b.firstAt));
 }
 
 function scoreF6(orders: Order[], roundTrips: RoundTrip[], options: Phase1ScoreOptions) {
@@ -199,8 +239,8 @@ function scoreF6(orders: Order[], roundTrips: RoundTrip[], options: Phase1ScoreO
       (countsByDate.get(dateKey(order.executedAt)) ?? 0) + 1
     );
   const avgDailyOrders = orders.length / countsByDate.size;
-  const sameDayRoundTripShare =
-    countSameDaySymbolRoundTrips(orders) / Math.max(1, countsByDate.size);
+  const sameDayEntries = sameDaySymbolRoundTripEvidence(orders);
+  const sameDayRoundTripShare = sameDayEntries.length / Math.max(1, countsByDate.size);
   const totalFee = orders.reduce((sum, order) => sum + order.fee, 0);
   const realizedPnl = roundTrips.reduce((sum, rt) => sum + rt.pnl, 0);
   const feeDrag = options.excludeFeeDrag
@@ -233,6 +273,11 @@ function scoreF6(orders: Order[], roundTrips: RoundTrip[], options: Phase1ScoreO
     ) +
     Math.min(feeDragCap, feeDrag * SCORE_CONSTANTS.f6.feeDragMultiplier);
   const score = clampScore(100 - penalty);
+  const evidence = sameDayEntries.slice(0, 3).map((entry) => ({
+    when: shortDate(entry.firstAt),
+    symbol: entry.symbol,
+    fact: '같은 날 매수와 매도가 함께 발생',
+  }));
   return measuredMetric(
     'F6',
     '과매매',
@@ -247,7 +292,8 @@ function scoreF6(orders: Order[], roundTrips: RoundTrip[], options: Phase1ScoreO
           ? '첫 분석 제외 · 당일 왕복/수수료 캡 재정규화'
           : `${baselineDailyOrders.toFixed(1)}건 기준`,
       '수수료 항': options.excludeFeeDrag ? '컬럼 없음 · 항 제외 후 캡 재정규화' : '포함',
-    }
+    },
+    evidence
   );
 }
 
@@ -276,13 +322,19 @@ function scoreF8(orders: Order[], options: Phase1ScoreOptions) {
     );
   }
   const totalBuyAmount = buyOrders.reduce((sum, order) => sum + order.amount, 0);
-  const topShare = Math.max(...symbolAmounts.values()) / totalBuyAmount;
+  const sortedSymbolAmounts = [...symbolAmounts.entries()].sort((a, b) => b[1] - a[1]);
+  const topShare = sortedSymbolAmounts[0][1] / totalBuyAmount;
   const cap = options.maxSingleAssetWeightPct / 100;
   const penalty = Math.min(
     SCORE_CONSTANTS.f8.excessConcentrationCap,
     Math.max(0, topShare - cap) * SCORE_CONSTANTS.f8.excessConcentrationMultiplier
   );
   const score = clampScore(100 - penalty);
+  const evidence = sortedSymbolAmounts.slice(0, 3).map(([symbol, amount], index) => ({
+    when: '기간합계',
+    symbol,
+    fact: `매수금액 비중 ${index + 1}위 · 전체 매수 중 ${Math.round((amount / totalBuyAmount) * 100)}%`,
+  }));
   return measuredMetric(
     'F8',
     '몰빵',
@@ -292,7 +344,8 @@ function scoreF8(orders: Order[], options: Phase1ScoreOptions) {
     {
       '최대 종목 비중': `${Math.round(topShare * 100)}%`,
       '선언 한도': `${options.maxSingleAssetWeightPct}%`,
-    }
+    },
+    evidence
   );
 }
 

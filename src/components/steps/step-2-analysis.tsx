@@ -8,24 +8,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Icon } from '@/components/ui/icon';
 import { MetricCard } from '@/components/ui/metric-card';
 import { Text } from '@/components/ui/text';
-import { formatKrw } from '@/lib/format';
-import { buildSampleInvestmentTypeProfile } from '@/lib/investment-type';
-import { mockRecords } from '@/lib/mock-data';
+import { buildAnalysisViewData } from '@/lib/analysis-view-data';
 import { buildExpectationComparisons } from '@/lib/onboarding-diagnosis';
-import { baseMetrics, lockedMetrics } from '@/lib/mock-metrics';
 import { buildInvestmentTypeShareCard } from '@/lib/share-card';
 import { useFlowStore } from '@/stores/use-flow-store';
-
-const HOUR_BUCKETS = [2, 1, 0, 0, 1, 0, 3, 5, 6, 8, 7, 9, 10, 11, 9, 8, 7, 6, 8, 9, 7, 5, 4, 3];
-const WEEKDAY_LABELS = ['월', '화', '수', '목', '금', '토', '일'];
-const WEEKDAY_COUNTS = [12, 8, 15, 10, 18, 9, 6];
-
-const realizedTrades = [
-  { symbol: 'XRP', when: '08-09', pnlPct: -2.4 },
-  { symbol: 'SOL', when: '08-06', pnlPct: 6.1 },
-  { symbol: 'ETH', when: '08-02', pnlPct: 3.8 },
-  { symbol: 'DOGE', when: '07-30', pnlPct: -5.6 },
-];
 
 function StatTile({
   label,
@@ -65,33 +51,16 @@ export function Step2Analysis() {
   const setStep = useFlowStore((s) => s.setStep);
   const diagnosisAnswers = useFlowStore((s) => s.diagnosisAnswers);
   const csvAnalysis = useFlowStore((s) => s.csvAnalysis);
+  const analysis = useMemo(
+    () => buildAnalysisViewData({ dataSource, csvAnalysis, diagnosis: diagnosisAnswers }),
+    [csvAnalysis, dataSource, diagnosisAnswers]
+  );
+  const derivedSeries = analysis.derivedSeries;
   const expectationComparisons = useMemo(
-    () => buildExpectationComparisons(diagnosisAnswers),
-    [diagnosisAnswers]
+    () => buildExpectationComparisons(diagnosisAnswers, analysis.expectationActuals),
+    [analysis.expectationActuals, diagnosisAnswers]
   );
-  const visibleMetrics = dataSource === 'csv' && csvAnalysis ? csvAnalysis.metrics : baseMetrics;
-  const compositeMetric = visibleMetrics.find((metric) => metric.id === 'F10');
-  const recoveryMetric = visibleMetrics.find((metric) => metric.id === 'F5');
-  const concentrationMetric = visibleMetrics.find((metric) => metric.id === 'F8');
-  const investmentType = useMemo(
-    () =>
-      dataSource === 'csv' && csvAnalysis
-        ? csvAnalysis.investmentType
-        : buildSampleInvestmentTypeProfile(baseMetrics, diagnosisAnswers.generalMbti),
-    [csvAnalysis, dataSource, diagnosisAnswers.generalMbti]
-  );
-  const recordedShareCard = buildInvestmentTypeShareCard(investmentType, 'recorded');
-
-  const symbolTotals = useMemo(() => {
-    const totals = new Map<string, number>();
-    for (const r of mockRecords) {
-      totals.set(r.symbol, (totals.get(r.symbol) ?? 0) + r.price * r.quantity);
-    }
-    return [...totals.entries()].sort((a, b) => b[1] - a[1]);
-  }, []);
-
-  const maxHour = Math.max(...HOUR_BUCKETS, 1);
-  const maxWeekday = Math.max(...WEEKDAY_COUNTS, 1);
+  const recordedShareCard = buildInvestmentTypeShareCard(analysis.investmentType, 'recorded');
 
   return (
     <ScrollView className="flex-1" contentContainerClassName="gap-6 p-4 pb-12">
@@ -99,12 +68,12 @@ export function Step2Analysis() {
         <View className="flex-row items-center justify-between gap-2">
           <View className="flex-row items-center gap-2">
             <Text className="text-lg font-extrabold text-foreground">스코어 및 분석</Text>
-            {dataSource === 'sample' && (
+            {analysis.source === 'sample' && (
               <Badge variant="outline">
                 <Text>샘플 데이터</Text>
               </Badge>
             )}
-            {dataSource === 'csv' && (
+            {analysis.source === 'csv' && (
               <Badge variant="outline">
                 <Text>내 CSV 분석</Text>
               </Badge>
@@ -116,11 +85,7 @@ export function Step2Analysis() {
         </View>
         <Card>
           <CardContent className="pt-2">
-            <Text className="leading-6 text-foreground">
-              {dataSource === 'csv' && csvAnalysis
-                ? `CSV에서 정상 ${csvAnalysis.preview.normalRowCount}행을 읽어 F1/F3/F6/F8과 투자거울 타입을 계산했어요. 오류 ${csvAnalysis.preview.errorRowCount}행은 점수에 넣지 않았습니다.`
-                : `거래 기록만으로 계산한 ${compositeMetric?.name}(F10)는 ${compositeMetric?.score ?? '측정 중'}점이에요. ${recoveryMetric?.name}(F5)는 ${recoveryMetric?.band} 구간이고, ${concentrationMetric?.name}(F8)은 ${concentrationMetric?.limitation ?? '실측값을 보여드려요.'}`}
-            </Text>
+            <Text className="leading-6 text-foreground">{analysis.summaryText}</Text>
           </CardContent>
         </Card>
       </View>
@@ -132,10 +97,9 @@ export function Step2Analysis() {
           계산했습니다.
         </Text>
         <View className="flex-row flex-wrap gap-2.5">
-          <StatTile label="총 거래 건수" value="27건" sub="최근 30일" />
-          <StatTile label="총 거래대금" value={`${formatKrw(132_450_000)}원`} />
-          <StatTile label="실현손익" value={`+${formatKrw(842_000)}원`} tone="pos" />
-          <StatTile label="미청산 보유" value="3종목" />
+          {analysis.statTiles.map((tile) => (
+            <StatTile key={tile.label} {...tile} />
+          ))}
         </View>
       </View>
 
@@ -144,20 +108,25 @@ export function Step2Analysis() {
           <View className="flex-row items-center justify-between gap-3">
             <View className="flex-1 gap-1">
               <Text className="text-xs font-bold text-primary">투자거울 타입</Text>
-              <Text className="text-xl font-extrabold text-foreground">{investmentType.title}</Text>
-              <Text className="text-xs text-muted-foreground">코드 {investmentType.code}</Text>
+              <Text className="text-xl font-extrabold text-foreground">
+                {analysis.investmentType.title}
+              </Text>
+              <Text className="text-xs text-muted-foreground">
+                코드 {analysis.investmentType.code}
+              </Text>
             </View>
             <View className="rounded-2xl bg-primary/10 px-3 py-2">
               <Text className="text-xs font-bold text-primary">
                 MBTI{' '}
-                {investmentType.generalMbti && investmentType.generalMbti.length === 4
-                  ? investmentType.generalMbti
+                {analysis.investmentType.generalMbti &&
+                analysis.investmentType.generalMbti.length === 4
+                  ? analysis.investmentType.generalMbti
                   : '선택 안 함'}
               </Text>
             </View>
           </View>
           <View className="flex-row flex-wrap gap-2">
-            {investmentType.axes.map((axis) => (
+            {analysis.investmentType.axes.map((axis) => (
               <View key={axis.axis} className="rounded-full bg-muted px-3 py-1.5">
                 <Text className="text-[11px] font-semibold text-foreground">
                   {axis.code} · {axis.label}
@@ -166,11 +135,11 @@ export function Step2Analysis() {
             ))}
           </View>
           <Text className="text-xs leading-5 text-muted-foreground">
-            {investmentType.comparisonCopy}
+            {analysis.investmentType.comparisonCopy}
           </Text>
           <View className="gap-2 rounded-2xl bg-muted p-3">
             <Text className="text-xs font-extrabold text-foreground">장점</Text>
-            {investmentType.strengths.map((item) => (
+            {analysis.investmentType.strengths.map((item) => (
               <Text key={item} className="text-[11px] leading-4 text-muted-foreground">
                 • {item}
               </Text>
@@ -178,7 +147,7 @@ export function Step2Analysis() {
           </View>
           <View className="gap-2 rounded-2xl bg-muted p-3">
             <Text className="text-xs font-extrabold text-foreground">주의할 점</Text>
-            {investmentType.watchouts.map((item) => (
+            {analysis.investmentType.watchouts.map((item) => (
               <Text key={item} className="text-[11px] leading-4 text-muted-foreground">
                 • {item}
               </Text>
@@ -186,17 +155,17 @@ export function Step2Analysis() {
           </View>
           <View className="gap-2 rounded-2xl bg-primary/5 p-3">
             <Text className="text-xs font-extrabold text-primary">개선하면 좋은 편향</Text>
-            {investmentType.biasSuggestions.map((item) => (
+            {analysis.investmentType.biasSuggestions.map((item) => (
               <Text key={item.metricId} className="text-[11px] leading-4 text-muted-foreground">
                 • {item.title}: {item.suggestion}
               </Text>
             ))}
           </View>
           <Text className="text-xs leading-5 text-muted-foreground">
-            {investmentType.similarMbtiCopy}
+            {analysis.investmentType.similarMbtiCopy}
           </Text>
           <Text className="text-[11px] leading-4 text-muted-foreground">
-            {investmentType.disclaimer} 매수·매도 추천이나 성격 단정이 아닙니다.
+            {analysis.investmentType.disclaimer} 매수·매도 추천이나 성격 단정이 아닙니다.
           </Text>
           <View className="gap-2 rounded-2xl border border-dashed border-primary/30 bg-primary/5 p-3">
             <Text className="text-xs font-extrabold text-primary">
@@ -231,14 +200,21 @@ export function Step2Analysis() {
             {expectationComparisons.map((item) => (
               <Card key={item.questionId}>
                 <CardContent className="gap-2 pt-2">
-                  <Text className="text-sm font-bold text-foreground">{item.label}</Text>
+                  <View className="flex-row items-center justify-between gap-2">
+                    <Text className="text-sm font-bold text-foreground">{item.label}</Text>
+                    {item.source === 'sample' && (
+                      <Badge variant="outline">
+                        <Text>샘플</Text>
+                      </Badge>
+                    )}
+                  </View>
                   <View className="flex-row gap-2">
                     <View className="flex-1 rounded-xl bg-muted p-3">
                       <Text className="text-[11px] text-muted-foreground">내 예상</Text>
                       <Text className="text-[13px] font-bold text-foreground">{item.expected}</Text>
                     </View>
                     <View className="flex-1 rounded-xl bg-primary/10 p-3">
-                      <Text className="text-[11px] text-primary">실제 기록</Text>
+                      <Text className="text-[11px] text-primary">기록된 실제</Text>
                       <Text className="text-[13px] font-bold text-foreground">{item.actual}</Text>
                     </View>
                   </View>
@@ -260,16 +236,14 @@ export function Step2Analysis() {
 
       <View className="gap-3">
         <View className="gap-1">
-          <Text className="text-base font-extrabold text-foreground">
-            Free 행동 점수 9종 + 종합점수
-          </Text>
+          <Text className="text-base font-extrabold text-foreground">Free 행동 점수</Text>
           <Text className="text-xs text-muted-foreground">
             모든 점수는 0~100점이며 높을수록 절제·규율 상태가 안정적이에요. 수익률이나 투자 실력
             평가는 아닙니다.
           </Text>
         </View>
         <View className="gap-3">
-          {visibleMetrics.map((m) => (
+          {analysis.metrics.map((m) => (
             <MetricCard key={m.id} metric={m} />
           ))}
         </View>
@@ -285,7 +259,7 @@ export function Step2Analysis() {
           </Button>
         </View>
         <View className="gap-2.5">
-          {lockedMetrics.map((m) => {
+          {analysis.lockedMetrics.map((m) => {
             const unlocked = subscriptionTier === 'pro';
             return (
               <View
@@ -316,14 +290,14 @@ export function Step2Analysis() {
       <View className="flex-row gap-3">
         <Card className="flex-1">
           <CardContent className="gap-3 pt-2">
-            <Text className="text-sm font-bold text-foreground">시간대별 체결 분포</Text>
+            <Text className="text-sm font-bold text-foreground">시간대별 거래대금</Text>
             <Text className="text-[11px] text-muted-foreground">파란색은 00~06시 구간</Text>
             <View className="h-24 flex-row items-end gap-0.5">
-              {HOUR_BUCKETS.map((v, i) => (
+              {analysis.hourlyBars.map((bar) => (
                 <View
-                  key={i}
-                  className={'flex-1 rounded-t ' + (i < 6 ? 'bg-secondary' : 'bg-primary/30')}
-                  style={{ height: `${Math.max((v / maxHour) * 100, 3)}%` }}
+                  key={bar.hour}
+                  className={'flex-1 rounded-t ' + (bar.isDawn ? 'bg-secondary' : 'bg-primary/30')}
+                  style={{ height: `${bar.heightPct}%` }}
                 />
               ))}
             </View>
@@ -334,13 +308,13 @@ export function Step2Analysis() {
             <Text className="text-sm font-bold text-foreground">요일별 체결 분포</Text>
             <Text className="text-[11px] text-muted-foreground">월요일부터 일요일 순</Text>
             <View className="h-24 flex-row items-end gap-1.5">
-              {WEEKDAY_COUNTS.map((v, i) => (
-                <View key={i} className="flex-1 items-center gap-1">
+              {analysis.weekdayBars.map((bar) => (
+                <View key={bar.label} className="flex-1 items-center gap-1">
                   <View
                     className="w-full rounded-t bg-primary/30"
-                    style={{ height: `${Math.max((v / maxWeekday) * 100, 3)}%` }}
+                    style={{ height: `${bar.heightPct}%` }}
                   />
-                  <Text className="text-[9.5px] text-muted-foreground">{WEEKDAY_LABELS[i]}</Text>
+                  <Text className="text-[9.5px] text-muted-foreground">{bar.label}</Text>
                 </View>
               ))}
             </View>
@@ -350,35 +324,17 @@ export function Step2Analysis() {
 
       <Card>
         <CardContent className="gap-2.5 pt-2">
-          <Text className="text-sm font-bold text-foreground">종목별 거래대금 상위</Text>
-          {symbolTotals.map(([symbol, total]) => (
+          <Text className="text-sm font-bold text-foreground">종목별 매수 비중 상위</Text>
+          <Text className="text-[11px] text-muted-foreground">
+            매수금액 기준 · {derivedSeries.perSymbolBuyShare.length}개 종목
+          </Text>
+          {analysis.symbolRows.map((row) => (
             <View
-              key={symbol}
+              key={row.symbol}
               className="flex-row items-center justify-between border-b border-border py-2 last:border-b-0"
             >
-              <Text className="font-semibold text-foreground">{symbol}</Text>
-              <Text className="tabular-nums text-foreground">{formatKrw(total)}원</Text>
-            </View>
-          ))}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="gap-2.5 pt-2">
-          <Text className="text-sm font-bold text-foreground">최근 청산 기록</Text>
-          {realizedTrades.map((t, i) => (
-            <View
-              key={i}
-              className="flex-row items-center justify-between border-b border-border py-2 last:border-b-0"
-            >
-              <Text className="text-muted-foreground">{t.when}</Text>
-              <Text className="font-semibold text-foreground">{t.symbol}</Text>
-              <Text
-                className={t.pnlPct >= 0 ? 'font-bold text-primary' : 'font-bold text-destructive'}
-              >
-                {t.pnlPct >= 0 ? '+' : ''}
-                {t.pnlPct}%
-              </Text>
+              <Text className="font-semibold text-foreground">{row.symbol}</Text>
+              <Text className="tabular-nums text-foreground">{row.shareLabel}</Text>
             </View>
           ))}
         </CardContent>

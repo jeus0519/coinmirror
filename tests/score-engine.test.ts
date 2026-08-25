@@ -169,6 +169,24 @@ test('F6는 첫 분석에서 절대 일평균 임계값 없이 P1을 제외하�
   assert.equal(withBaseline?.band, '주의');
 });
 
+test('F1/F3/F6/F8은 실제 주문과 청산에서 근거 거래를 채우고 손익률 표현은 쓰지 않는다', () => {
+  const metrics = buildPhase1ScoreMetrics(syntheticFixtures.chaser, {
+    maxSingleAssetWeightPct: 50,
+  });
+
+  for (const id of ['F1', 'F3', 'F6', 'F8']) {
+    const metric = metrics.find((item) => item.id === id);
+    assert.ok(metric, `${id} metric missing`);
+    assert.ok(metric.evidence.length > 0, `${id} evidence missing`);
+    assert.ok(metric.evidence.length <= 3, `${id} evidence too many`);
+    assert.equal(
+      metric.evidence.every((item) => item.when && item.symbol && item.fact),
+      true
+    );
+    assert.doesNotMatch(metric.evidence.map((item) => item.fact).join(' '), /[+-]\d+(?:\.\d+)?%/);
+  }
+});
+
 test('표본 미달은 0점이 아니라 측정 중과 ? 축으로 처리한다', () => {
   const metrics = buildPhase1ScoreMetrics(syntheticFixtures.insufficient, {
     maxSingleAssetWeightPct: 50,
