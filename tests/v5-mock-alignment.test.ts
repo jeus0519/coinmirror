@@ -12,6 +12,7 @@ import { baseMetrics, lockedMetrics, scoreLevel } from '../src/lib/mock-metrics.
 import { principlePresets } from '../src/lib/mock-goals.ts';
 import {
   GENERAL_MBTI_OPTIONS,
+  buildExpectedInvestmentTypeProfile,
   buildMbtiComparisonCopy,
   buildSampleInvestmentTypeProfile,
 } from '../src/lib/investment-type.ts';
@@ -105,4 +106,19 @@ test('일반 MBTI는 선택 입력이며 투자 타입 계산에는 쓰지 않�
   const withMbti = buildSampleInvestmentTypeProfile(baseMetrics, 'ENTJ');
   assert.equal(withoutMbti.code, withMbti.code);
   assert.match(buildMbtiComparisonCopy(undefined, withMbti.title), /입력하지 않아도/);
+});
+
+test('설문만으로 CSV 전 예상 투자거울 타입을 산출하고 미응답 축은 ?로 둔다', () => {
+  const expected = buildExpectedInvestmentTypeProfile({
+    A1: 'day',
+    A2: ['chase', 'concentration'],
+    A4: 'all_in',
+    B1: '31_100',
+    generalMbti: 'ENFP',
+  });
+
+  assert.equal(expected.title, '예상 추격형 단기 반응가');
+  assert.equal(expected.code, 'C-R-?-N');
+  assert.match(expected.disclaimer, /예상 타입/);
+  assert.match(expected.comparisonCopy ?? '', /업로드 후 기록된 타입/);
 });

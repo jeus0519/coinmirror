@@ -77,6 +77,15 @@ export type InvestmentTypeProfile = {
   disclaimer: string;
 };
 
+type ExpectedTypeInput = Partial<{
+  A1: string;
+  A2: string[];
+  A4: string;
+  B1: string;
+  B3: string;
+  generalMbti: GeneralMbti;
+}>;
+
 const AXIS_LABELS: Record<InvestmentTypeAxisName, { low: string; high: string; missing: string }> =
   {
     entry: { low: '추격형', high: '대기형', missing: '진입 방식 측정 중' },
@@ -123,6 +132,7 @@ function titleFromAxes(axes: InvestmentTypeAxis[]) {
 
   if (codeLabels.has('추격형') && codeLabels.has('단기반응형')) return '추격형 단기 반응가';
   if (codeLabels.has('집중형') && codeLabels.has('손실보류형')) return '집중형 손실 보류가';
+  if (codeLabels.has('손실보류형')) return '손실보류형 관찰가';
   if (codeLabels.has('추격형') && codeLabels.has('집중형')) return '집중 추격 관찰가';
   if (codeLabels.has('단기반응형') && codeLabels.has('손실정리형')) return '짧은 점검형 반응가';
   if (codeLabels.has('대기형') && codeLabels.has('장기보유형')) return '분산형 안정 관찰가';
@@ -202,6 +212,91 @@ function buildSimilarMbti(axes: InvestmentTypeAxis[]) {
   if (labels.has('손실보류형') && labels.has('집중형')) return ['ISFJ', 'INFJ'] as GeneralMbti[];
   if (labels.has('단기반응형')) return ['ESTP', 'ESFP'] as GeneralMbti[];
   return ['ISTJ', 'INTJ'] as GeneralMbti[];
+}
+
+function expectedAxis(
+  axis: InvestmentTypeAxisName,
+  code: InvestmentTypeAxisCode,
+  label: string,
+  evidenceMetricId: 'F1' | 'F3' | 'F6' | 'F8',
+  answered: boolean
+): InvestmentTypeAxis {
+  return {
+    axis,
+    code: answered ? code : '?',
+    label: answered ? label : AXIS_LABELS[axis].missing,
+    evidenceMetricIds: [evidenceMetricId],
+    confidence: answered ? 'partial' : 'insufficient',
+  };
+}
+
+export function buildExpectedInvestmentTypeProfile(
+  input: ExpectedTypeInput
+): InvestmentTypeProfile {
+  const concerns = input.A2 ?? [];
+  const entryAnswered = Boolean(input.A1) || concerns.includes('chase');
+  const tempoAnswered = Boolean(input.A1) || Boolean(input.B1);
+  const lossAnswered = concerns.includes('hold_loss') || Boolean(input.B3);
+  const allocationAnswered = concerns.includes('concentration') || Boolean(input.A4);
+  const tempoFast =
+    input.A1 === 'day' ||
+    input.A1 === 'momentum' ||
+    input.B1 === '31_100' ||
+    input.B1 === 'over_100' ||
+    concerns.includes('overtrade');
+
+  const axes: InvestmentTypeAxis[] = [
+    expectedAxis(
+      'entry',
+      concerns.includes('chase') || input.A1 === 'momentum' ? 'C' : 'W',
+      concerns.includes('chase') || input.A1 === 'momentum' ? '추격형' : '대기형',
+      'F3',
+      entryAnswered
+    ),
+    expectedAxis(
+      'tempo',
+      tempoFast ? 'R' : 'H',
+      tempoFast ? '단기반응형' : '장기보유형',
+      'F6',
+      tempoAnswered
+    ),
+    expectedAxis(
+      'loss',
+      concerns.includes('hold_loss') || input.B3 === 'profit_first' ? 'L' : 'X',
+      concerns.includes('hold_loss') || input.B3 === 'profit_first' ? '손실보류형' : '손실정리형',
+      'F1',
+      lossAnswered
+    ),
+    expectedAxis(
+      'allocation',
+      concerns.includes('concentration') || input.A4 === 'all_in' ? 'N' : 'D',
+      concerns.includes('concentration') || input.A4 === 'all_in' ? '집중형' : '분산형',
+      'F8',
+      allocationAnswered
+    ),
+  ];
+  const baseTitle = titleFromAxes(axes);
+  const similarMbtiCodes = buildSimilarMbti(axes);
+  return {
+    version: 1,
+    calculatedAt: '2026-08-19T00:00:00+09:00',
+    sourceWindow: { from: 'survey', to: 'survey', orderCount: 0 },
+    code: axes.map((axis) => axis.code).join('-'),
+    title: `예상 ${baseTitle}`,
+    axes,
+    generalMbti: input.generalMbti,
+    comparisonCopy:
+      'CSV 없이 만든 예상 타입입니다. 업로드 후 기록된 타입과의 갭을 나란히 보여드려요.',
+    strengths: [
+      'CSV 업로드 전에도 자기인식 기반으로 시작할 수 있어요.',
+      '점수 숫자 없이 공유 가능한 가벼운 카드로 쓸 수 있어요.',
+    ],
+    watchouts: ['예상 타입은 실제 거래 기록이 아니라 설문 답변만으로 만든 가설입니다.'],
+    biasSuggestions: [],
+    similarMbtiCodes,
+    similarMbtiCopy: `유사 MBTI 비유는 재미용 비유입니다. 설문 답변만 놓고 보면 ${similarMbtiCodes.join('·')} 이미지와 가깝게 설명할 수 있어요.`,
+    disclaimer: '이 카드는 CSV 업로드 전 예상 타입이며, 성격검사나 투자 조언이 아닙니다.',
+  };
 }
 
 export function buildSampleInvestmentTypeProfile(

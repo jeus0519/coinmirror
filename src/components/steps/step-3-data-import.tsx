@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
+import { buildExpectedInvestmentTypeProfile } from '@/lib/investment-type';
 import { summarizeDiagnosis } from '@/lib/onboarding-diagnosis';
 import { useFlowStore } from '@/stores/use-flow-store';
 
@@ -15,6 +16,7 @@ export function Step3DataImport() {
   const diagnosisAnswers = useFlowStore((s) => s.diagnosisAnswers);
   const setStep = useFlowStore((s) => s.setStep);
   const summary = summarizeDiagnosis(diagnosisAnswers as Parameters<typeof summarizeDiagnosis>[0]);
+  const expectedType = buildExpectedInvestmentTypeProfile(diagnosisAnswers);
 
   async function handleUpload() {
     const result = await DocumentPicker.getDocumentAsync({
@@ -46,6 +48,39 @@ export function Step3DataImport() {
           <Button size="sm" variant="ghost" onPress={() => setStep(2)}>
             <Text className="text-muted-foreground">진단 답변 수정하기</Text>
           </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="gap-3 pt-2">
+          <Text className="text-[11px] font-extrabold text-primary">예상 투자거울 타입</Text>
+          <View className="flex-row items-start justify-between gap-3">
+            <View className="flex-1 gap-1">
+              <Text className="text-xl font-extrabold text-foreground">{expectedType.title}</Text>
+              <Text className="text-xs text-muted-foreground">
+                코드 {expectedType.code} · CSV 없이 만든 예상
+              </Text>
+            </View>
+            <Text className="rounded-full bg-primary/10 px-3 py-1 text-[11px] font-bold text-primary">
+              공유 카드 후보
+            </Text>
+          </View>
+          <View className="flex-row flex-wrap gap-2">
+            {expectedType.axes.map((axis) => (
+              <Text
+                key={axis.axis}
+                className="rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground"
+              >
+                {axis.code} · {axis.label}
+              </Text>
+            ))}
+          </View>
+          <Text className="text-xs leading-5 text-muted-foreground">
+            {expectedType.comparisonCopy} 예상 카드는 점수·금액·수익률·종목명을 담지 않습니다.
+          </Text>
+          <Text className="text-[11px] leading-4 text-muted-foreground">
+            {expectedType.disclaimer}
+          </Text>
         </CardContent>
       </Card>
 

@@ -417,6 +417,7 @@ table.tbl td.neg { color: var(--danger-500); font-weight: 700; }
       <div class="card" id="data-diagnosis-summary"></div>
     </div>
     <div class="section">
+      <div class="card" id="expected-type-card" style="margin-bottom:14px"></div>
       <div class="card" style="text-align:center">
         <div class="cta-row">
           <button class="btn btn-primary" id="btn-sample">예시 데이터로 바로 체험하기</button>
@@ -793,6 +794,7 @@ function completeDiagnosis() {
   unlockDiagnosis();
   renderDiagnosis();
   goStep(3);
+  renderExpectedTypeCard();
 }
 $('#btn-save-diagnosis').addEventListener('click', completeDiagnosis);
 $('#btn-skip-diagnosis').addEventListener('click', completeDiagnosis);
@@ -842,6 +844,40 @@ function investmentTypeProfile() {
   const similarMbti = labels.has('대기형') && labels.has('장기보유형') ? ['ISTJ','INTJ'] : ['ESTP','ENTP'];
   const similarMbtiCopy = `유사 MBTI 비유는 재미용 비유입니다. 최근 거래 리듬만 놓고 보면 ${similarMbti.join('·')}의 신중한 관찰 이미지와 가깝게 설명할 수 있습니다.`;
   return { title, code: axes.map((a) => a.code).join('-'), axes, mbti, comparison, strengths, watchouts, biases, similarMbti, similarMbtiCopy };
+}
+
+function expectedInvestmentTypeProfile() {
+  const a = state.diagnosisAnswers;
+  const concerns = a.A2 || [];
+  const entryAnswered = Boolean(a.A1) || concerns.includes('chase');
+  const tempoAnswered = Boolean(a.A1) || Boolean(a.B1);
+  const lossAnswered = concerns.includes('hold_loss') || Boolean(a.B3);
+  const allocationAnswered = concerns.includes('concentration') || Boolean(a.A4);
+  const tempoFast = a.A1 === 'day' || a.A1 === 'momentum' || a.B1 === '31_100' || a.B1 === 'over_100' || concerns.includes('overtrade');
+  const axis = (answered, code, label, missing) => answered ? { code, label } : { code:'?', label:missing };
+  const axes = [
+    axis(entryAnswered, concerns.includes('chase') || a.A1 === 'momentum' ? 'C' : 'W', concerns.includes('chase') || a.A1 === 'momentum' ? '추격형' : '대기형', '진입 방식 측정 중'),
+    axis(tempoAnswered, tempoFast ? 'R' : 'H', tempoFast ? '단기반응형' : '장기보유형', '거래 속도 측정 중'),
+    axis(lossAnswered, concerns.includes('hold_loss') || a.B3 === 'profit_first' ? 'L' : 'X', concerns.includes('hold_loss') || a.B3 === 'profit_first' ? '손실보류형' : '손실정리형', '손실 대응 측정 중'),
+    axis(allocationAnswered, concerns.includes('concentration') || a.A4 === 'all_in' ? 'N' : 'D', concerns.includes('concentration') || a.A4 === 'all_in' ? '집중형' : '분산형', '자금 배분 측정 중'),
+  ];
+  const labels = new Set(axes.map((item) => item.label));
+  let title = '예상 측정 중 관찰가';
+  if (labels.has('추격형') && labels.has('단기반응형')) title = '예상 추격형 단기 반응가';
+  else if (labels.has('손실보류형')) title = '예상 손실보류형 관찰가';
+  else if (labels.has('대기형') && labels.has('장기보유형')) title = '예상 분산형 안정 관찰가';
+  return { title, code: axes.map((item) => item.code).join('-'), axes };
+}
+
+function renderExpectedTypeCard() {
+  const profile = expectedInvestmentTypeProfile();
+  $('#expected-type-card').innerHTML = `<div class="tag">예상 투자거울 타입</div>
+    <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-top:8px">
+      <div><h4 style="margin:0 0 4px;font-size:22px">${esc(profile.title)}</h4><p class="section-desc">코드 ${esc(profile.code)} · CSV 없이 만든 예상</p></div>
+      <span class="badge">공유 카드 후보</span>
+    </div>
+    <div class="cta-row" style="margin-top:12px">${profile.axes.map((axis) => `<span class="badge">${esc(axis.code)} · ${esc(axis.label)}</span>`).join('')}</div>
+    <p class="section-desc" style="margin-top:12px">업로드 후 기록된 타입과의 갭을 나란히 보여드립니다. 예상 카드는 점수·금액·수익률·종목명을 담지 않습니다.</p>`;
 }
 
 function renderInvestmentTypeCard() {

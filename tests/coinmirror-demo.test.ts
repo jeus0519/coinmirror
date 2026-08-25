@@ -46,6 +46,14 @@ test('HTML 데모는 8문항에서 분석과 P7 원칙까지 클릭으로 진행
   (document.querySelector('[data-q="B1"]') as HTMLElement).click();
   (document.querySelector('#btn-save-diagnosis') as HTMLElement).click();
   assert.ok(document.querySelector('#panel-3')?.classList.contains('active'));
+  assert.match(
+    document.querySelector('#expected-type-card')?.textContent ?? '',
+    /예상 투자거울 타입/
+  );
+  assert.match(
+    document.querySelector('#expected-type-card')?.textContent ?? '',
+    /CSV 없이 만든 예상/
+  );
 
   (document.querySelector('#btn-sample') as HTMLElement).click();
   await new Promise((resolveClick) => setTimeout(resolveClick, 20));
