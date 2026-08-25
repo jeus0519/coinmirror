@@ -1,11 +1,17 @@
 # FRONTEND
 
-Expo Router + Nativewind + Reusables + Zustand 컨벤션.
+Expo Router + Nativewind + Reusables + Zustand 컨벤션. **MVP 검증은 웹 우선**으로 진행한다.
 
 ## 화면 (Routing)
 
 - 화면은 `src/app/`에 파일 기반 라우팅으로 추가한다. 새 화면 추가 시 `/new_screen` 스킬 사용.
-- 현재 온보딩/데모는 `src/app/index.tsx`의 6단계 스테퍼다. 장기 앱 IA를 도입할 때 `src/app/_layout.tsx`와 새 탭 레이아웃을 함께 설계한다.
+- 현재 온보딩/데모는 `src/app/index.tsx`의 6단계 스테퍼다. `npm run web`에서 먼저 검증하고, 네이티브 앱 IA는 CSV 파서/엔진 연결 후 후속으로 설계한다.
+
+## 웹 우선 결정
+
+- 2026-08-25 이후 신규 MVP 화면은 브라우저 동작을 1차 완료 기준으로 본다.
+- Expo 네이티브 실행은 회귀 확인용이며, iOS/Android 네이티브 폴더는 직접 수정하지 않는다.
+- 이메일 리포트/공유 카드/CSV 업로드 같은 진입·전환 기능은 모바일 앱보다 웹 전환 퍼널에서 먼저 검증한다.
 
 ## 컴포넌트
 
