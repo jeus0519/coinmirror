@@ -52,7 +52,7 @@ test('HTML 데모는 8문항에서 분석과 P7 원칙까지 클릭으로 진행
   );
   assert.match(
     document.querySelector('#expected-type-card')?.textContent ?? '',
-    /CSV 없이 만든 예상/
+    /거래내역 없이 만든 예상/
   );
 
   (document.querySelector('#btn-sample') as HTMLElement).click();
@@ -87,6 +87,31 @@ test('HTML 데모는 8문항에서 분석과 P7 원칙까지 클릭으로 진행
   (document.querySelector('[data-principle="no-dawn-trade"]') as HTMLElement).click();
   (document.querySelector('#btn-principle-save') as HTMLElement).click();
   assert.equal(dom.window.localStorage.getItem('coinmirror.principle'), 'no-dawn-trade');
+  assert.deepEqual(errors, []);
+
+  dom.window.close();
+});
+
+test('HTML 데모는 코인미러 한글명, 짧은 친근한 문구, PDF/CSV 선택형 업로드를 보여준다', async () => {
+  const { dom, errors } = await loadDemo();
+  const document = dom.window.document;
+  const bodyText = document.body.textContent ?? '';
+  const cssText = document.querySelector('style')?.textContent ?? '';
+
+  assert.equal(document.title, '코인미러 — 내 거래 습관 거울');
+  assert.match(document.querySelector('.logo b')?.textContent ?? '', /코인미러/);
+  assert.doesNotMatch(document.querySelector('.logo b')?.textContent ?? '', /coinmirror/i);
+  assert.match(bodyText, /내 거래 습관,\s*짧게 확인해요/);
+  assert.match(bodyText, /PDF 거래내역 올리기/);
+  assert.match(bodyText, /CSV 거래내역 올리기/);
+  assert.match(bodyText, /비밀번호 없이 올리는 방법/);
+  assert.match(bodyText, /인쇄/);
+  assert.match(bodyText, /PDF로 저장/);
+  assert.doesNotMatch(bodyText, /내 CSV 업로드/);
+  assert.doesNotMatch(bodyText, /CSV 하나로/);
+  assert.match(cssText, /--brand-500:\s*#9fe870/);
+  assert.match(cssText, /--ink:\s*#0e0f0c/);
+  assert.match(cssText, /border-radius:\s*30px/);
   assert.deepEqual(errors, []);
 
   dom.window.close();

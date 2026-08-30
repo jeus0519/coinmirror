@@ -11,7 +11,7 @@
 - Zustand (클라이언트 상태) · Supabase (`@supabase/supabase-js`) (DB/Auth)
 - TypeScript strict
 - 리포트 채널: 이메일 우선, 텔레그램/메신저는 후속 옵션
-- 첫 분석 UX: 설문 → 예상 투자거울 타입 → CSV 업로드 → 기록된 타입/갭 공개
+- 첫 분석 UX: 설문 → 예상 투자거울 타입 → PDF/CSV 거래내역 업로드 → 기록된 타입/갭 공개
 
 ## 불변식 (강제됨 — 구현 방법은 자유, 아래 규칙만 지키면 됨)
 
@@ -87,4 +87,4 @@ npx @react-native-reusables/cli@latest doctor            # 셋업 점검
 
 - `.claude/settings.json`에 Expo 공식 Claude 플러그인(`expo@claude-plugins-official`)이 활성화되어 있다 — Expo 관련 기능이 겹치면 이 플러그인이 우선일 수 있다.
 - `AGENTS.md`는 Expo 템플릿이 남긴 파일로, "코드 쓰기 전 버전별 공식 문서 확인" 경고를 담고 있다. 내용은 [docs/references/expo-sdk-notes.md](docs/references/expo-sdk-notes.md)에 흡수했다.
-- 2026-08-25 제품 결정: 타입 주역, 웹 우선, 이메일 리포트 채널. F1/F3/F6/F8 Phase 1 엔진은 화면에 직접 연결되지 않았고 CSV 파서 이후 연결한다.
+- 2026-08-26 제품 결정: 업비트 고객센터 PDF가 주요 업로드 포맷이다. PDF/CSV 거래내역은 동일한 RawExecution → Phase 1 엔진 → 투자거울 타입 파이프라인을 탄다.

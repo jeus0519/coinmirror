@@ -11,7 +11,8 @@ Expo Router + Nativewind + Reusables + Zustand 컨벤션. **MVP 검증은 웹 �
 
 - 2026-08-25 이후 신규 MVP 화면은 브라우저 동작을 1차 완료 기준으로 본다.
 - Expo 네이티브 실행은 회귀 확인용이며, iOS/Android 네이티브 폴더는 직접 수정하지 않는다.
-- 이메일 리포트/공유 카드/CSV 업로드 같은 진입·전환 기능은 모바일 앱보다 웹 전환 퍼널에서 먼저 검증한다.
+- 이메일 리포트/공유 카드/PDF·CSV 거래내역 업로드 같은 진입·전환 기능은 모바일 앱보다 웹 전환 퍼널에서 먼저 검증한다.
+- 웹 목업의 서비스명은 한글 `코인미러`를 우선 사용한다. 문장은 짧고 친근하게 쓰며, PDF/CSV 선택형 업로드와 비밀번호 회피 안내를 첫 경험에 노출한다.
 
 ## 컴포넌트
 
@@ -23,6 +24,7 @@ Expo Router + Nativewind + Reusables + Zustand 컨벤션. **MVP 검증은 웹 �
 
 - Nativewind(Tailwind) 클래스 우선. 인라인 `style` prop은 Nativewind로 표현 불가능한 경우에만.
 - 색상은 `tailwind.config.js`의 CSS 변수 토큰(`bg-background`, `text-foreground` 등)을 쓴다. 하드코딩 hex 금지 — 다크모드가 깨진다.
+- 현재 라이트 목업 톤은 Wise 계열의 라임 포인트(`#9fe870`)와 큰 라운드 카드/필 버튼을 기준으로 한다. Expo 토큰(`src/global.css`, `src/lib/theme.ts`)과 HTML 데모(`docs/coinmirror_demo.html`)를 함께 맞춘다.
 - 커스터마이징 방법: [Reusables Customization 문서](https://reactnativereusables.com/docs/customization) 참고.
 
 ## 상태관리

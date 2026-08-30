@@ -137,7 +137,7 @@ test('일반 MBTI는 선택 입력이며 투자 타입 계산에는 쓰지 않�
   assert.match(buildMbtiComparisonCopy(undefined, withMbti.title), /입력하지 않아도/);
 });
 
-test('설문만으로 CSV 전 예상 투자거울 타입을 산출하고 미응답 축은 ?로 둔다', () => {
+test('설문만으로 거래내역 업로드 전 예상 투자거울 타입을 산출하고 미응답 축은 ?로 둔다', () => {
   const expected = buildExpectedInvestmentTypeProfile({
     A1: 'day',
     A2: ['chase', 'concentration'],

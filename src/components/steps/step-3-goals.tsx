@@ -19,8 +19,7 @@ export function Step3Goals() {
       <View className="gap-2">
         <Text className="text-lg font-extrabold text-foreground">P7 · 원칙 지키기</Text>
         <Text className="text-xs leading-5 text-muted-foreground">
-          숫자를 매번 입력하는 대신 앞으로 관찰할 원칙 하나를 고르세요. 다음 거래내역 분석에서
-          동일한 기준으로 자동 확인합니다.
+          숫자 입력 대신 원칙 하나만 골라요. 다음 분석에서 같은 기준으로 볼게요.
         </Text>
       </View>
 
@@ -78,7 +77,7 @@ export function Step3Goals() {
           </View>
           <Text className="text-xs text-muted-foreground">{selected.current}</Text>
           <Text className="text-[11px] leading-5 text-muted-foreground">
-            이것은 매매 권고가 아니라 다음 분석에서 동일한 행동을 관찰하기 위한 개인 기준입니다.
+            매매 권고가 아니에요. 다음 기록을 보는 개인 기준입니다.
           </Text>
         </CardContent>
       </Card>
@@ -87,8 +86,7 @@ export function Step3Goals() {
         <CardContent className="gap-3 pt-2">
           <Text className="text-sm font-bold text-foreground">최근 4주 변화 미리보기</Text>
           <Text className="text-[11px] text-muted-foreground">
-            막대는 거래 횟수, 숫자는 F10 투자 체력 종합점수예요. 구독관리에서는 최대 12주를
-            추적합니다.
+            막대는 거래 횟수, 숫자는 F10이에요. 구독관리에서는 12주까지 봅니다.
           </Text>
           <View className="h-32 flex-row items-end gap-3">
             {weeklyTrend.map((item) => (

@@ -149,12 +149,10 @@ export function Step4Info() {
       <View className="gap-2">
         <Text className="text-lg font-extrabold text-foreground">종목 정보 및 거래소 이벤트</Text>
         <Text className="text-xs text-muted-foreground">
-          내가 실제로 거래한 종목을 앞쪽에 배치했습니다. 추천 순위가 아닙니다.
+          내가 거래한 종목을 먼저 보여줘요. 추천 순서는 아닙니다.
         </Text>
         <View className="rounded-xl bg-warning/10 px-3.5 py-2.5">
-          <Text className="text-[12.5px] text-warning">
-            이 정보는 매수·매도 판단 근거가 아니라 참고용 사실 정보입니다.
-          </Text>
+          <Text className="text-[12.5px] text-warning">매수·매도 근거가 아닌 참고 정보예요.</Text>
         </View>
       </View>
 
@@ -162,7 +160,7 @@ export function Step4Info() {
         <View className="gap-1">
           <Text className="text-base font-extrabold text-foreground">종목 일반 정보</Text>
           <Text className="text-xs text-muted-foreground">
-            각 프로젝트가 공개한 개요입니다. 시세·전망 정보는 포함하지 않습니다.
+            프로젝트가 공개한 개요예요. 시세 전망은 빼요.
           </Text>
         </View>
         <View className="flex-row gap-2">
@@ -186,8 +184,7 @@ export function Step4Info() {
             거래소 참여형 이벤트 정보
           </Text>
           <Text className="text-xs text-muted-foreground">
-            스테이킹 · 에어드랍 · 점검 공지 등 참여 여부를 스스로 판단할 수 있게 유형별로 정리한
-            목록입니다.
+            스테이킹·에어드랍·점검 공지를 유형별로 모았어요.
           </Text>
         </View>
         <View className="flex-row flex-wrap gap-2">

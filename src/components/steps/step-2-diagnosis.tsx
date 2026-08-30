@@ -37,8 +37,8 @@ export function Step2Diagnosis() {
       <View className="gap-2">
         <Text className="text-lg font-extrabold text-foreground">내 투자 거울 설정</Text>
         <Text className="text-[13px] leading-5 text-muted-foreground">
-          정답이나 위험등급을 매기는 설문이 아니에요. 4개의 해석 기준과 4개의 자기 예상을 받아 실제
-          거래 기록과 중립적으로 비교합니다. 답변은 거래 기반 점수를 바꾸지 않아요.
+          정답을 맞히는 설문이 아니에요. 내 기준과 예상을 받아 실제 기록과 가볍게 비교해요. 점수는
+          거래 기록만 봅니다.
         </Text>
       </View>
 
@@ -102,7 +102,7 @@ export function Step2Diagnosis() {
           </Text>
           <Text className="text-xs leading-5 text-muted-foreground">
             입력하지 않아도 괜찮아요. 이 값은 투자 점수 계산에 쓰지 않고, 거래 기록 기반 투자거울
-            타입과 비교하는 데만 사용합니다.
+            타입과 비교할 때만 써요.
           </Text>
         </View>
         <View className="flex-row flex-wrap gap-2">
@@ -128,9 +128,9 @@ export function Step2Diagnosis() {
       </View>
 
       <View className="gap-2 rounded-2xl bg-foreground p-5">
-        <Text className="text-base font-extrabold text-background">거래 기록과 비교해 볼까요?</Text>
+        <Text className="text-base font-extrabold text-background">기록과 비교해 볼까요?</Text>
         <Text className="text-[13px] leading-5 text-background/75">
-          응답한 자기 예상만 분석 결과에 나타납니다. 미응답 문항은 점수나 이용에 불이익이 없어요.
+          답한 예상만 보여줘요. 비워도 괜찮습니다.
         </Text>
         <Button onPress={() => saveDiagnosis(profile)}>
           <Text>저장하고 거래내역 불러오기</Text>

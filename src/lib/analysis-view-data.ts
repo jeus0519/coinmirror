@@ -10,11 +10,11 @@ import {
   type Phase1DerivedSeries,
   type RawExecution,
 } from './score-engine';
-import { type CsvAnalysisResult } from './csv/analyze-csv';
+import { type TradeHistoryAnalysisResult } from './trade-history/build-analysis';
 import { formatKrw } from './format';
 
 export type AnalysisViewData = {
-  source: 'sample' | 'csv';
+  source: 'sample' | 'csv' | 'pdf';
   metrics: Metric[];
   lockedMetrics: LockedMetricPreview[];
   investmentType: ReturnType<typeof buildSampleInvestmentTypeProfile>;
@@ -55,7 +55,7 @@ function formatSignedKrw(value: number) {
 }
 
 function buildViewData(input: {
-  source: 'sample' | 'csv';
+  source: 'sample' | 'csv' | 'pdf';
   metrics: Metric[];
   investmentType: ReturnType<typeof buildSampleInvestmentTypeProfile>;
   derivedSeries: Phase1DerivedSeries;
@@ -112,32 +112,32 @@ export function buildSampleAnalysisViewData(diagnosis: DiagnosisProfile): Analys
     metrics,
     investmentType: buildSampleInvestmentTypeProfile(metrics, diagnosis.generalMbti),
     derivedSeries,
-    summaryText: `샘플 체결 ${derivedSeries.orderCount}건을 같은 분석 파이프라인으로 계산했어요. 내 CSV를 업로드하면 이 숫자가 사용자 데이터로 교체됩니다.`,
+    summaryText: `샘플 체결 ${derivedSeries.orderCount}건을 같은 분석 파이프라인으로 계산했어요. 내 PDF/CSV 거래내역을 업로드하면 이 숫자가 사용자 데이터로 교체됩니다.`,
   });
 }
 
-export function buildCsvAnalysisViewData(
-  csvAnalysis: CsvAnalysisResult,
+export function buildTradeAnalysisViewData(
+  tradeAnalysis: TradeHistoryAnalysisResult,
   diagnosis: DiagnosisProfile
 ): AnalysisViewData {
   const derivedSeries =
-    csvAnalysis.derivedSeries ?? buildSeriesFromExecutions(csvAnalysis.parse.executions);
+    tradeAnalysis.derivedSeries ?? buildSeriesFromExecutions(tradeAnalysis.parse.executions);
   return buildViewData({
-    source: 'csv',
-    metrics: csvAnalysis.metrics,
-    investmentType: csvAnalysis.investmentType,
+    source: tradeAnalysis.sourceFormat,
+    metrics: tradeAnalysis.metrics,
+    investmentType: tradeAnalysis.investmentType,
     derivedSeries,
-    expectationActuals: csvAnalysis.expectationActuals,
-    summaryText: `CSV에서 정상 ${csvAnalysis.preview.normalRowCount}행을 읽어 F1/F3/F6/F8과 투자거울 타입을 계산했어요. 오류 ${csvAnalysis.preview.errorRowCount}행은 점수에 넣지 않았습니다.`,
+    expectationActuals: tradeAnalysis.expectationActuals,
+    summaryText: `${tradeAnalysis.preview.sourceFormatLabel}에서 정상 ${tradeAnalysis.preview.normalRowCount}행을 읽어 F1/F3/F6/F8과 투자거울 타입을 계산했어요. 오류 ${tradeAnalysis.preview.errorRowCount}행은 점수에 넣지 않았습니다.`,
   });
 }
 
 export function buildAnalysisViewData(input: {
-  dataSource: 'sample' | 'csv' | null;
-  csvAnalysis: CsvAnalysisResult | null;
+  dataSource: 'sample' | 'csv' | 'pdf' | null;
+  tradeAnalysis: TradeHistoryAnalysisResult | null;
   diagnosis: DiagnosisProfile;
 }): AnalysisViewData {
-  if (input.dataSource === 'csv' && input.csvAnalysis)
-    return buildCsvAnalysisViewData(input.csvAnalysis, input.diagnosis);
+  if ((input.dataSource === 'csv' || input.dataSource === 'pdf') && input.tradeAnalysis)
+    return buildTradeAnalysisViewData(input.tradeAnalysis, input.diagnosis);
   return buildSampleAnalysisViewData(input.diagnosis);
 }

@@ -4,6 +4,7 @@
 | ---------------------------------------------------------------------------------------- | --------- | ----------------------------------------------------------------- |
 | [v5.0_score-system-and-onboarding-survey.md](v5.0_score-system-and-onboarding-survey.md) | 확정      | 무입력 중심 스코어 9+1종, 구독 7종, 온보딩 8문항                  |
 | [v5.1_investment-type-layer.md](v5.1_investment-type-layer.md)                           | 현재 기준 | 예상/기록된 투자거울 타입, 공유 카드, 선택 MBTI 비교, 점수 근거화 |
+| [v5.2_pdf-trade-history-import.md](v5.2_pdf-trade-history-import.md)                     | 현재 구현 | 업비트 고객센터 PDF/CSV 거래내역 업로드와 공통 분석 파이프라인    |
 
 대체된 스펙은 [history 인덱스](../history/v1.0_history_index.md)에 보관한다.
 

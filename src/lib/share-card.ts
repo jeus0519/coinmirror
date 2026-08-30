@@ -26,7 +26,7 @@ export function buildInvestmentTypeShareCard(
     axisLine: profile.axes.map((axis) => `${axis.code} ${axis.label}`).join(' · '),
     description:
       context === 'expected'
-        ? 'CSV 업로드 전 내 답변만으로 만든 가벼운 예상 카드예요.'
+        ? '거래내역 업로드 전 내 답변만으로 만든 가벼운 예상 카드예요.'
         : '최근 거래 기록에서 반복 행동을 요약한 회고 카드예요.',
     watermark: 'coinmirror.app',
     compliance: COMPLIANCE_COPY,

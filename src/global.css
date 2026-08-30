@@ -12,36 +12,36 @@
     --font-rounded: 'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif;
     --font-serif: Georgia, 'Times New Roman', serif;
 
-    /* Light — docs/coinmirror_demo.html 팔레트 그대로 (라이트 + 그린 기본) */
-    --background: 180 20% 99%; /* #fcfdfd */
-    --foreground: 217 33% 17%; /* #1e293b ink */
-    --card: 0 0% 100%; /* #ffffff surface */
-    --card-foreground: 217 33% 17%;
+    /* Light — 코인미러 웹 목업 팔레트: 라임 포인트 + 따뜻한 금융 UI */
+    --background: 70 47% 97%; /* #fbfcf5 */
+    --foreground: 72 10% 5%; /* #0e0f0c */
+    --card: 0 0% 100%; /* #ffffff */
+    --card-foreground: 72 10% 5%;
     --popover: 0 0% 100%;
-    --popover-foreground: 217 33% 17%;
-    --primary: 142 71% 45%; /* #22c55e brand-500 */
-    --primary-foreground: 0 0% 100%;
-    --secondary: 199 89% 48%; /* #0ea5e9 accent-500 */
+    --popover-foreground: 72 10% 5%;
+    --primary: 92 73% 67%; /* #9fe870 */
+    --primary-foreground: 87 100% 10%; /* #163300 */
+    --secondary: 221 100% 50%; /* #0052ff */
     --secondary-foreground: 0 0% 100%;
-    --muted: 210 40% 96%; /* #f1f5f9 slate-100 */
-    --muted-foreground: 215 16% 47%; /* #64748b */
-    --accent: 204 100% 97%; /* #f0f9ff accent-50 */
-    --accent-foreground: 200 98% 39%; /* #0284c7 accent-600 */
-    --destructive: 0 84% 60%; /* #ef4444 */
+    --muted: 80 24% 92%; /* warm surface */
+    --muted-foreground: 90 2% 41%; /* #686b66 */
+    --accent: 210 100% 97%;
+    --accent-foreground: 221 100% 43%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --warning: 25 95% 53%; /* #f97316 */
+    --warning: 25 95% 53%;
     --warning-foreground: 0 0% 100%;
-    --success: 142 76% 36%; /* #16a34a brand-600 */
-    --success-foreground: 0 0% 100%;
-    --border: 214 32% 91%; /* #e2e8f0 line */
-    --input: 214 32% 91%;
-    --ring: 142 71% 45%;
-    --radius: 1rem;
-    --chart-1: 142 71% 45%;
-    --chart-2: 199 89% 48%;
+    --success: 108 53% 55%;
+    --success-foreground: 87 100% 10%;
+    --border: 80 19% 88%;
+    --input: 80 19% 88%;
+    --ring: 92 73% 67%;
+    --radius: 1.5rem;
+    --chart-1: 92 73% 67%;
+    --chart-2: 221 100% 50%;
     --chart-3: 25 95% 53%;
     --chart-4: 0 84% 60%;
-    --chart-5: 142 76% 36%;
+    --chart-5: 108 53% 55%;
   }
 
   .dark:root {

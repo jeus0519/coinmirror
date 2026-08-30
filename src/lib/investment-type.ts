@@ -288,14 +288,14 @@ export function buildExpectedInvestmentTypeProfile(
     comparisonCopy:
       'CSV 없이 만든 예상 타입입니다. 업로드 후 기록된 타입과의 갭을 나란히 보여드려요.',
     strengths: [
-      'CSV 업로드 전에도 자기인식 기반으로 시작할 수 있어요.',
+      '거래내역 업로드 전에도 자기인식 기반으로 시작할 수 있어요.',
       '점수 숫자 없이 공유 가능한 가벼운 카드로 쓸 수 있어요.',
     ],
     watchouts: ['예상 타입은 실제 거래 기록이 아니라 설문 답변만으로 만든 가설입니다.'],
     biasSuggestions: [],
     similarMbtiCodes,
     similarMbtiCopy: `유사 MBTI 비유는 재미용 비유입니다. 설문 답변만 놓고 보면 ${similarMbtiCodes.join('·')} 이미지와 가깝게 설명할 수 있어요.`,
-    disclaimer: '이 카드는 CSV 업로드 전 예상 타입이며, 성격검사나 투자 조언이 아닙니다.',
+    disclaimer: '이 카드는 거래내역 업로드 전 예상 타입이며, 성격검사나 투자 조언이 아닙니다.',
   };
 }
 

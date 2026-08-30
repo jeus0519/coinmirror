@@ -51,10 +51,10 @@ export function Step2Analysis() {
   const toggleSubscription = useFlowStore((s) => s.toggleSubscription);
   const setStep = useFlowStore((s) => s.setStep);
   const diagnosisAnswers = useFlowStore((s) => s.diagnosisAnswers);
-  const csvAnalysis = useFlowStore((s) => s.csvAnalysis);
+  const tradeAnalysis = useFlowStore((s) => s.tradeAnalysis);
   const analysis = useMemo(
-    () => buildAnalysisViewData({ dataSource, csvAnalysis, diagnosis: diagnosisAnswers }),
-    [csvAnalysis, dataSource, diagnosisAnswers]
+    () => buildAnalysisViewData({ dataSource, tradeAnalysis, diagnosis: diagnosisAnswers }),
+    [tradeAnalysis, dataSource, diagnosisAnswers]
   );
   const derivedSeries = analysis.derivedSeries;
   const expectationComparisons = useMemo(
@@ -68,7 +68,7 @@ export function Step2Analysis() {
       <View className="gap-2">
         <View className="flex-row items-center justify-between gap-2">
           <View className="flex-row items-center gap-2">
-            <Text className="text-lg font-extrabold text-foreground">스코어 및 분석</Text>
+            <Text className="text-lg font-extrabold text-foreground">기록 분석</Text>
             {analysis.source === 'sample' && (
               <Badge variant="outline">
                 <Text>샘플 데이터</Text>
@@ -79,9 +79,14 @@ export function Step2Analysis() {
                 <Text>내 CSV 분석</Text>
               </Badge>
             )}
+            {analysis.source === 'pdf' && (
+              <Badge variant="outline">
+                <Text>내 PDF 분석</Text>
+              </Badge>
+            )}
           </View>
           <Button size="sm" variant="ghost" onPress={() => setStep(3)}>
-            <Text className="text-xs text-muted-foreground">다른 데이터로 다시 분석</Text>
+            <Text className="text-xs text-muted-foreground">다른 자료 보기</Text>
           </Button>
         </View>
         <Card>
@@ -94,8 +99,7 @@ export function Step2Analysis() {
       <View className="gap-3">
         <Text className="text-base font-extrabold text-foreground">거래 개요</Text>
         <Text className="text-xs text-muted-foreground">
-          분할 체결은 가중평균 1건으로 병합했고, 실현손익은 FIFO 기준으로 수수료를 반영해
-          계산했습니다.
+          나뉜 체결은 1건으로 묶었어요. 손익은 FIFO와 수수료를 반영했어요.
         </Text>
         <View className="flex-row flex-wrap gap-2.5">
           {analysis.statTiles.map((tile) => (
@@ -166,7 +170,8 @@ export function Step2Analysis() {
             {analysis.investmentType.similarMbtiCopy}
           </Text>
           <Text className="text-[11px] leading-4 text-muted-foreground">
-            {analysis.investmentType.disclaimer} 매수·매도 추천이나 성격 단정이 아닙니다.
+            {analysis.investmentType.disclaimer} 미래 행동을 제시하거나 성격을 단정하는 기능이
+            아닙니다.
           </Text>
           <ShareCard card={recordedShareCard} />
         </CardContent>
@@ -174,7 +179,7 @@ export function Step2Analysis() {
 
       <View className="gap-3">
         <View className="gap-1">
-          <Text className="text-base font-extrabold text-foreground">내 예상 vs 실제 기록</Text>
+          <Text className="text-base font-extrabold text-foreground">내 예상 vs 기록</Text>
           <Text className="text-xs text-muted-foreground">
             맞고 틀림을 판단하지 않고, 답한 항목의 차이만 보여드려요.
           </Text>
@@ -211,7 +216,7 @@ export function Step2Analysis() {
           <Card>
             <CardContent className="pt-2">
               <Text className="text-xs text-muted-foreground">
-                자기 예상 문항은 건너뛰었어요. 거래 기반 점수는 그대로 확인할 수 있습니다.
+                예상 문항은 건너뛰었어요. 거래 점수는 그대로 볼 수 있어요.
               </Text>
             </CardContent>
           </Card>
@@ -220,10 +225,10 @@ export function Step2Analysis() {
 
       <View className="gap-3">
         <View className="gap-1">
-          <Text className="text-base font-extrabold text-foreground">Free 행동 점수</Text>
+          <Text className="text-base font-extrabold text-foreground">무료 행동 점수</Text>
           <Text className="text-xs text-muted-foreground">
-            모든 점수는 0~100점이며 높을수록 절제·규율 상태가 안정적이에요. 수익률이나 투자 실력
-            평가는 아닙니다.
+            모든 점수는 0~100점이며 높을수록 절제·규율 상태가 안정적이에요. 거래 성과나 투자 실력을
+            평가하는 점수는 아닙니다.
           </Text>
         </View>
         <View className="gap-3">
@@ -262,7 +267,7 @@ export function Step2Analysis() {
                 <Text className="text-[13px] text-foreground">{m.teaser}</Text>
                 {unlocked && (
                   <Text className="text-xs font-semibold text-primary">
-                    구독 체험이 켜져 있어요 — 다음 CSV 분석부터 실제 값이 계산돼요.
+                    구독 체험이 켜졌어요 — 다음 분석부터 더 볼 수 있어요.
                   </Text>
                 )}
               </View>

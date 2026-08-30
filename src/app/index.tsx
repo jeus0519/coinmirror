@@ -17,12 +17,12 @@ export default function AppScreen() {
   return (
     <SafeAreaView className="flex-1 bg-background" edges={['top']}>
       <View className="flex-row items-center gap-2.5 px-4 pb-2 pt-1">
-        <View className="h-9 w-9 items-center justify-center rounded-xl bg-primary">
-          <Text className="text-lg font-extrabold text-primary-foreground">c</Text>
+        <View className="h-9 w-9 items-center justify-center rounded-2xl bg-primary">
+          <Text className="text-lg font-extrabold text-primary-foreground">미</Text>
         </View>
         <View>
-          <Text className="text-base font-extrabold text-foreground">coinmirror</Text>
-          <Text className="text-[11px] text-muted-foreground">투자 습관 기록 · 행동 요약 도구</Text>
+          <Text className="text-base font-extrabold text-foreground">코인미러</Text>
+          <Text className="text-[11px] text-muted-foreground">내 거래 습관을 비춰봐요</Text>
         </View>
       </View>
 

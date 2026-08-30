@@ -8,19 +8,19 @@ import { baseMetrics, KIND_LABEL } from '@/lib/mock-metrics';
 import { useFlowStore } from '@/stores/use-flow-store';
 
 const BOUNDARIES = [
-  '매수 · 매도를 권하지 않습니다',
-  '목표 가격 · 청산 가격 · 진입 가격을 제시하지 않습니다',
-  '시세를 예측하거나 종목을 평가하지 않습니다',
-  '거래소 API 키를 요구하지 않습니다',
-  '원본 CSV를 서버에 저장하지 않습니다',
-  '수익이나 원금을 보장하지 않습니다',
+  '매수 · 매도를 권하지 않아요',
+  '목표가 · 진입가를 찍어주지 않아요',
+  '시세 예측을 하지 않아요',
+  '거래소 API 키를 요구하지 않아요',
+  '원본 파일과 PDF 비밀번호를 저장하지 않아요',
+  '수익이나 원금을 보장하지 않아요',
 ];
 
 const FLOW_STEPS = [
-  { n: 1, title: '내 투자 거울 설정', desc: '8문항에 답하거나 나중으로 건너뜁니다.' },
-  { n: 2, title: '거래내역 불러오기', desc: '예시 데이터 또는 내 CSV를 올립니다.' },
-  { n: 3, title: '예상·실제와 점수 확인', desc: 'F1~F10과 자기인식 차이를 봅니다.' },
-  { n: 4, title: '프리셋 원칙 선택', desc: '다음 분석에서 자동 확인할 원칙을 하나 고릅니다.' },
+  { n: 1, title: '짧은 진단', desc: '내 기준을 먼저 잡아요.' },
+  { n: 2, title: '자료 업로드', desc: 'PDF 또는 CSV를 골라요.' },
+  { n: 3, title: '기록 확인', desc: '점수와 차이를 봐요.' },
+  { n: 4, title: '원칙 선택', desc: '다음에 볼 기준을 정해요.' },
 ];
 
 export function Step1Start() {
@@ -29,49 +29,43 @@ export function Step1Start() {
   return (
     <ScrollView className="flex-1" contentContainerClassName="gap-10 p-4 pb-12">
       <View className="items-center gap-4 pt-4">
-        <View className="rounded-full border border-primary/30 bg-primary/10 px-3.5 py-1.5">
-          <Text className="text-xs font-bold text-primary">
-            투자 조언이 아닌, 내 거래의 사후 행동 요약
+        <View className="rounded-full border border-primary/40 bg-primary/20 px-3.5 py-1.5">
+          <Text className="text-xs font-bold text-primary-foreground">
+            투자 조언 없이, 기록만 또렷하게
           </Text>
         </View>
 
-        <Text className="text-center text-[26px] font-extrabold leading-9 tracking-tight text-foreground">
-          당신의 매매 기록은,{'\n'}
-          <Text className="text-[26px] font-extrabold text-primary">당신의 습관</Text>을 이미 알고
-          있습니다.
+        <Text className="text-center text-[30px] font-extrabold leading-9 tracking-tight text-foreground">
+          내 거래 습관,{`\n`}
+          <Text className="text-[30px] font-extrabold text-primary-foreground">짧게 확인해요</Text>
         </Text>
 
         <Text className="text-center text-[15px] leading-6 text-muted-foreground">
-          거래소에서 내려받은 거래내역 CSV 하나로 9가지 행동 점수와 종합점수를 사후 분석합니다.
-          무엇을 사거나 팔라고 말하지 않습니다. 이미 지나간 내 거래가 어떤 모양이었는지만 그대로
-          보여드립니다. 먼저 짧은 성향 진단으로 스코어 해석 기준을 개인화한 뒤 거래내역을
-          불러옵니다.
+          코인미러는 PDF/CSV 거래내역을 읽어 내 매매 리듬을 보여줘요. 사라, 팔라 말하지 않아요.
+          지나간 기록을 쉽게 돌아봅니다.
         </Text>
 
         <View className="w-full gap-2.5">
           <Button onPress={() => setStep(2)}>
-            <Text>투자 성향 진단 시작하기</Text>
+            <Text>바로 시작하기</Text>
           </Button>
-          <Button variant="outline" onPress={() => setStep(2)}>
-            <Text>설명 먼저 보고 시작하기</Text>
+          <Button variant="outline" onPress={() => setStep(3)}>
+            <Text>자료부터 올리기</Text>
           </Button>
         </View>
       </View>
 
       <View className="gap-3">
         <View className="gap-1">
-          <Text className="text-lg font-extrabold text-foreground">
-            Free 행동 점수 9종 + 종합점수
-          </Text>
+          <Text className="text-lg font-extrabold text-foreground">이런 걸 봐요</Text>
           <Text className="text-[13px] text-muted-foreground">
-            모두 CSV만으로 계산 가능한 항목입니다. 표본이 부족하면 점수를 만들지 않고 &lsquo;측정
-            중&rsquo;으로 남깁니다.
+            PDF/CSV 거래내역으로 계산합니다. 표본이 부족하면 솔직히 “측정 중”으로 둡니다.
           </Text>
         </View>
         <View className="gap-2.5">
           {baseMetrics.map((m) => (
-            <View key={m.id} className="rounded-2xl border border-border bg-card p-4">
-              <Text className="text-[11px] font-extrabold text-primary">
+            <View key={m.id} className="rounded-3xl border border-border bg-card p-4">
+              <Text className="text-[11px] font-extrabold text-primary-foreground">
                 {m.id} · {KIND_LABEL[m.kind]}
               </Text>
               <Text className="mb-1 mt-1 text-[15px] font-bold text-foreground">{m.name}</Text>
@@ -81,10 +75,10 @@ export function Step1Start() {
         </View>
       </View>
 
-      <View className="gap-3 rounded-2xl bg-foreground p-6">
-        <Text className="text-lg font-extrabold text-background">coinmirror가 하지 않는 것</Text>
+      <View className="gap-3 rounded-3xl bg-foreground p-6">
+        <Text className="text-lg font-extrabold text-background">코인미러가 하지 않는 것</Text>
         <Text className="text-[13px] text-background/70">
-          이 서비스는 투자 자문이 아니라 기록 · 회고 도구입니다. 아래는 지키기로 한 경계선입니다.
+          코인미러는 기록 회고 도구예요. 이 선은 지킵니다.
         </Text>
         <View className="gap-2.5">
           {BOUNDARIES.map((item) => (
@@ -100,18 +94,17 @@ export function Step1Start() {
         <View className="gap-1">
           <Text className="text-lg font-extrabold text-foreground">진행 방식</Text>
           <Text className="text-[13px] text-muted-foreground">
-            초기 이용 흐름은 4단계로 이어집니다. 지금은 목업 데이터로 전체 흐름을 확인할 수
-            있습니다.
+            짧게 답하고, 자료를 올리고, 기록을 봅니다.
           </Text>
         </View>
         <View className="gap-2.5">
           {FLOW_STEPS.map((s) => (
             <View
               key={s.n}
-              className="flex-row items-start gap-3 rounded-2xl border border-border bg-card p-4"
+              className="flex-row items-start gap-3 rounded-3xl border border-border bg-card p-4"
             >
-              <View className="h-6 w-6 items-center justify-center rounded-lg bg-secondary/10">
-                <Text className="text-[13px] font-extrabold text-secondary">{s.n}</Text>
+              <View className="h-6 w-6 items-center justify-center rounded-full bg-primary">
+                <Text className="text-[13px] font-extrabold text-primary-foreground">{s.n}</Text>
               </View>
               <View className="flex-1 gap-0.5">
                 <Text className="text-[15px] font-bold text-foreground">{s.title}</Text>
