@@ -38,3 +38,12 @@ test('실제 분석 상단 거래 개요는 승률과 수익·손실 보유시�
   );
   assert.match(view.statTiles[0].value, /%/);
 });
+
+test('무료 분석 화면은 구독 혜택 페이지로 이어지는 자연스러운 배너를 제공한다', async () => {
+  const source = await readFile(STEP_2, 'utf8');
+
+  assert.match(source, /이번 분석을 기준선으로 저장할까요/);
+  assert.match(source, /내 패턴 변화 추적하기/);
+  assert.match(source, /router\.push\('\/subscription'\)/);
+  assert.match(source, /subscriptionTier === 'free'/);
+});

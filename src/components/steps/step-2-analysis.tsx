@@ -1,4 +1,5 @@
 import { Lock } from 'lucide-react-native';
+import { router } from 'expo-router';
 import { useMemo } from 'react';
 import { ScrollView, View } from 'react-native';
 
@@ -107,6 +108,31 @@ export function Step2Analysis() {
           ))}
         </View>
       </View>
+
+      {subscriptionTier === 'free' && (
+        <Card className="border-primary/30 bg-primary/5">
+          <CardContent className="gap-3 pt-2">
+            <View className="gap-1">
+              <Text className="text-[11px] font-extrabold text-primary">구독관리 미리보기</Text>
+              <Text className="text-base font-extrabold text-foreground">
+                이번 분석을 기준선으로 저장할까요?
+              </Text>
+              <Text className="text-sm leading-6 text-muted-foreground">
+                방금 본 승률, 수익·손실 보유기간, 거래 빈도를 다음 업로드와 비교하면 반복되는
+                패턴이 더 선명해져요.
+              </Text>
+            </View>
+            <View className="gap-1.5 rounded-2xl bg-background/80 p-3">
+              <Text className="text-xs text-foreground">• 다음 업로드 때 변화량 자동 비교</Text>
+              <Text className="text-xs text-foreground">• 월간 투자습관 리포트</Text>
+              <Text className="text-xs text-foreground">• 내 약점 기반 목표 저장과 추적</Text>
+            </View>
+            <Button onPress={() => router.push('/subscription')}>
+              <Text>내 패턴 변화 추적하기</Text>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardContent className="gap-3 pt-2">

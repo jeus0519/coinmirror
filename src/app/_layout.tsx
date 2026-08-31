@@ -21,6 +21,8 @@ export default function RootLayout() {
     <ThemeProvider value={NAV_THEME[colorScheme === 'dark' ? 'dark' : 'light']}>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
+        <Stack.Screen name="subscription" options={{ headerShown: false }} />
+        <Stack.Screen name="subscription-checkout" options={{ headerShown: false }} />
         <Stack.Screen
           name="entry/new"
           options={{ headerShown: true, title: '거래 기록', presentation: 'modal' }}
