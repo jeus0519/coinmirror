@@ -197,3 +197,13 @@ test('표본 미달은 0점이 아니라 측정 중과 ? 축으로 처리한다'
   assert.equal(metrics.find((metric) => metric.id === 'F1')?.measured, false);
   assert.equal(type.axes.find((axis) => axis.axis === 'loss')?.code, '?');
 });
+
+test('실제 거래내역 분석은 A4 답변이 없어도 자금 배분 축을 기본 50 기준으로 판정한다', () => {
+  const metrics = buildPhase1ScoreMetrics(syntheticFixtures.concentrated, {
+    maxSingleAssetWeightPct: 50,
+  });
+  const type = buildSampleInvestmentTypeProfile(metrics);
+
+  assert.equal(type.axes.find((axis) => axis.axis === 'allocation')?.code, 'N');
+  assert.equal(type.code.endsWith('-N'), true);
+});

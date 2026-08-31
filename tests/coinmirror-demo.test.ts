@@ -104,9 +104,10 @@ test('HTML 데모는 코인미러 한글명, 짧은 친근한 문구, PDF/CSV �
   assert.match(bodyText, /내 거래 습관,\s*짧게 확인해요/);
   assert.match(bodyText, /PDF 거래내역 올리기/);
   assert.match(bodyText, /CSV 거래내역 올리기/);
-  assert.match(bodyText, /비밀번호 없이 올리는 방법/);
-  assert.match(bodyText, /인쇄/);
-  assert.match(bodyText, /PDF로 저장/);
+  assert.match(bodyText, /업비트 원본 PDF를 추천해요/);
+  assert.match(bodyText, /비밀번호가 있어도 괜찮아요/);
+  assert.match(bodyText, /글자가 이미지가 되어 숫자를 읽지 못할 수 있어요/);
+  assert.doesNotMatch(bodyText, /비밀번호 없이 올리는 방법/);
   assert.doesNotMatch(bodyText, /내 CSV 업로드/);
   assert.doesNotMatch(bodyText, /CSV 하나로/);
   assert.match(cssText, /--brand-500:\s*#9fe870/);

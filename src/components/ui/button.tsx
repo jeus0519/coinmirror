@@ -96,12 +96,22 @@ type ButtonProps = React.ComponentProps<typeof Pressable> &
   VariantProps<typeof buttonVariants>;
 
 function Button({ className, variant, size, ...props }: ButtonProps) {
+  const webClickProps =
+    Platform.OS === 'web' && props.onPress
+      ? {
+          onClick: (event: unknown) => {
+            props.onPress?.(event as never);
+          },
+        }
+      : null;
+
   return (
     <TextClassContext.Provider value={buttonTextVariants({ variant, size })}>
       <Pressable
         className={cn(props.disabled && 'opacity-50', buttonVariants({ variant, size }), className)}
         role="button"
         {...props}
+        {...webClickProps}
       />
     </TextClassContext.Provider>
   );

@@ -1,5 +1,7 @@
 import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useEffect } from 'react';
+import { useLocalSearchParams } from 'expo-router';
 
 import { Step1Start } from '@/components/steps/step-1-start';
 import { Step2Diagnosis } from '@/components/steps/step-2-diagnosis';
@@ -13,6 +15,12 @@ import { useFlowStore } from '@/stores/use-flow-store';
 
 export default function AppScreen() {
   const currentStep = useFlowStore((s) => s.currentStep);
+  const setStep = useFlowStore((s) => s.setStep);
+  const params = useLocalSearchParams<{ step?: string }>();
+
+  useEffect(() => {
+    if (params.step === 'upload') setStep(3);
+  }, [params.step, setStep]);
 
   return (
     <SafeAreaView className="flex-1 bg-background" edges={['top']}>

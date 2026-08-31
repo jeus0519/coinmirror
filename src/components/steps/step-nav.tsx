@@ -16,7 +16,6 @@ const STEPS: { step: FlowStep; label: string }[] = [
 export function StepNav() {
   const currentStep = useFlowStore((s) => s.currentStep);
   const hasAnalyzed = useFlowStore((s) => s.hasAnalyzed);
-  const hasDiagnosis = useFlowStore((s) => s.hasDiagnosis);
   const setStep = useFlowStore((s) => s.setStep);
 
   return (
@@ -27,7 +26,8 @@ export function StepNav() {
       contentContainerClassName="flex-row items-center gap-1.5 px-4 py-2.5"
     >
       {STEPS.map(({ step, label }) => {
-        const disabled = (step === 3 && !hasDiagnosis) || (step >= 4 && !hasAnalyzed);
+        // 거래내역(3)은 진단 없이도 들어갈 수 있다 — 시작 화면의 "자료부터 올리기"와 같은 규칙.
+        const disabled = step >= 4 && !hasAnalyzed;
         const active = step === currentStep;
         return (
           <Pressable

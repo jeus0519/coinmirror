@@ -447,9 +447,10 @@ table.tbl td.neg { color: var(--danger-500); font-weight: 700; }
           <p>원본 파일과 PDF 비밀번호는 저장하지 않습니다.</p>
         </div>
         <div class="password-guide">
-          <b>비밀번호 없이 올리는 방법</b>
-          <p>PDF를 열 때만 비밀번호를 입력하세요. 그다음 인쇄 → PDF로 저장을 눌러 새 파일을 만들면 됩니다.</p>
-          <button class="btn btn-ghost btn-sm" id="btn-password-guide">방법 다시 보기</button>
+          <b>업비트 원본 PDF를 추천해요</b>
+          <p>비밀번호가 있어도 괜찮아요. 이 기기에서만 열고 저장하지 않아요.</p>
+          <p>인쇄 → PDF로 저장한 파일은 글자가 이미지가 되어 숫자를 읽지 못할 수 있어요.</p>
+          <button class="btn btn-ghost btn-sm" id="btn-password-guide">비밀번호 사용 안내 보기</button>
         </div>
       </div>
     </div>
@@ -710,7 +711,7 @@ async function uploadTradeFile(file) {
 }
 
 function showPasswordGuide() {
-  toast('비밀번호 없이 올리려면 PDF 열기 → 인쇄 → PDF로 저장 순서로 새 파일을 만들어 주세요.');
+  toast('원본 PDF 비밀번호는 이 기기에서 파일을 여는 데만 써요. 이미지 PDF라면 원본 PDF를 다시 올려 주세요.');
 }
 
 async function handleAnalysisResponse(res) {

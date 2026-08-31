@@ -54,6 +54,16 @@ function formatSignedKrw(value: number) {
   return `${prefix}${formatKrw(Math.abs(Math.round(value)))}원`;
 }
 
+function formatRate(value: number | null) {
+  return value === null ? '측정 중' : `${(value * 100).toFixed(1)}%`;
+}
+
+function formatHoldingHours(hours: number | null) {
+  if (hours === null) return '측정 중';
+  if (hours < 24) return `${hours.toFixed(1)}시간`;
+  return `${(hours / 24).toFixed(1)}일`;
+}
+
 function buildViewData(input: {
   source: 'sample' | 'csv' | 'pdf';
   metrics: Metric[];
@@ -77,6 +87,29 @@ function buildViewData(input: {
     ...input,
     lockedMetrics,
     statTiles: [
+      {
+        label: '청산 승률',
+        value: formatRate(input.derivedSeries.winRate),
+        sub: `왕복거래 ${input.derivedSeries.roundTripCount}건 기준`,
+        tone:
+          input.derivedSeries.winRate === null
+            ? undefined
+            : input.derivedSeries.winRate >= 0.5
+              ? 'pos'
+              : 'neg',
+      },
+      {
+        label: '수익 보유기간',
+        value: formatHoldingHours(input.derivedSeries.medianHoldingHours.profit),
+        sub: '수익 청산 중앙값',
+        tone: 'pos',
+      },
+      {
+        label: '손실 보유기간',
+        value: formatHoldingHours(input.derivedSeries.medianHoldingHours.loss),
+        sub: '손실 청산 중앙값',
+        tone: 'neg',
+      },
       {
         label: '총 거래 건수',
         value: `${input.derivedSeries.orderCount}건`,

@@ -29,13 +29,8 @@ export class PdfNoTextLayerError extends Error {
 type PdfJsItem = { str?: string; hasEOL?: boolean };
 
 type PdfJsModule = {
-  getDocument: (options: {
-    data: Uint8Array;
-    password?: string;
-    disableWorker?: boolean;
-    useWorkerFetch?: boolean;
-    isEvalSupported?: boolean;
-  }) => {
+  getDocument: (options: { data: Uint8Array; password?: string; useWorkerFetch?: boolean }) => {
+    destroy: () => Promise<void>;
     promise: Promise<{
       numPages: number;
       getPage: (pageNumber: number) => Promise<{
@@ -45,13 +40,41 @@ type PdfJsModule = {
   };
 };
 
+type PdfWorkerHost = typeof globalThis & { pdfjsWorker?: { WorkerMessageHandler: unknown } };
+
+let pdfWorkerSetup: Promise<void> | null = null;
+
+/**
+ * pdfjs-dist 6.x는 브라우저에서 `GlobalWorkerOptions.workerSrc`가 비어 있으면
+ * getDocument() 안에서 `No "GlobalWorkerOptions.workerSrc" specified.`로 즉시 던진다.
+ * Node는 모듈 로드 시점에 workerSrc를 스스로 채우기 때문에 이 문제가 테스트에서는 드러나지 않고
+ * Chrome에서만 모든 PDF가 첫 바이트도 못 읽고 실패했다.
+ *
+ * Metro 웹 번들에는 워커 파일을 가리킬 안정적인 URL이 없으므로,
+ * 워커 모듈을 `globalThis.pdfjsWorker`에 올려 pdf.js가 메인 스레드 핸들러를 쓰게 한다.
+ * (pdf.js는 이 전역이 있으면 별도 Worker를 띄우지 않고 그대로 재사용한다.)
+ */
+export function ensurePdfWorker() {
+  pdfWorkerSetup ??= (async () => {
+    const host = globalThis as PdfWorkerHost;
+    if (host.pdfjsWorker?.WorkerMessageHandler) return;
+    const worker = await import('pdfjs-dist/legacy/build/pdf.worker.mjs');
+    host.pdfjsWorker = { WorkerMessageHandler: worker.WorkerMessageHandler };
+  })();
+  return pdfWorkerSetup;
+}
+
 function toUint8Array(input: Uint8Array | ArrayBuffer) {
   if (input instanceof Uint8Array) {
     return new Uint8Array(
       input.buffer.slice(input.byteOffset, input.byteOffset + input.byteLength)
     );
   }
-  return new Uint8Array(input);
+  // pdf.js may transfer or mutate the buffer it receives while loading a document.
+  // Web upload retry flows first probe an encrypted PDF without a password and then
+  // reopen the same original bytes with a password. Always hand pdf.js a fresh copy
+  // so the stored upload bytes remain reusable across password retries.
+  return new Uint8Array(input.slice(0));
 }
 
 function isPasswordError(error: unknown) {
@@ -78,6 +101,7 @@ export async function extractPdfText(
 ): Promise<string> {
   let pdfjs: PdfJsModule;
   try {
+    await ensurePdfWorker();
     pdfjs = (await import('pdfjs-dist/legacy/build/pdf.mjs')) as PdfJsModule;
   } catch (error) {
     throw new PdfTextExtractionError(
@@ -86,30 +110,34 @@ export async function extractPdfText(
   }
 
   try {
-    const document = await pdfjs.getDocument({
+    const loadingTask = pdfjs.getDocument({
       data: toUint8Array(input),
       password: options.password,
-      disableWorker: true,
       useWorkerFetch: false,
-      isEvalSupported: false,
-    }).promise;
-    const pages: string[] = [];
-    for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
-      const page = await document.getPage(pageNumber);
-      const content = await page.getTextContent();
-      const pageText = content.items
-        .map((item) => {
-          const text = item.str ?? '';
-          return item.hasEOL ? `${text}\n` : text;
-        })
-        .join(' ')
-        .replace(/[ \t]+\n/g, '\n')
-        .replace(/\n[ \t]+/g, '\n');
-      pages.push(pageText);
+    });
+    try {
+      const document = await loadingTask.promise;
+      const pages: string[] = [];
+      for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
+        const page = await document.getPage(pageNumber);
+        const content = await page.getTextContent();
+        const pageText = content.items
+          .map((item) => {
+            const text = item.str ?? '';
+            return item.hasEOL ? `${text}\n` : text;
+          })
+          .join(' ')
+          .replace(/[ \t]+\n/g, '\n')
+          .replace(/\n[ \t]+/g, '\n');
+        pages.push(pageText);
+      }
+      const text = pages.join('\n\f\n');
+      if (!hasTextLayer(text)) throw new PdfNoTextLayerError(document.numPages);
+      return text;
+    } finally {
+      // 원본 바이트와 비밀번호가 메모리에 남지 않도록 문서를 반드시 닫는다.
+      await loadingTask.destroy().catch(() => {});
     }
-    const text = pages.join('\n\f\n');
-    if (!hasTextLayer(text)) throw new PdfNoTextLayerError(document.numPages);
-    return text;
   } catch (error) {
     if (isPasswordError(error)) throw new PdfPasswordRequiredError();
     if (isPdfNoTextLayerError(error)) throw error;

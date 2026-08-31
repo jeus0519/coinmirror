@@ -106,3 +106,11 @@ test('analyzeCsvInput은 파싱 미리보기와 엔진 결과를 한 번에 만�
   assert.match(result.expectationActuals.B3?.actual ?? '', /이익 .* · 손실 .*/);
   assert.match(result.expectationActuals.B4?.actual ?? '', /%/);
 });
+
+test('analyzeCsvInput은 A4 답변이 없어도 실제 거래내역의 자금 배분 축을 ?로 두지 않는다', async () => {
+  const csv = await readFile(resolve('src/lib/csv/fixtures/upbit-sample.csv'), 'utf8');
+  const result = analyzeCsvInput(csv, { generalMbti: 'INTP' });
+
+  assert.match(result.investmentType.code, /^[CW]-[RH]-[LX]-[ND]$/);
+  assert.notEqual(result.investmentType.axes.find((axis) => axis.axis === 'allocation')?.code, '?');
+});

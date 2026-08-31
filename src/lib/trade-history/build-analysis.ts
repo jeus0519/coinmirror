@@ -38,7 +38,9 @@ function maxSingleAssetWeightPct(profile: DiagnosisProfile) {
   if (profile.A4 === '10' || profile.A4 === '30' || profile.A4 === '50') {
     return Number(profile.A4) as 10 | 30 | 50;
   }
-  return undefined;
+  // 실제 거래내역을 업로드한 뒤에는 자금 배분 축을 '?'로 보류하지 않는다.
+  // 사용자가 별도 기준을 고르지 않았으면 기본 위험 점검선 50%로 F8을 판정한다.
+  return 50;
 }
 
 function formatDate(value: string) {
