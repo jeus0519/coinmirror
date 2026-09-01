@@ -109,6 +109,36 @@ export function Step2Analysis() {
         </View>
       </View>
 
+      {analysis.subscriptionInsights.length > 0 && (
+        <View className="gap-3">
+          <View className="gap-1">
+            <Text className="text-base font-extrabold text-foreground">
+              이번 분석에서 눈에 띄는 패턴
+            </Text>
+            <Text className="text-xs text-muted-foreground">
+              과거 거래 기록에서 확인된 사실만 보여드려요. 매수·매도 조언은 하지 않아요.
+            </Text>
+          </View>
+          {analysis.subscriptionInsights.map((insight) => (
+            <Card key={insight.kind} className="border-primary/20">
+              <CardContent className="gap-3 pt-2">
+                <View className="gap-1">
+                  <Text className="text-sm font-extrabold text-foreground">{insight.title}</Text>
+                  <Text className="text-xs leading-5 text-muted-foreground">{insight.evidence}</Text>
+                </View>
+                <View className="gap-1.5 rounded-2xl bg-muted p-3">
+                  <Text className="text-[11px] font-extrabold text-primary">
+                    구독관리에서 추적할 목표 후보
+                  </Text>
+                  <Text className="text-xs leading-5 text-foreground">{insight.trackingGoal}</Text>
+                </View>
+                <Text className="text-xs leading-5 text-muted-foreground">{insight.prompt}</Text>
+              </CardContent>
+            </Card>
+          ))}
+        </View>
+      )}
+
       {subscriptionTier === 'free' && (
         <Card className="border-primary/30 bg-primary/5">
           <CardContent className="gap-3 pt-2">

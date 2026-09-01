@@ -25,6 +25,15 @@ export type AnalysisViewData = {
   hourlyBars: { hour: number; heightPct: number; isDawn: boolean }[];
   weekdayBars: { label: string; heightPct: number; count: number }[];
   symbolRows: { symbol: string; shareLabel: string }[];
+  subscriptionInsights: SubscriptionInsight[];
+};
+
+export type SubscriptionInsight = {
+  kind: 'holding-gap' | 'low-win-rate' | 'concentration';
+  title: string;
+  evidence: string;
+  prompt: string;
+  trackingGoal: string;
 };
 
 const WEEKDAY_LABELS = ['월', '화', '수', '목', '금', '토', '일'];
@@ -62,6 +71,45 @@ function formatHoldingHours(hours: number | null) {
   if (hours === null) return '측정 중';
   if (hours < 24) return `${hours.toFixed(1)}시간`;
   return `${(hours / 24).toFixed(1)}일`;
+}
+
+function buildSubscriptionInsights(derivedSeries: Phase1DerivedSeries): SubscriptionInsight[] {
+  const insights: SubscriptionInsight[] = [];
+  const profitHours = derivedSeries.medianHoldingHours.profit;
+  const lossHours = derivedSeries.medianHoldingHours.loss;
+
+  if (profitHours !== null && lossHours !== null && lossHours > profitHours * 2) {
+    insights.push({
+      kind: 'holding-gap',
+      title: '손실 거래를 더 오래 들고 있었어요',
+      evidence: `수익 거래 중앙값은 ${formatHoldingHours(profitHours)}, 손실 거래 중앙값은 ${formatHoldingHours(lossHours)}였어요.`,
+      prompt: '손실 거래를 오래 들고 있었던 순간에 어떤 기준을 보고 있었나요?',
+      trackingGoal: '다음 업로드 때 손실 보유기간이 줄었는지 확인하기',
+    });
+  }
+
+  if (derivedSeries.winRate !== null && derivedSeries.winRate < 0.4) {
+    insights.push({
+      kind: 'low-win-rate',
+      title: '청산 승률이 낮은 구간이었어요',
+      evidence: `왕복거래 ${derivedSeries.roundTripCount}건의 청산 승률은 ${formatRate(derivedSeries.winRate)}였어요.`,
+      prompt: '손실 청산이 많았던 거래들은 진입 기준이 비슷했나요?',
+      trackingGoal: '다음 업로드 때 청산 승률과 거래 빈도를 함께 비교하기',
+    });
+  }
+
+  const topSymbol = derivedSeries.perSymbolBuyShare[0];
+  if (topSymbol && topSymbol.share >= 0.5) {
+    insights.push({
+      kind: 'concentration',
+      title: '매수 금액이 한 종목에 크게 몰렸어요',
+      evidence: `${topSymbol.symbol} 매수 비중이 전체 매수금액의 ${Math.round(topSymbol.share * 100)}%였어요.`,
+      prompt: '비중이 커진 시점에 사전에 정한 한도나 근거가 있었나요?',
+      trackingGoal: '다음 업로드 때 상위 종목 매수 비중 변화 확인하기',
+    });
+  }
+
+  return insights.slice(0, 3);
 }
 
 function buildViewData(input: {
@@ -132,6 +180,7 @@ function buildViewData(input: {
       symbol: item.symbol,
       shareLabel: `${Math.round(item.share * 100)}%`,
     })),
+    subscriptionInsights: buildSubscriptionInsights(input.derivedSeries),
   };
 }
 

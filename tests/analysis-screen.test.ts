@@ -47,3 +47,32 @@ test('무료 분석 화면은 구독 혜택 페이지로 이어지는 자연스�
   assert.match(source, /router\.push\('\/subscription'\)/);
   assert.match(source, /subscriptionTier === 'free'/);
 });
+
+test('실제 분석은 구독관리에서 추적할 개인화 핵심 패턴과 목표 후보를 만든다', async () => {
+  const csv = [
+    '마켓,구분,체결시간,체결가,수량,수수료',
+    'KRW-BTC,매수,2026-01-01 09:00:00,100,1,0',
+    'KRW-BTC,매도,2026-01-01 21:00:00,120,1,0',
+    'KRW-ETH,매수,2026-01-01 09:00:00,100,1,0',
+    'KRW-ETH,매도,2026-01-10 09:00:00,80,1,0',
+    'KRW-XRP,매수,2026-01-02 09:00:00,100,1,0',
+    'KRW-XRP,매도,2026-01-02 21:00:00,130,1,0',
+  ].join('\n');
+  const tradeAnalysis = analyzeCsvInput(csv, {});
+  const view = buildTradeAnalysisViewData(tradeAnalysis, {});
+
+  assert.ok(view.subscriptionInsights.length >= 1);
+  assert.equal(view.subscriptionInsights[0].kind, 'holding-gap');
+  assert.match(view.subscriptionInsights[0].title, /손실 거래를 더 오래/);
+  assert.match(view.subscriptionInsights[0].evidence, /수익/);
+  assert.match(view.subscriptionInsights[0].trackingGoal, /손실 보유기간/);
+});
+
+test('분석 화면은 개인화 핵심 패턴 카드와 구독관리 목표 추적 프리뷰를 보여준다', async () => {
+  const source = await readFile(STEP_2, 'utf8');
+
+  assert.match(source, /이번 분석에서 눈에 띄는 패턴/);
+  assert.match(source, /subscriptionInsights\.map/);
+  assert.match(source, /구독관리에서 추적할 목표 후보/);
+  assert.match(source, /trackingGoal/);
+});
