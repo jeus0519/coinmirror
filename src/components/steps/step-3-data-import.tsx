@@ -1,4 +1,5 @@
 import * as DocumentPicker from 'expo-document-picker';
+import { router } from 'expo-router';
 import { Upload } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, Platform, ScrollView, View } from 'react-native';
@@ -423,6 +424,17 @@ export function Step3DataImport() {
         <Button onPress={runSample}>
           <Text>예시 데이터로 바로 체험하기</Text>
         </Button>
+        <View className="gap-2 rounded-2xl border border-primary/20 bg-primary/5 p-3">
+          <View className="gap-1">
+            <Text className="text-xs font-extrabold text-primary">2회차 업로드 데모</Text>
+            <Text className="text-xs leading-5 text-muted-foreground">
+              1회차 기준선과 2회차 중복 내역을 자동으로 넣어, 중복 체결 제외와 기간 밖 매수분의 원가 연결용 보정을 바로 확인해요.
+            </Text>
+          </View>
+          <Button variant="outline" onPress={() => router.replace('/?demo=duplicate-upload')}>
+            <Text>중복 업로드 처리 체험하기</Text>
+          </Button>
+        </View>
         <View className="flex-row gap-2">
           <FilePickerButton
             format="pdf"

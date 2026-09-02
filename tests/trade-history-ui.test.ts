@@ -148,3 +148,17 @@ test('현재 앱 루트에서 query로 업로드 단계에 직접 진입할 수 
   assert.match(source, /params\.step === 'upload'/);
   assert.match(source, /setStep\(3\)/);
 });
+
+test('업로드 화면은 중복 업로드와 교차 기간 청산을 체험하는 데모 진입점을 제공한다', async () => {
+  const source = await readStepSource();
+
+  assert.match(source, /demo=duplicate-upload/);
+  assert.match(source, /중복 업로드 처리 체험하기/);
+  assert.match(source, /기간 밖 매수분/);
+  assert.match(source, /원가 연결용/);
+  assert.match(source, /demo=duplicate-upload/);
+
+  const appSource = await readFile('src/app/index.tsx', 'utf8');
+  assert.match(appSource, /params\.demo === 'duplicate-upload'/);
+  assert.match(appSource, /runDuplicateUploadDemo/);
+});

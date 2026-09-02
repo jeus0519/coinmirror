@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 
+import { analyzeCsvInput } from '@/lib/csv/analyze-csv';
 import { type TradeHistoryAnalysisResult } from '@/lib/trade-history/build-analysis';
 import { type DiagnosisProfile } from '@/lib/onboarding-diagnosis';
 import {
@@ -23,6 +24,10 @@ import {
   persistSubscriptionState,
   type SubscriptionPersistenceStorage,
 } from '@/lib/subscription/persistence';
+import {
+  DUPLICATE_UPLOAD_DEMO_BASELINE_CSV,
+  DUPLICATE_UPLOAD_DEMO_SECOND_CSV,
+} from '@/lib/subscription/duplicate-upload-demo';
 
 /**
  * docs/coinmirror_demo.html의 6단계 스테퍼 상태를 대응한다.
@@ -48,6 +53,7 @@ interface FlowState {
   setStep: (step: FlowStep) => void;
   saveDiagnosis: (answers: DiagnosisProfile) => void;
   runSample: () => void;
+  runDuplicateUploadDemo: (storage?: SubscriptionPersistenceStorage | null) => void;
   setTradeAnalysisPreview: (analysis: TradeHistoryAnalysisResult) => void;
   clearTradeAnalysis: () => void;
   confirmTradeAnalysis: () => void;
@@ -85,6 +91,46 @@ export const useFlowStore = create<FlowState>((set) => ({
     set({ hasDiagnosis: true, diagnosisAnswers: answers, currentStep: 3 }),
   runSample: () =>
     set({ hasAnalyzed: true, dataSource: 'sample', tradeAnalysis: null, currentStep: 4 }),
+  runDuplicateUploadDemo: (storage) =>
+    set((state) => {
+      const baselineAnalysis = analyzeCsvInput(DUPLICATE_UPLOAD_DEMO_BASELINE_CSV, state.diagnosisAnswers);
+      const secondAnalysis = analyzeCsvInput(DUPLICATE_UPLOAD_DEMO_SECOND_CSV, state.diagnosisAnswers);
+      const baseline = buildSnapshotFromAnalysis(baselineAnalysis, {
+        id: 'demo-baseline',
+        ownerId: 'local-device',
+        createdAt: new Date().toISOString(),
+        isBaseline: true,
+      });
+      const current = buildIncrementalSnapshotFromAnalysis(
+        secondAnalysis,
+        [baseline],
+        state.diagnosisAnswers,
+        {
+          id: 'demo-second-upload',
+          ownerId: 'local-device',
+          createdAt: new Date().toISOString(),
+          isBaseline: false,
+        }
+      );
+      const comparison = compareSnapshots(baseline, current);
+      const nextState = {
+        currentStep: 4 as FlowStep,
+        hasAnalyzed: true,
+        dataSource: 'csv' as DataSource,
+        tradeAnalysis: secondAnalysis,
+        subscriptionSnapshots: [baseline, current],
+        snapshotComparison: comparison,
+        suggestedSubscriptionGoal: buildGoalCandidateFromComparison(comparison),
+        savedSubscriptionGoals: state.savedSubscriptionGoals.map((goal) =>
+          evaluateSavedGoal(goal, comparison)
+        ),
+      };
+      persistSubscriptionState(resolveStorage(storage), {
+        snapshots: nextState.subscriptionSnapshots,
+        goals: nextState.savedSubscriptionGoals,
+      });
+      return nextState;
+    }),
   setTradeAnalysisPreview: (analysis) =>
     set({ hasAnalyzed: false, dataSource: null, tradeAnalysis: analysis, currentStep: 3 }),
   clearTradeAnalysis: () => set({ tradeAnalysis: null, dataSource: null, hasAnalyzed: false }),

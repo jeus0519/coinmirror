@@ -174,3 +174,29 @@ test('다음 업로드에 이전 체결이 섞이면 store는 중복 체결을 �
     /중복 체결 2건을 제외/
   );
 });
+
+test('중복 업로드 데모는 1회차 기준선과 2회차 중복+교차청산 비교 상태를 한 번에 만든다', () => {
+  useFlowStore.setState({
+    currentStep: 3,
+    hasDiagnosis: false,
+    hasAnalyzed: false,
+    dataSource: null,
+    diagnosisAnswers: {},
+    tradeAnalysis: null,
+    subscriptionSnapshots: [],
+    snapshotComparison: null,
+    suggestedSubscriptionGoal: null,
+    savedSubscriptionGoals: [],
+  });
+
+  useFlowStore.getState().runDuplicateUploadDemo(null);
+
+  const state = useFlowStore.getState();
+  assert.equal(state.currentStep, 4);
+  assert.equal(state.hasAnalyzed, true);
+  assert.equal(state.dataSource, 'csv');
+  assert.equal(state.subscriptionSnapshots.length, 2);
+  assert.equal(state.snapshotComparison?.dedupe.duplicateExecutionCount, 1);
+  assert.equal(state.snapshotComparison?.dedupe.contextExecutionCount, 1);
+  assert.match(state.snapshotComparison?.dedupe.copy ?? '', /원가 연결용/);
+});

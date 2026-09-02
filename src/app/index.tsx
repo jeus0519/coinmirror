@@ -16,11 +16,16 @@ import { useFlowStore } from '@/stores/use-flow-store';
 export default function AppScreen() {
   const currentStep = useFlowStore((s) => s.currentStep);
   const setStep = useFlowStore((s) => s.setStep);
-  const params = useLocalSearchParams<{ step?: string }>();
+  const runDuplicateUploadDemo = useFlowStore((s) => s.runDuplicateUploadDemo);
+  const params = useLocalSearchParams<{ step?: string; demo?: string }>();
 
   useEffect(() => {
+    if (params.demo === 'duplicate-upload') {
+      runDuplicateUploadDemo();
+      return;
+    }
     if (params.step === 'upload') setStep(3);
-  }, [params.step, setStep]);
+  }, [params.demo, params.step, runDuplicateUploadDemo, setStep]);
 
   return (
     <SafeAreaView className="flex-1 bg-background" edges={['top']}>
