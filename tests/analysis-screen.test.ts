@@ -130,3 +130,15 @@ test('분석 화면은 중복 체결 자동 제외 결과를 비교 카드에 �
   assert.match(source, /신규 체결만 비교/);
   assert.match(source, /원가 연결용/);
 });
+
+test('분석 화면은 월간 투자습관 리포트 미리보기 카드를 제공한다', async () => {
+  const source = await readFile(STEP_2, 'utf8');
+
+  assert.match(source, /buildMonthlyHabitReport/);
+  assert.match(source, /월간 투자습관 리포트 미리보기/);
+  assert.match(source, /이번 달 저장한 분석/);
+  assert.match(source, /중복 제외/);
+  assert.match(source, /원가 연결 보정/);
+  assert.match(source, /목표 회고/);
+  assert.match(source, /원본 PDF와 비밀번호는 저장하지 않아요/);
+});

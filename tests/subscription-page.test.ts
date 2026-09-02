@@ -62,6 +62,17 @@ test('구독 혜택 페이지는 이미지 대신 혜택별 미니 프리뷰를 
   assert.doesNotMatch(source, /<Image/);
 });
 
+test('구독 혜택 페이지는 월간 리포트의 실제 미리보기 구조를 보여준다', async () => {
+  const source = await readFile(PAGE, 'utf8');
+
+  assert.match(source, /이번 달 저장한 분석/);
+  assert.match(source, /신규 반영 체결/);
+  assert.match(source, /중복 제외/);
+  assert.match(source, /원가 연결 보정/);
+  assert.match(source, /목표 회고/);
+  assert.match(source, /원본 PDF와 비밀번호/);
+});
+
 test('구독 혜택 페이지의 분석 결과 복귀 버튼은 최하단 보조 액션으로 분리한다', async () => {
   const source = await readFile(PAGE, 'utf8');
   const checkoutIndex = source.indexOf('구독 신청하기');

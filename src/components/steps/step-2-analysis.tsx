@@ -13,6 +13,7 @@ import { Text } from '@/components/ui/text';
 import { buildAnalysisViewData } from '@/lib/analysis-view-data';
 import { buildExpectationComparisons } from '@/lib/onboarding-diagnosis';
 import { buildInvestmentTypeShareCard } from '@/lib/share-card';
+import { buildMonthlyHabitReport } from '@/lib/subscription/monthly-report';
 import { useFlowStore } from '@/stores/use-flow-store';
 
 function StatTile({
@@ -71,6 +72,10 @@ export function Step2Analysis() {
     [analysis.expectationActuals, diagnosisAnswers]
   );
   const recordedShareCard = buildInvestmentTypeShareCard(analysis.investmentType, 'recorded');
+  const monthlyHabitReport = useMemo(
+    () => buildMonthlyHabitReport(subscriptionSnapshots, savedSubscriptionGoals),
+    [subscriptionSnapshots, savedSubscriptionGoals]
+  );
   const hasSavedGoal = savedSubscriptionGoals.length > 0;
   const snapshotStatusTitle = snapshotComparison
     ? '직전 분석과 비교 중'
@@ -298,6 +303,67 @@ export function Step2Analysis() {
                 </View>
               ))}
             </View>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="border-primary/20">
+        <CardContent className="gap-3 pt-2">
+          <View className="gap-1">
+            <Text className="text-[11px] font-extrabold text-primary">월간 투자습관 리포트 미리보기</Text>
+            <Text className="text-base font-extrabold text-foreground">{monthlyHabitReport.title}</Text>
+            <Text className="text-xs leading-5 text-muted-foreground">
+              {monthlyHabitReport.subtitle} {monthlyHabitReport.summaryCopy} 이번 달 저장한 분석, 중복 제외,
+              원가 연결 보정, 목표 회고를 한 번에 확인해요.
+            </Text>
+          </View>
+          <View className="flex-row flex-wrap gap-2.5">
+            {monthlyHabitReport.metrics.slice(0, 4).map((metric) => (
+              <View key={metric.key} className="min-w-[46%] flex-1 gap-1 rounded-2xl bg-muted p-3">
+                <Text className="text-[11px] font-bold text-muted-foreground">{metric.label}</Text>
+                <Text className="text-lg font-extrabold text-foreground">{metric.value}</Text>
+                <Text className="text-[11px] leading-4 text-muted-foreground">{metric.helper}</Text>
+              </View>
+            ))}
+          </View>
+          {monthlyHabitReport.status === 'ready' ? (
+            <View className="gap-2 rounded-2xl bg-background/80 p-3">
+              <Text className="text-xs font-extrabold text-foreground">이번 달 변화</Text>
+              {monthlyHabitReport.changes.map((change) => (
+                <Text key={change.metricKey} className="text-[11px] leading-4 text-muted-foreground">
+                  • {change.label}: {change.copy}
+                </Text>
+              ))}
+            </View>
+          ) : (
+            <View className="gap-1 rounded-2xl bg-muted p-3">
+              <Text className="text-xs font-extrabold text-foreground">한 번 더 저장하면 월간 변화가 생겨요</Text>
+              <Text className="text-[11px] leading-4 text-muted-foreground">
+                같은 달에 저장한 분석이 2개 이상이면 중복 제외, 원가 연결 보정, 목표 회고를 함께 정리해요.
+              </Text>
+            </View>
+          )}
+          <View className="gap-1 rounded-2xl bg-primary/5 p-3">
+            <Text className="text-xs font-extrabold text-primary">목표 회고</Text>
+            <Text className="text-[11px] leading-4 text-muted-foreground">
+              저장한 목표 {monthlyHabitReport.goalSummary.total}개 · 달성{' '}
+              {monthlyHabitReport.goalSummary.achieved}개 · 재점검{' '}
+              {monthlyHabitReport.goalSummary.missed}개 · 판단 보류{' '}
+              {monthlyHabitReport.goalSummary.pending}개
+            </Text>
+            {monthlyHabitReport.goalSummary.highlights.map((title) => (
+              <Text key={title} className="text-[11px] leading-4 text-muted-foreground">
+                • {title}
+              </Text>
+            ))}
+          </View>
+          <Text className="text-[11px] leading-4 text-muted-foreground">
+            {monthlyHabitReport.safetyCopy} 원본 PDF와 비밀번호는 저장하지 않아요.
+          </Text>
+          {subscriptionTier === 'free' && (
+            <Button variant="outline" onPress={() => router.push('/subscription')}>
+              <Text>월간 리포트 전체 보기</Text>
+            </Button>
           )}
         </CardContent>
       </Card>
