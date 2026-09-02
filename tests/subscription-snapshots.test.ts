@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  buildIncrementalSnapshotFromAnalysis,
   buildSnapshotFromAnalysis,
   compareSnapshots,
 } from '../src/lib/subscription/snapshots.ts';
@@ -93,4 +94,105 @@ test('엔진 버전이 다르면 비교하지 않고 판단 보류한다', () =>
 
   assert.equal(comparison.status, 'version-mismatch');
   assert.match(comparison.summary, /분석 기준이 달라/);
+});
+
+test('2회차 업로드에 이전 체결이 섞여 있으면 중복 체결을 제외하고 신규 체결만 스냅샷으로 저장한다', () => {
+  const first = buildSnapshotFromAnalysis(
+    analyze(
+      [
+        '마켓,구분,체결시간,체결가,수량,수수료',
+        'KRW-BTC,매수,2026-01-01 09:00:00,100,1,0',
+        'KRW-BTC,매도,2026-01-02 09:00:00,120,1,0',
+      ].join('\n')
+    ),
+    { id: 'first', ownerId: 'local-device', createdAt: '2026-08-01T00:00:00.000Z' }
+  );
+
+  const secondUpload = analyze(
+    [
+      '마켓,구분,체결시간,체결가,수량,수수료',
+      'KRW-BTC,매수,2026-01-01 09:00:00,100,1,0',
+      'KRW-BTC,매도,2026-01-02 09:00:00,120,1,0',
+      'KRW-ETH,매수,2026-02-01 09:00:00,100,1,0',
+      'KRW-ETH,매도,2026-02-02 09:00:00,80,1,0',
+    ].join('\n')
+  );
+
+  const second = buildIncrementalSnapshotFromAnalysis(secondUpload, [first], {}, {
+    id: 'second',
+    ownerId: 'local-device',
+    createdAt: '2026-09-01T00:00:00.000Z',
+  });
+
+  assert.equal(first.dedupe.totalExecutionCount, 2);
+  assert.equal(second.dedupe.totalExecutionCount, 4);
+  assert.equal(second.dedupe.duplicateExecutionCount, 2);
+  assert.equal(second.dedupe.uniqueExecutionCount, 2);
+  assert.equal(second.summary.orderCount, 2);
+  assert.match(second.dedupe.copy, /중복 체결 2건을 제외/);
+});
+
+test('중복 체결이 포함된 비교는 자동 제외 사실과 비교 신뢰도 문구를 보여준다', () => {
+  const previous = buildSnapshotFromAnalysis(
+    analyze(
+      [
+        '마켓,구분,체결시간,체결가,수량,수수료',
+        'KRW-BTC,매수,2026-01-01 09:00:00,100,1,0',
+        'KRW-BTC,매도,2026-01-02 09:00:00,120,1,0',
+      ].join('\n')
+    ),
+    { id: 'prev', ownerId: 'local-device', createdAt: '2026-08-01T00:00:00.000Z' }
+  );
+  const current = {
+    ...previous,
+    id: 'curr',
+    dedupe: {
+      totalExecutionCount: 4,
+      duplicateExecutionCount: 2,
+      uniqueExecutionCount: 2,
+      contextExecutionCount: 0,
+      duplicateRate: 0.5,
+      copy: '이미 저장된 기준선과 겹치는 중복 체결 2건을 제외하고 신규 체결 2건만 비교했어요.',
+    },
+  };
+
+  const comparison = compareSnapshots(previous, current);
+
+  assert.equal(comparison.dedupe.duplicateExecutionCount, 2);
+  assert.equal(comparison.dedupe.duplicateRate, 0.5);
+  assert.match(comparison.dedupe.copy, /신규 체결 2건만 비교/);
+});
+
+test('기간 밖 매수분이 다음 업로드의 신규 매도로 청산되면 중복 매수를 context lot으로만 사용해 왕복거래를 보정한다', () => {
+  const first = buildSnapshotFromAnalysis(
+    analyze(
+      [
+        '마켓,구분,체결시간,체결가,수량,수수료',
+        'KRW-BTC,매수,2026-01-01 09:00:00,100,1,0',
+      ].join('\n')
+    ),
+    { id: 'first-open', ownerId: 'local-device', createdAt: '2026-08-01T00:00:00.000Z' }
+  );
+
+  const secondUpload = analyze(
+    [
+      '마켓,구분,체결시간,체결가,수량,수수료',
+      'KRW-BTC,매수,2026-01-01 09:00:00,100,1,0',
+      'KRW-BTC,매도,2026-02-01 09:00:00,130,1,0',
+    ].join('\n')
+  );
+
+  const second = buildIncrementalSnapshotFromAnalysis(secondUpload, [first], {}, {
+    id: 'second-close',
+    ownerId: 'local-device',
+    createdAt: '2026-09-01T00:00:00.000Z',
+  });
+
+  assert.equal(second.dedupe.totalExecutionCount, 2);
+  assert.equal(second.dedupe.duplicateExecutionCount, 1);
+  assert.equal(second.dedupe.uniqueExecutionCount, 1);
+  assert.equal(second.dedupe.contextExecutionCount, 1);
+  assert.equal(second.summary.roundTripCount, 1);
+  assert.equal(second.summary.winRate, 1);
+  assert.match(second.dedupe.copy, /기간 밖 매수 1건을 원가 연결용으로만 사용/);
 });

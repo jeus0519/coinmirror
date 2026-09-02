@@ -30,9 +30,14 @@ function sanitizeSnapshot(snapshot: SubscriptionSnapshot): SubscriptionSnapshot 
     sourceFormat: snapshot.sourceFormat,
     engineVersion: snapshot.engineVersion,
     periodLabel: snapshot.periodLabel,
+    periodStart: snapshot.periodStart,
+    periodEnd: snapshot.periodEnd,
     investmentTypeCode: snapshot.investmentTypeCode,
     investmentTypeTitle: snapshot.investmentTypeTitle,
     metrics: { ...snapshot.metrics },
+    executionFingerprints: [...snapshot.executionFingerprints],
+    sourceFingerprint: snapshot.sourceFingerprint,
+    dedupe: { ...snapshot.dedupe },
     summary: { ...snapshot.summary },
   };
 }

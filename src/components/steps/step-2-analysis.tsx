@@ -230,6 +230,17 @@ export function Step2Analysis() {
               <Text className="text-xs leading-5 text-muted-foreground">
                 {snapshotComparison.summary}
               </Text>
+              {snapshotComparison.dedupe.duplicateExecutionCount > 0 && (
+                <View className="gap-1 rounded-xl bg-background/80 p-2.5">
+                  <Text className="text-[11px] font-extrabold text-primary">
+                    중복 체결 자동 처리
+                  </Text>
+                  <Text className="text-[11px] leading-4 text-muted-foreground">
+                    {snapshotComparison.dedupe.copy} 신규 체결만 비교 결과에 반영했어요. 기간 밖
+                    매수분은 중복 집계하지 않고 신규 매도 원가 연결용으로만 사용해요.
+                  </Text>
+                </View>
+              )}
               {snapshotComparison.rows.map((row) => (
                 <View key={row.metricKey} className="gap-1 rounded-xl bg-background/80 p-2.5">
                   <Text className="text-xs font-bold text-foreground">{row.label}</Text>

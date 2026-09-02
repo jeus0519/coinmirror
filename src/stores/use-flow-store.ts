@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { type TradeHistoryAnalysisResult } from '@/lib/trade-history/build-analysis';
 import { type DiagnosisProfile } from '@/lib/onboarding-diagnosis';
 import {
+  buildIncrementalSnapshotFromAnalysis,
   buildSnapshotFromAnalysis,
   compareSnapshots,
   type SnapshotComparison,
@@ -99,12 +100,24 @@ export const useFlowStore = create<FlowState>((set) => ({
     set((state) => {
       if (!state.tradeAnalysis) return state;
       const previous = state.subscriptionSnapshots.at(-1) ?? null;
-      const snapshot = buildSnapshotFromAnalysis(state.tradeAnalysis, {
-        id: `local-${state.subscriptionSnapshots.length + 1}`,
-        ownerId: 'local-device',
-        createdAt: new Date().toISOString(),
-        isBaseline: state.subscriptionSnapshots.length === 0,
-      });
+      const snapshot = previous
+        ? buildIncrementalSnapshotFromAnalysis(
+            state.tradeAnalysis,
+            state.subscriptionSnapshots,
+            state.diagnosisAnswers,
+            {
+              id: `local-${state.subscriptionSnapshots.length + 1}`,
+              ownerId: 'local-device',
+              createdAt: new Date().toISOString(),
+              isBaseline: false,
+            }
+          )
+        : buildSnapshotFromAnalysis(state.tradeAnalysis, {
+            id: `local-${state.subscriptionSnapshots.length + 1}`,
+            ownerId: 'local-device',
+            createdAt: new Date().toISOString(),
+            isBaseline: true,
+          });
       const comparison = previous ? compareSnapshots(previous, snapshot) : null;
       const nextState = {
         subscriptionSnapshots: [...state.subscriptionSnapshots, snapshot],

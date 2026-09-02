@@ -34,6 +34,19 @@ function sampleAnalysis(price: number) {
   );
 }
 
+function overlappingAnalysis() {
+  return analyzeCsvInput(
+    [
+      '마켓,구분,체결시간,체결가,수량,수수료',
+      'KRW-BTC,매수,2026-01-01 09:00:00,100,1,0',
+      'KRW-BTC,매도,2026-01-02 09:00:00,120,1,0',
+      'KRW-ETH,매수,2026-02-01 09:00:00,100,1,0',
+      'KRW-ETH,매도,2026-02-02 09:00:00,80,1,0',
+    ].join('\n'),
+    {}
+  );
+}
+
 test('구독 기준선 저장은 분석 요약 스냅샷만 저장하고 다음 분석과 비교한다', () => {
   useFlowStore.setState({
     currentStep: 4,
@@ -66,25 +79,38 @@ test('구독 목표 후보를 저장하고 다음 분석 비교로 달성 여부
     hasAnalyzed: true,
     dataSource: 'csv',
     diagnosisAnswers: {},
-    tradeAnalysis: sampleAnalysis(120),
+    tradeAnalysis: periodAnalysis('01', 120),
     subscriptionSnapshots: [],
     snapshotComparison: null,
+    suggestedSubscriptionGoal: null,
     savedSubscriptionGoals: [],
   });
 
   useFlowStore.getState().saveCurrentAnalysisSnapshot();
-  useFlowStore.setState({ tradeAnalysis: sampleAnalysis(80) });
+  useFlowStore.setState({ tradeAnalysis: periodAnalysis('02', 80) });
   useFlowStore.getState().saveCurrentAnalysisSnapshot();
 
   useFlowStore.getState().saveSuggestedSubscriptionGoal();
   assert.equal(useFlowStore.getState().savedSubscriptionGoals.length, 1);
   assert.equal(useFlowStore.getState().savedSubscriptionGoals[0].status, 'active');
 
-  useFlowStore.setState({ tradeAnalysis: sampleAnalysis(130) });
+  useFlowStore.setState({ tradeAnalysis: periodAnalysis('03', 130) });
   useFlowStore.getState().saveCurrentAnalysisSnapshot();
 
   assert.equal(useFlowStore.getState().savedSubscriptionGoals[0].latestSnapshotId, 'local-3');
 });
+
+
+function periodAnalysis(month: string, price: number) {
+  return analyzeCsvInput(
+    [
+      '마켓,구분,체결시간,체결가,수량,수수료',
+      `KRW-BTC,매수,2026-${month}-01 09:00:00,100,1,0`,
+      `KRW-BTC,매도,2026-${month}-02 09:00:00,${price},1,0`,
+    ].join('\n'),
+    {}
+  );
+}
 
 function memoryStorage() {
   const map = new Map<string, string>();
@@ -119,4 +145,32 @@ test('구독 스냅샷과 목표는 명시적 로컬 저장소에 저장·복원
 
   useFlowStore.getState().clearSubscriptionSnapshots(storage);
   assert.deepEqual(loadPersistedSubscriptionState(storage), { snapshots: [], goals: [] });
+});
+
+test('다음 업로드에 이전 체결이 섞이면 store는 중복 체결을 제외한 스냅샷을 저장한다', () => {
+  useFlowStore.setState({
+    currentStep: 4,
+    hasDiagnosis: false,
+    hasAnalyzed: true,
+    dataSource: 'csv',
+    diagnosisAnswers: {},
+    tradeAnalysis: sampleAnalysis(120),
+    subscriptionSnapshots: [],
+    snapshotComparison: null,
+    suggestedSubscriptionGoal: null,
+    savedSubscriptionGoals: [],
+  });
+
+  useFlowStore.getState().saveCurrentAnalysisSnapshot(null);
+  useFlowStore.setState({ tradeAnalysis: overlappingAnalysis() });
+  useFlowStore.getState().saveCurrentAnalysisSnapshot(null);
+
+  const second = useFlowStore.getState().subscriptionSnapshots[1];
+  assert.equal(second.dedupe.totalExecutionCount, 4);
+  assert.equal(second.dedupe.duplicateExecutionCount, 2);
+  assert.equal(second.dedupe.uniqueExecutionCount, 2);
+  assert.match(
+    useFlowStore.getState().snapshotComparison?.dedupe.copy ?? '',
+    /중복 체결 2건을 제외/
+  );
 });

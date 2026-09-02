@@ -1,5 +1,11 @@
+import { type DiagnosisProfile } from '../onboarding-diagnosis';
 import { type Metric } from '../mock-metrics';
-import { type TradeHistoryAnalysisResult, type TradeHistorySourceFormat } from '../trade-history/build-analysis';
+import {
+  analyzeParseResult,
+  type TradeHistoryAnalysisResult,
+  type TradeHistorySourceFormat,
+} from '../trade-history/build-analysis';
+import { type RawExecution } from '../score-engine/preprocess';
 
 export const SUBSCRIPTION_SNAPSHOT_ENGINE_VERSION = 'phase1-v1';
 
@@ -9,6 +15,15 @@ export type SubscriptionSnapshotMetricKey =
   | 'lossHoldingHours'
   | 'monthlyOrderCount';
 
+export type SubscriptionSnapshotDedupe = {
+  totalExecutionCount: number;
+  duplicateExecutionCount: number;
+  uniqueExecutionCount: number;
+  contextExecutionCount: number;
+  duplicateRate: number;
+  copy: string;
+};
+
 export type SubscriptionSnapshot = {
   id: string;
   ownerId: string;
@@ -17,9 +32,14 @@ export type SubscriptionSnapshot = {
   sourceFormat: TradeHistorySourceFormat;
   engineVersion: string;
   periodLabel: string;
+  periodStart: string | null;
+  periodEnd: string | null;
   investmentTypeCode: string;
   investmentTypeTitle: string;
   metrics: Record<string, number | null>;
+  executionFingerprints: string[];
+  sourceFingerprint: string;
+  dedupe: SubscriptionSnapshotDedupe;
   summary: {
     orderCount: number;
     roundTripCount: number;
@@ -48,6 +68,7 @@ export type SnapshotComparison = {
   previousId: string;
   currentId: string;
   summary: string;
+  dedupe: SubscriptionSnapshotDedupe;
   rows: SnapshotComparisonRow[];
 };
 
@@ -58,11 +79,62 @@ function metricsToRecord(metrics: readonly Metric[]) {
   >;
 }
 
-export function buildSnapshotFromAnalysis(
+function stableHash(value: string) {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `fp_${(hash >>> 0).toString(16).padStart(8, '0')}`;
+}
+
+function normalizeNumber(value: number) {
+  return Number(value.toFixed(8)).toString();
+}
+
+export function buildExecutionFingerprint(execution: RawExecution) {
+  return stableHash(
+    [
+      execution.executedAt,
+      execution.symbol,
+      execution.side,
+      normalizeNumber(execution.price),
+      normalizeNumber(execution.quantity),
+      normalizeNumber(execution.fee),
+    ].join('|')
+  );
+}
+
+function periodFromExecutions(executions: readonly RawExecution[]) {
+  const times = executions.map((execution) => execution.executedAt).sort();
+  return {
+    periodStart: times[0] ?? null,
+    periodEnd: times.at(-1) ?? null,
+  };
+}
+
+function sourceFingerprintFrom(executionFingerprints: readonly string[]) {
+  return stableHash([...executionFingerprints].sort().join('|'));
+}
+
+function dedupeCopy(total: number, duplicate: number, unique: number, context = 0) {
+  const contextCopy = context > 0 ? ` 기간 밖 매수 ${context}건을 원가 연결용으로만 사용했어요.` : '';
+  if (duplicate === 0) return `중복 체결 없이 ${unique}건을 기준으로 저장했어요.`;
+  if (unique === 0) {
+    return `이미 저장된 기준선과 모두 겹쳐 중복 체결 ${duplicate}건을 제외했어요.${contextCopy}`;
+  }
+  return `이미 저장된 기준선과 겹치는 중복 체결 ${duplicate}건을 제외하고 신규 체결 ${unique}건만 비교했어요.${contextCopy}`;
+}
+
+function buildSnapshot(
   analysis: TradeHistoryAnalysisResult,
-  options: { id: string; ownerId: string; createdAt: string; isBaseline?: boolean }
+  options: { id: string; ownerId: string; createdAt: string; isBaseline?: boolean },
+  dedupe: SubscriptionSnapshotDedupe,
+  sourceExecutions: readonly RawExecution[]
 ): SubscriptionSnapshot {
   const series = analysis.derivedSeries;
+  const executionFingerprints = sourceExecutions.map(buildExecutionFingerprint);
+  const { periodStart, periodEnd } = periodFromExecutions(sourceExecutions);
   return {
     id: options.id,
     ownerId: options.ownerId,
@@ -71,11 +143,16 @@ export function buildSnapshotFromAnalysis(
     sourceFormat: analysis.sourceFormat,
     engineVersion: SUBSCRIPTION_SNAPSHOT_ENGINE_VERSION,
     periodLabel: analysis.preview.periodLabel,
+    periodStart,
+    periodEnd,
     investmentTypeCode: analysis.investmentType.code,
     investmentTypeTitle: analysis.investmentType.title,
     metrics: metricsToRecord(analysis.metrics),
+    executionFingerprints,
+    sourceFingerprint: sourceFingerprintFrom(executionFingerprints),
+    dedupe,
     summary: {
-      orderCount: series?.orderCount ?? 0,
+      orderCount: Math.max(0, (series?.orderCount ?? 0) - dedupe.contextExecutionCount),
       roundTripCount: series?.roundTripCount ?? 0,
       winRate: series?.winRate ?? null,
       profitHoldingHours: series?.medianHoldingHours.profit ?? null,
@@ -85,6 +162,60 @@ export function buildSnapshotFromAnalysis(
       symbolCount: analysis.preview.symbolCount,
     },
   };
+}
+
+export function buildSnapshotFromAnalysis(
+  analysis: TradeHistoryAnalysisResult,
+  options: { id: string; ownerId: string; createdAt: string; isBaseline?: boolean }
+): SubscriptionSnapshot {
+  const executions = analysis.parse.executions;
+  const dedupe: SubscriptionSnapshotDedupe = {
+    totalExecutionCount: executions.length,
+    duplicateExecutionCount: 0,
+    uniqueExecutionCount: executions.length,
+    contextExecutionCount: 0,
+    duplicateRate: 0,
+    copy: dedupeCopy(executions.length, 0, executions.length),
+  };
+  return buildSnapshot(analysis, options, dedupe, executions);
+}
+
+export function buildIncrementalSnapshotFromAnalysis(
+  analysis: TradeHistoryAnalysisResult,
+  previousSnapshots: readonly SubscriptionSnapshot[],
+  diagnosis: DiagnosisProfile,
+  options: { id: string; ownerId: string; createdAt: string; isBaseline?: boolean }
+): SubscriptionSnapshot {
+  const seen = new Set(previousSnapshots.flatMap((snapshot) => snapshot.executionFingerprints));
+  const uniqueExecutions = analysis.parse.executions.filter(
+    (execution) => !seen.has(buildExecutionFingerprint(execution))
+  );
+  const duplicateExecutions = analysis.parse.executions.filter((execution) =>
+    seen.has(buildExecutionFingerprint(execution))
+  );
+  const contextExecutions = duplicateExecutions.filter((execution) => execution.side === 'buy');
+  const duplicateExecutionCount = analysis.parse.executions.length - uniqueExecutions.length;
+  const nextAnalysis = analyzeParseResult(
+    { ...analysis.parse, executions: [...contextExecutions, ...uniqueExecutions] },
+    diagnosis,
+    analysis.sourceFormat
+  );
+  const dedupe: SubscriptionSnapshotDedupe = {
+    totalExecutionCount: analysis.parse.executions.length,
+    duplicateExecutionCount,
+    uniqueExecutionCount: uniqueExecutions.length,
+    contextExecutionCount: contextExecutions.length,
+    duplicateRate: analysis.parse.executions.length
+      ? duplicateExecutionCount / analysis.parse.executions.length
+      : 0,
+    copy: dedupeCopy(
+      analysis.parse.executions.length,
+      duplicateExecutionCount,
+      uniqueExecutions.length,
+      contextExecutions.length
+    ),
+  };
+  return buildSnapshot(nextAnalysis, options, dedupe, uniqueExecutions);
 }
 
 function formatValue(metricKey: SubscriptionSnapshotMetricKey, value: number | null) {
@@ -141,6 +272,7 @@ export function compareSnapshots(
       previousId: previous.id,
       currentId: current.id,
       summary: '분석 기준이 달라 이번 회차는 이전 기준선과 직접 비교하지 않았어요.',
+      dedupe: current.dedupe,
       rows: [],
     };
   }
@@ -175,6 +307,7 @@ export function compareSnapshots(
     previousId: previous.id,
     currentId: current.id,
     summary: `직전 분석(${previous.periodLabel})과 최신 분석(${current.periodLabel})을 비교했어요.`,
+    dedupe: current.dedupe,
     rows,
   };
 }

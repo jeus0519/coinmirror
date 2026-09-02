@@ -120,3 +120,13 @@ test('분석 화면은 기준선 저장 단계별로 CTA와 설명을 다르게 
   assert.match(source, /다음 업로드 때 자동 비교돼요/);
   assert.match(source, /목표 저장 완료/);
 });
+
+test('분석 화면은 중복 체결 자동 제외 결과를 비교 카드에 표시한다', async () => {
+  const source = await readFile(STEP_2, 'utf8');
+
+  assert.match(source, /snapshotComparison\.dedupe/);
+  assert.match(source, /중복 체결 자동 처리/);
+  assert.match(source, /duplicateExecutionCount > 0/);
+  assert.match(source, /신규 체결만 비교/);
+  assert.match(source, /원가 연결용/);
+});

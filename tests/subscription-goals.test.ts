@@ -13,6 +13,14 @@ const comparison: SnapshotComparison = {
   previousId: 'prev',
   currentId: 'curr',
   summary: '직전 분석과 최신 분석을 비교했어요.',
+  dedupe: {
+    totalExecutionCount: 2,
+    duplicateExecutionCount: 0,
+    uniqueExecutionCount: 2,
+    contextExecutionCount: 0,
+    duplicateRate: 0,
+    copy: '중복 체결 없이 2건을 기준으로 저장했어요.',
+  },
   rows: [
     {
       metricKey: 'lossHoldingHours',
