@@ -2,6 +2,26 @@ import { create } from 'zustand';
 
 import { type TradeHistoryAnalysisResult } from '@/lib/trade-history/build-analysis';
 import { type DiagnosisProfile } from '@/lib/onboarding-diagnosis';
+import {
+  buildSnapshotFromAnalysis,
+  compareSnapshots,
+  type SnapshotComparison,
+  type SubscriptionSnapshot,
+} from '@/lib/subscription/snapshots';
+import {
+  buildGoalCandidateFromComparison,
+  evaluateSavedGoal,
+  saveGoalFromCandidate,
+  type SavedSubscriptionGoal,
+  type SubscriptionGoalCandidate,
+} from '@/lib/subscription/goals';
+import {
+  clearPersistedSubscriptionState,
+  getBrowserSubscriptionStorage,
+  loadPersistedSubscriptionState,
+  persistSubscriptionState,
+  type SubscriptionPersistenceStorage,
+} from '@/lib/subscription/persistence';
 
 /**
  * docs/coinmirror_demo.html의 6단계 스테퍼 상태를 대응한다.
@@ -18,6 +38,10 @@ interface FlowState {
   hasAnalyzed: boolean;
   dataSource: DataSource;
   subscriptionTier: SubscriptionTier;
+  subscriptionSnapshots: SubscriptionSnapshot[];
+  snapshotComparison: SnapshotComparison | null;
+  suggestedSubscriptionGoal: SubscriptionGoalCandidate | null;
+  savedSubscriptionGoals: SavedSubscriptionGoal[];
   diagnosisAnswers: DiagnosisProfile;
   tradeAnalysis: TradeHistoryAnalysisResult | null;
   setStep: (step: FlowStep) => void;
@@ -27,6 +51,14 @@ interface FlowState {
   clearTradeAnalysis: () => void;
   confirmTradeAnalysis: () => void;
   toggleSubscription: () => void;
+  saveCurrentAnalysisSnapshot: (storage?: SubscriptionPersistenceStorage | null) => void;
+  saveSuggestedSubscriptionGoal: (storage?: SubscriptionPersistenceStorage | null) => void;
+  restoreSubscriptionState: (storage?: SubscriptionPersistenceStorage | null) => void;
+  clearSubscriptionSnapshots: (storage?: SubscriptionPersistenceStorage | null) => void;
+}
+
+function resolveStorage(storage?: SubscriptionPersistenceStorage | null) {
+  return storage === undefined ? getBrowserSubscriptionStorage() : storage;
 }
 
 function canEnterStep(state: FlowState, step: FlowStep) {
@@ -40,6 +72,10 @@ export const useFlowStore = create<FlowState>((set) => ({
   hasAnalyzed: false,
   dataSource: null,
   subscriptionTier: 'free',
+  subscriptionSnapshots: [],
+  snapshotComparison: null,
+  suggestedSubscriptionGoal: null,
+  savedSubscriptionGoals: [],
   diagnosisAnswers: {},
   tradeAnalysis: null,
   setStep: (step) =>
@@ -59,4 +95,69 @@ export const useFlowStore = create<FlowState>((set) => ({
     })),
   toggleSubscription: () =>
     set((state) => ({ subscriptionTier: state.subscriptionTier === 'free' ? 'pro' : 'free' })),
+  saveCurrentAnalysisSnapshot: (storage) =>
+    set((state) => {
+      if (!state.tradeAnalysis) return state;
+      const previous = state.subscriptionSnapshots.at(-1) ?? null;
+      const snapshot = buildSnapshotFromAnalysis(state.tradeAnalysis, {
+        id: `local-${state.subscriptionSnapshots.length + 1}`,
+        ownerId: 'local-device',
+        createdAt: new Date().toISOString(),
+        isBaseline: state.subscriptionSnapshots.length === 0,
+      });
+      const comparison = previous ? compareSnapshots(previous, snapshot) : null;
+      const nextState = {
+        subscriptionSnapshots: [...state.subscriptionSnapshots, snapshot],
+        snapshotComparison: comparison,
+        suggestedSubscriptionGoal: buildGoalCandidateFromComparison(comparison),
+        savedSubscriptionGoals: state.savedSubscriptionGoals.map((goal) =>
+          evaluateSavedGoal(goal, comparison)
+        ),
+      };
+      persistSubscriptionState(resolveStorage(storage), {
+        snapshots: nextState.subscriptionSnapshots,
+        goals: nextState.savedSubscriptionGoals,
+      });
+      return nextState;
+    }),
+  saveSuggestedSubscriptionGoal: (storage) =>
+    set((state) => {
+      if (!state.suggestedSubscriptionGoal) return state;
+      const goal = saveGoalFromCandidate(state.suggestedSubscriptionGoal, {
+        id: `goal-${state.savedSubscriptionGoals.length + 1}`,
+        createdAt: new Date().toISOString(),
+      });
+      const nextState = {
+        savedSubscriptionGoals: [...state.savedSubscriptionGoals, goal],
+        suggestedSubscriptionGoal: null,
+      };
+      persistSubscriptionState(resolveStorage(storage), {
+        snapshots: state.subscriptionSnapshots,
+        goals: nextState.savedSubscriptionGoals,
+      });
+      return nextState;
+    }),
+  restoreSubscriptionState: (storage) =>
+    set((state) => {
+      const persisted = loadPersistedSubscriptionState(resolveStorage(storage));
+      const previous = persisted.snapshots.at(-2) ?? null;
+      const current = persisted.snapshots.at(-1) ?? null;
+      const comparison = previous && current ? compareSnapshots(previous, current) : null;
+      return {
+        ...state,
+        subscriptionSnapshots: persisted.snapshots,
+        snapshotComparison: comparison,
+        suggestedSubscriptionGoal: buildGoalCandidateFromComparison(comparison),
+        savedSubscriptionGoals: persisted.goals.map((goal) => evaluateSavedGoal(goal, comparison)),
+      };
+    }),
+  clearSubscriptionSnapshots: (storage) => {
+    clearPersistedSubscriptionState(resolveStorage(storage));
+    set({
+      subscriptionSnapshots: [],
+      snapshotComparison: null,
+      suggestedSubscriptionGoal: null,
+      savedSubscriptionGoals: [],
+    });
+  },
 }));

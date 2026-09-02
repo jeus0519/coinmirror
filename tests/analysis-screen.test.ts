@@ -76,3 +76,47 @@ test('분석 화면은 개인화 핵심 패턴 카드와 구독관리 목표 추
   assert.match(source, /구독관리에서 추적할 목표 후보/);
   assert.match(source, /trackingGoal/);
 });
+
+test('분석 화면은 기준선 저장과 직전 분석 비교 UI를 제공한다', async () => {
+  const source = await readFile(STEP_2, 'utf8');
+
+  assert.match(source, /saveCurrentAnalysisSnapshot/);
+  assert.match(source, /snapshotComparison/);
+  assert.match(source, /이번 분석 저장하기/);
+  assert.match(source, /직전 분석과 비교/);
+  assert.match(source, /snapshotComparison\.rows\.map/);
+  assert.match(source, /원본 PDF와 비밀번호는 저장하지 않아요/);
+});
+
+test('분석 화면은 구독 목표 후보 저장과 저장된 목표 상태를 보여준다', async () => {
+  const source = await readFile(STEP_2, 'utf8');
+
+  assert.match(source, /suggestedSubscriptionGoal/);
+  assert.match(source, /savedSubscriptionGoals/);
+  assert.match(source, /saveSuggestedSubscriptionGoal/);
+  assert.match(source, /이 목표 저장하기/);
+  assert.match(source, /저장한 목표/);
+  assert.match(source, /evaluationCopy/);
+});
+
+test('분석 화면은 로컬 저장 복원과 내 데이터 삭제 액션을 제공한다', async () => {
+  const source = await readFile(STEP_2, 'utf8');
+
+  assert.match(source, /restoreSubscriptionState/);
+  assert.match(source, /clearSubscriptionSnapshots/);
+  assert.match(source, /저장한 기준선 불러오기/);
+  assert.match(source, /저장한 기준선과 목표 삭제하기/);
+  assert.match(source, /이 기기에 저장된 분석 요약과 목표만 삭제/);
+});
+
+test('분석 화면은 기준선 저장 단계별로 CTA와 설명을 다르게 보여준다', async () => {
+  const source = await readFile(STEP_2, 'utf8');
+
+  assert.match(source, /snapshotStatusTitle/);
+  assert.match(source, /첫 기준선이 아직 없어요/);
+  assert.match(source, /기준선 저장됨/);
+  assert.match(source, /직전 분석과 비교 중/);
+  assert.match(source, /이번 분석 다시 저장하기/);
+  assert.match(source, /다음 업로드 때 자동 비교돼요/);
+  assert.match(source, /목표 저장 완료/);
+});

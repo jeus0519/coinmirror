@@ -50,6 +50,14 @@ export function Step2Analysis() {
   const dataSource = useFlowStore((s) => s.dataSource);
   const subscriptionTier = useFlowStore((s) => s.subscriptionTier);
   const toggleSubscription = useFlowStore((s) => s.toggleSubscription);
+  const subscriptionSnapshots = useFlowStore((s) => s.subscriptionSnapshots);
+  const snapshotComparison = useFlowStore((s) => s.snapshotComparison);
+  const suggestedSubscriptionGoal = useFlowStore((s) => s.suggestedSubscriptionGoal);
+  const savedSubscriptionGoals = useFlowStore((s) => s.savedSubscriptionGoals);
+  const saveCurrentAnalysisSnapshot = useFlowStore((s) => s.saveCurrentAnalysisSnapshot);
+  const saveSuggestedSubscriptionGoal = useFlowStore((s) => s.saveSuggestedSubscriptionGoal);
+  const restoreSubscriptionState = useFlowStore((s) => s.restoreSubscriptionState);
+  const clearSubscriptionSnapshots = useFlowStore((s) => s.clearSubscriptionSnapshots);
   const setStep = useFlowStore((s) => s.setStep);
   const diagnosisAnswers = useFlowStore((s) => s.diagnosisAnswers);
   const tradeAnalysis = useFlowStore((s) => s.tradeAnalysis);
@@ -63,6 +71,19 @@ export function Step2Analysis() {
     [analysis.expectationActuals, diagnosisAnswers]
   );
   const recordedShareCard = buildInvestmentTypeShareCard(analysis.investmentType, 'recorded');
+  const hasSavedGoal = savedSubscriptionGoals.length > 0;
+  const snapshotStatusTitle = snapshotComparison
+    ? '직전 분석과 비교 중'
+    : subscriptionSnapshots.length > 0
+      ? '기준선 저장됨'
+      : '첫 기준선이 아직 없어요';
+  const snapshotStatusDescription = snapshotComparison
+    ? '직전 분석과 이번 분석의 차이를 바로 아래에서 확인할 수 있어요.'
+    : subscriptionSnapshots.length > 0
+      ? '다음 업로드 때 자동 비교돼요. 새 거래내역을 올린 뒤 이번 분석 다시 저장하기를 눌러 변화량을 확인하세요.'
+      : '이번 분석을 저장해두면 다음 업로드 때 승률, 보유기간, 거래 빈도 변화를 비교할 수 있어요.';
+  const snapshotSaveCta = subscriptionSnapshots.length > 0 ? '이번 분석 다시 저장하기' : '이번 분석 저장하기';
+  const goalStatusTitle = hasSavedGoal ? '목표 저장 완료' : '목표는 비교가 생기면 저장할 수 있어요';
 
   return (
     <ScrollView className="flex-1" contentContainerClassName="gap-6 p-4 pb-12">
@@ -163,6 +184,112 @@ export function Step2Analysis() {
           </CardContent>
         </Card>
       )}
+
+      <Card>
+        <CardContent className="gap-3 pt-2">
+          <View className="gap-1">
+            <Text className="text-base font-extrabold text-foreground">구독관리 기준선</Text>
+            <Text className="text-xs font-extrabold text-primary">{snapshotStatusTitle}</Text>
+            <Text className="text-xs leading-5 text-muted-foreground">
+              {snapshotStatusDescription} 이번 분석 저장하기를 누르면 투자거울 타입, 승률,
+              보유기간 같은 분석 요약만 저장해요. 원본 PDF와 비밀번호는 저장하지 않아요.
+            </Text>
+          </View>
+          <View className="flex-row items-center justify-between gap-3 rounded-2xl bg-muted p-3">
+            <View className="flex-1 gap-1">
+              <Text className="text-xs font-bold text-foreground">
+                저장된 분석 {subscriptionSnapshots.length}개
+              </Text>
+              <Text className="text-[11px] text-muted-foreground">
+                2개 이상 저장되면 직전 분석과 비교가 표시돼요.
+              </Text>
+            </View>
+            <Button size="sm" onPress={() => saveCurrentAnalysisSnapshot()}>
+              <Text className="text-xs">{snapshotSaveCta}</Text>
+            </Button>
+          </View>
+          <View className="gap-2 rounded-2xl border border-border p-3">
+            <Text className="text-[11px] leading-4 text-muted-foreground">
+              이 기기에 저장된 분석 요약과 목표만 삭제할 수 있어요. 원본 PDF와 비밀번호는
+              애초에 저장하지 않아요.
+            </Text>
+            <View className="flex-row flex-wrap gap-2">
+              <Button size="sm" variant="outline" onPress={() => restoreSubscriptionState()}>
+                <Text className="text-xs">저장한 기준선 불러오기</Text>
+              </Button>
+              <Button size="sm" variant="ghost" onPress={() => clearSubscriptionSnapshots()}>
+                <Text className="text-xs text-muted-foreground">
+                  저장한 기준선과 목표 삭제하기
+                </Text>
+              </Button>
+            </View>
+          </View>
+          {snapshotComparison && (
+            <View className="gap-2 rounded-2xl border border-primary/20 bg-primary/5 p-3">
+              <Text className="text-sm font-extrabold text-foreground">직전 분석과 비교</Text>
+              <Text className="text-xs leading-5 text-muted-foreground">
+                {snapshotComparison.summary}
+              </Text>
+              {snapshotComparison.rows.map((row) => (
+                <View key={row.metricKey} className="gap-1 rounded-xl bg-background/80 p-2.5">
+                  <Text className="text-xs font-bold text-foreground">{row.label}</Text>
+                  <Text className="text-[11px] leading-4 text-muted-foreground">{row.copy}</Text>
+                  <Text className="text-[11px] font-semibold text-primary">
+                    {row.status === 'pending'
+                      ? '판단 보류'
+                      : row.direction === 'improved'
+                        ? '개선'
+                        : row.direction === 'worsened'
+                          ? '악화'
+                          : '유지'}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
+          {suggestedSubscriptionGoal && (
+            <View className="gap-2 rounded-2xl bg-muted p-3">
+              <Text className="text-[11px] font-extrabold text-primary">추천 목표 후보</Text>
+              <Text className="text-sm font-extrabold text-foreground">
+                {suggestedSubscriptionGoal.title}
+              </Text>
+              <Text className="text-xs leading-5 text-muted-foreground">
+                {suggestedSubscriptionGoal.description}
+              </Text>
+              <Button size="sm" variant="secondary" onPress={() => saveSuggestedSubscriptionGoal()}>
+                <Text className="text-xs">이 목표 저장하기</Text>
+              </Button>
+            </View>
+          )}
+          {savedSubscriptionGoals.length > 0 && (
+            <View className="gap-2">
+              <View className="gap-1">
+                <Text className="text-sm font-extrabold text-foreground">저장한 목표</Text>
+                <Text className="text-[11px] font-semibold text-primary">{goalStatusTitle}</Text>
+              </View>
+              {savedSubscriptionGoals.map((goal) => (
+                <View key={goal.id} className="gap-1 rounded-2xl border border-border p-3">
+                  <View className="flex-row items-center justify-between gap-2">
+                    <Text className="flex-1 text-xs font-bold text-foreground">{goal.title}</Text>
+                    <Text className="text-[11px] font-semibold text-primary">
+                      {goal.status === 'achieved'
+                        ? '달성'
+                        : goal.status === 'missed'
+                          ? '재점검'
+                          : goal.status === 'pending'
+                            ? '판단 보류'
+                            : '추적 중'}
+                    </Text>
+                  </View>
+                  <Text className="text-[11px] leading-4 text-muted-foreground">
+                    {goal.evaluationCopy}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardContent className="gap-3 pt-2">
