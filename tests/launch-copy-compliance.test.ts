@@ -46,10 +46,13 @@ test('고객 노출 화면에는 투자 조언이나 수익 보장으로 오해�
   assert.deepEqual(violations, []);
 });
 
-test('웹 첫 런칭 계획은 고객 설치형 상품이 아니라 브라우저 기반 MVP로 명시한다', () => {
+test('무료 공개 MVP 계획은 Closed Beta 모집보다 즉시 무료 사용과 선택형 출시 알림을 우선한다', () => {
   const plan = readProjectFile('docs/exec-plans/active/009-customer-launch-readiness-plan.md');
 
-  assert.match(plan, /웹 MVP/);
-  assert.match(plan, /브라우저 안에서 원본 파일을 우선 처리/);
-  assert.match(plan, /고객 설치형 앱이 아니라/);
+  assert.match(plan, /Free Public MVP Launch Readiness/);
+  assert.match(plan, /무료 공개 MVP/);
+  assert.match(plan, /핵심 분석은 무료로 먼저 사용/);
+  assert.match(plan, /구독관리 출시 알림/);
+  assert.match(plan, /가격표와 결제 버튼은 이해충돌 검토 전까지 노출하지 않는다/);
+  assert.doesNotMatch(plan, /Closed Beta Launch Readiness/);
 });

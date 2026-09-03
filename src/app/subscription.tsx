@@ -98,14 +98,14 @@ export default function SubscriptionPage() {
       <Card className="border-primary/30 bg-primary/5">
         <CardContent className="gap-3 pt-2">
           <Text className="text-base font-extrabold text-foreground">
-            구독하면 무료 분석이 이렇게 확장돼요
+            무료 분석 후, 구독관리 출시 알림을 받아보세요
           </Text>
           <Text className="text-sm leading-6 text-foreground">
-            무료 결과는 이번 업로드의 현재 모습을 보여줘요. 구독관리에서는 이 결과를 기준선으로
-            저장하고, 다음 업로드 때 승률·손실 보유기간·거래 빈도 변화까지 비교합니다.
+            핵심 분석은 무료로 먼저 사용해요. 월간 리포트가 준비되면 알려드릴게요. 구독관리에서는
+            이 결과를 기준선으로 저장하고, 다음 업로드 때 승률·손실 보유기간·거래 빈도 변화까지 비교합니다.
           </Text>
           <Button onPress={() => router.push('/subscription-checkout')}>
-            <Text>구독 신청하기</Text>
+            <Text>구독관리 출시 알림 받기</Text>
           </Button>
         </CardContent>
       </Card>
@@ -166,13 +166,14 @@ export default function SubscriptionPage() {
       <Card className="border-primary/30 bg-primary/5">
         <CardContent className="gap-3 pt-2">
           <Text className="text-base font-extrabold text-foreground">
-            이번 분석을 다음 달 기준선으로 남겨둘까요?
+            다음 달에도 내 거래 습관 변화를 보고 싶다면?
           </Text>
           <Text className="text-sm leading-6 text-muted-foreground">
-            결제 전환 전 단계에서 플랜과 보관 방식을 한 번 더 확인할 수 있어요.
+            지금은 결제 없이 무료 분석을 먼저 열어두는 단계예요. 구독관리 출시 알림을 남기면
+            월간 리포트와 다음 업로드 비교가 준비될 때 안내받을 수 있어요.
           </Text>
           <Button onPress={() => router.push('/subscription-checkout')}>
-            <Text>구독 신청하기</Text>
+            <Text>구독관리 출시 알림 받기</Text>
           </Button>
         </CardContent>
       </Card>
@@ -182,7 +183,7 @@ export default function SubscriptionPage() {
         시세 전망, 손익 보장을 제공하지 않아요.
       </Text>
 
-      {/* 하단 보조 액션: 구매 CTA와 분리해 전환 흐름을 방해하지 않도록 최하단에 둔다. */}
+      {/* 하단 보조 액션: 알림 CTA와 분리해 현재 분석 복귀 흐름을 방해하지 않도록 최하단에 둔다. */}
       <Button size="sm" variant="ghost" className="self-center" onPress={() => router.back()}>
         <Icon as={ArrowLeft} size={16} className="text-muted-foreground" />
         <Text className="text-xs text-muted-foreground">내 분석 결과로 돌아가기</Text>
