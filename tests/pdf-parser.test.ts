@@ -51,6 +51,26 @@ test('업비트 PDF 분석 결과는 기존 Phase 1 파이프라인과 미리보
   assert.equal(result.expectationActuals.B1?.label, '월 거래 횟수');
 });
 
+test('업비트 익명화 실제형 PDF는 날짜에 공백이 있어도 거래 행을 파싱한다', async () => {
+  const text = await readFile(resolve('src/lib/pdf/fixtures/upbit-pdf-realistic-spaced-date.txt'), 'utf8');
+  const result = parseUpbitPdfText(text);
+
+  assert.equal(result.detectedAdapter, 'upbit-pdf-krw');
+  assert.equal(result.errors.length, 0);
+  assert.equal(result.executions.length, 2);
+  assert.deepEqual(result.executions[0], {
+    id: 'upbit-pdf-1',
+    symbol: 'USDT',
+    side: 'buy',
+    price: 1374,
+    quantity: 7000,
+    fee: 0,
+    executedAt: '2026-08-18T22:52:10+09:00',
+  });
+  assert.equal(result.executions[1].symbol, 'ONDO');
+  assert.equal(result.executions[1].executedAt, '2026-08-15T23:29:37+09:00');
+});
+
 test('텍스트 레이어 판정은 공백만 있는 추출 결과를 없는 것으로 본다', () => {
   // 인쇄 → PDF로 저장으로 만든 이미지 PDF는 페이지 구분만 남고 글자가 없다.
   assert.equal(hasTextLayer('\n\f\n\n \t\n'), false);

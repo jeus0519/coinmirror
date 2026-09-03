@@ -23,7 +23,10 @@ function parseNumber(value: string) {
 }
 
 function normalizeDate(value: string) {
-  return value.replace(/[./]/g, '-');
+  const match = value.match(/^(\d{4})[.\-/]\s*(\d{1,2})[.\-/]\s*(\d{1,2})\.?$/);
+  if (!match) return value.replace(/[./]/g, '-');
+  const [, year, month, day] = match;
+  return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
 }
 
 function parseTradePair(
@@ -33,7 +36,7 @@ function parseTradePair(
   executionIndex: number
 ): RawExecution {
   const tradeMatch = dateLine.match(
-    /^(?<date>\d{4}[.\-/]\d{2}[.\-/]\d{2})\s+(?<side>매수|매도)\s+KRW-(?<symbol>[A-Z0-9]+)\s+(?<quantity>[\d,]+(?:\.\d+)?)\s+(?<quantityUnit>[A-Z0-9]+)\s+(?<fee>[\d,]+(?:\.\d+)?)\s+KRW(?:\s+.*)?$/
+    /^(?<date>\d{4}[.\-/]\s*\d{1,2}[.\-/]\s*\d{1,2}\.?)\s+(?<side>매수|매도)\s+KRW-(?<symbol>[A-Z0-9]+)\s+(?<quantity>[\d,]+(?:\.\d+)?)\s+(?<quantityUnit>[A-Z0-9]+)\s+(?<fee>[\d,]+(?:\.\d+)?)\s+KRW(?:\s+.*)?$/
   );
   if (!tradeMatch?.groups) throw new Error('PDF 거래 행 형식을 인식하지 못했습니다');
 
@@ -75,7 +78,7 @@ export function parseUpbitPdfText(text: string): ParseResult {
     const rowNumber = /^\d+$/.test(maybeNumber) ? Number(maybeNumber) : index + 1;
 
     if (!/^\d+$/.test(maybeNumber)) continue;
-    if (!/^\d{4}[.\-/]\d{2}[.\-/]\d{2}\s+/.test(dateLine)) continue;
+    if (!/^\d{4}[.\-/]\s*\d{1,2}[.\-/]\s*\d{1,2}\.?\s+/.test(dateLine)) continue;
     if (!/^\d{2}:\d{2}:\d{2}\s+/.test(timeLine)) continue;
 
     if (!/\s(매수|매도)\s+KRW-/.test(dateLine)) {

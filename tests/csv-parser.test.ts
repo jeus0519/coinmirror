@@ -49,6 +49,29 @@ test('CSV 파서는 콤마 숫자, KST 날짜, CP949 디코딩을 처리한다',
   assert.equal(result.executions[0].executedAt, '2026-01-01T09:00:00+09:00');
 });
 
+test('업비트 익명화 실제형 CSV 헤더 변형도 침묵 실패 없이 파싱한다', async () => {
+  const csv = await readFile(resolve('src/lib/csv/fixtures/upbit-realistic-variant.csv'), 'utf8');
+  const result = parseUpbitCsv(csv);
+
+  assert.equal(result.detectedAdapter, 'upbit-krw-estimated');
+  assert.equal(result.errors.length, 0);
+  assert.equal(result.executions.length, 4);
+  assert.deepEqual(result.executions[0], {
+    id: 'upbit-1',
+    symbol: 'USDT',
+    side: 'buy',
+    price: 1374,
+    quantity: 7000,
+    fee: 0,
+    executedAt: '2026-08-18T22:52:10+09:00',
+  });
+  assert.equal(result.executions[1].symbol, 'ONDO');
+  assert.equal(result.executions[1].side, 'sell');
+  assert.equal(result.executions[1].fee, 33762.19);
+  assert.equal(result.columnMapping.side, '거래종류');
+  assert.equal(result.columnMapping.price, '거래단가');
+});
+
 test('헤더 미인식 또는 필수 컬럼 누락은 빈 성공이 아니라 명시적 실패를 반환한다', async () => {
   const malformed = await readFile(resolve('src/lib/csv/fixtures/upbit-malformed.csv'), 'utf8');
   const missingHeader = parseCsv('foo,bar\n1,2', { adapter: 'upbit' });

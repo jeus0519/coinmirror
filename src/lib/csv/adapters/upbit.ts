@@ -45,7 +45,7 @@ export const upbitMappings: CsvAdapter['mappings'] = [
   {
     field: 'side',
     required: true,
-    candidates: ['구분', '매수/매도', '종류', 'side', 'type', 'order side'],
+    candidates: ['구분', '매수/매도', '종류', '거래종류', '거래유형', 'side', 'type', 'order side'],
   },
   {
     field: 'executedAt',
@@ -55,7 +55,7 @@ export const upbitMappings: CsvAdapter['mappings'] = [
   {
     field: 'price',
     required: true,
-    candidates: ['체결가', '가격', '거래가격', 'price', 'executed price'],
+    candidates: ['체결가', '가격', '거래가격', '거래단가', 'price', 'executed price'],
   },
   {
     field: 'quantity',
