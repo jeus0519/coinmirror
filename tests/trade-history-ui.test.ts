@@ -38,6 +38,17 @@ test('거래내역 업로드 화면은 PDF와 CSV를 옵션으로 선택하게 �
   assert.match(source, /showPasswordTrustGuide/);
 });
 
+test('거래내역 업로드 화면은 웹 런칭용 브라우저 처리와 저장 범위를 먼저 안내한다', async () => {
+  const source = await readStepSource();
+
+  assert.match(source, /웹에서 바로 분석/);
+  assert.match(source, /원본 PDF\/CSV 파일은 장기 저장하지 않아요/);
+  assert.match(source, /PDF 비밀번호는 분석 중에만 사용하고 저장하지 않아요/);
+  assert.match(source, /분석 요약, 목표, 중복 식별용 fingerprint만 저장/);
+  assert.match(source, /내 데이터 삭제/);
+  assert.doesNotMatch(source, /설치/);
+});
+
 test('인쇄 → PDF로 저장 우회를 권장하지 않는다', async () => {
   // 인쇄 저장본은 텍스트 레이어가 사라져 파싱이 불가능하고,
   // 암호가 풀린 거래내역서가 남아 오히려 위험하다. 권장 문구가 되살아나면 실패시킨다.

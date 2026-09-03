@@ -421,6 +421,15 @@ export function Step3DataImport() {
             업비트 고객센터 PDF가 가장 흔해요. CSV가 있다면 CSV도 괜찮습니다.
           </Text>
         </View>
+        <View className="gap-2 rounded-2xl border border-primary/20 bg-primary/5 p-3">
+          <Text className="text-xs font-extrabold text-primary">웹에서 바로 분석해요</Text>
+          <Text className="text-xs leading-5 text-foreground">
+            원본 PDF/CSV 파일은 장기 저장하지 않아요. PDF 비밀번호는 분석 중에만 사용하고 저장하지 않아요.
+          </Text>
+          <Text className="text-xs leading-5 text-muted-foreground">
+            구독관리에는 분석 요약, 목표, 중복 식별용 fingerprint만 저장해요. 저장된 요약은 분석 화면의 내 데이터 삭제로 지울 수 있어요.
+          </Text>
+        </View>
         <Button onPress={runSample}>
           <Text>예시 데이터로 바로 체험하기</Text>
         </Button>

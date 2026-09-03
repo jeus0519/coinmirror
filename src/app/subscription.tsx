@@ -179,7 +179,7 @@ export default function SubscriptionPage() {
 
       <Text className="text-[11px] leading-5 text-muted-foreground">
         투자 조언이 아니라 과거 거래 기록을 회고하는 기능입니다. 특정 자산의 매수·매도 추천,
-        가격 예측, 수익 보장을 제공하지 않아요.
+        시세 전망, 손익 보장을 제공하지 않아요.
       </Text>
 
       {/* 하단 보조 액션: 구매 CTA와 분리해 전환 흐름을 방해하지 않도록 최하단에 둔다. */}

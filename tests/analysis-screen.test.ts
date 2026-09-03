@@ -105,8 +105,18 @@ test('분석 화면은 로컬 저장 복원과 내 데이터 삭제 액션을 �
   assert.match(source, /restoreSubscriptionState/);
   assert.match(source, /clearSubscriptionSnapshots/);
   assert.match(source, /저장한 기준선 불러오기/);
-  assert.match(source, /저장한 기준선과 목표 삭제하기/);
-  assert.match(source, /이 기기에 저장된 분석 요약과 목표만 삭제/);
+  assert.match(source, /브라우저 저장 요약 삭제하기/);
+  assert.match(source, /브라우저에 저장된 요약 데이터/);
+});
+
+test('분석 화면의 삭제 CTA는 원본 파일 삭제가 아니라 브라우저 저장 요약 삭제로 안내한다', async () => {
+  const source = await readFile(STEP_2, 'utf8');
+
+  assert.match(source, /브라우저에 저장된 요약 데이터/);
+  assert.match(source, /원본 PDF\/CSV 파일을 삭제하는 기능이 아니라/);
+  assert.match(source, /브라우저 저장 요약 삭제하기/);
+  assert.match(source, /기준선, 목표, 월간 리포트 미리보기 근거/);
+  assert.doesNotMatch(source, /원본 파일 삭제하기/);
 });
 
 test('분석 화면은 기준선 저장 단계별로 CTA와 설명을 다르게 보여준다', async () => {

@@ -215,8 +215,9 @@ export function Step2Analysis() {
           </View>
           <View className="gap-2 rounded-2xl border border-border p-3">
             <Text className="text-[11px] leading-4 text-muted-foreground">
-              이 기기에 저장된 분석 요약과 목표만 삭제할 수 있어요. 원본 PDF와 비밀번호는
-              애초에 저장하지 않아요.
+              브라우저에 저장된 요약 데이터만 관리해요. 원본 PDF/CSV 파일을 삭제하는 기능이 아니라,
+              기준선, 목표, 월간 리포트 미리보기 근거로 쓰는 분석 요약을 지웁니다. 원본 PDF와
+              비밀번호는 애초에 저장하지 않아요.
             </Text>
             <View className="flex-row flex-wrap gap-2">
               <Button size="sm" variant="outline" onPress={() => restoreSubscriptionState()}>
@@ -224,7 +225,7 @@ export function Step2Analysis() {
               </Button>
               <Button size="sm" variant="ghost" onPress={() => clearSubscriptionSnapshots()}>
                 <Text className="text-xs text-muted-foreground">
-                  저장한 기준선과 목표 삭제하기
+                  브라우저 저장 요약 삭제하기
                 </Text>
               </Button>
             </View>
