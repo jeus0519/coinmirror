@@ -11,6 +11,7 @@ import { Icon } from '@/components/ui/icon';
 import { Input } from '@/components/ui/input';
 import { Text } from '@/components/ui/text';
 import { analyzeCsvInput } from '@/lib/csv/analyze-csv';
+import { trackCoinmirrorEvent } from '@/lib/analytics';
 import { analyzeUpbitPdfText } from '@/lib/pdf/adapters/upbit';
 import {
   extractPdfText,
@@ -229,6 +230,10 @@ export function Step3DataImport() {
   const isBusy = progress !== null;
 
   function applyPreview(analysis: ReturnType<typeof analyzeCsvInput>) {
+    trackCoinmirrorEvent('parse_success', {
+      screen: 'upload',
+      source_format: analysis.sourceFormat,
+    });
     setTradeAnalysisPreview(analysis);
     setNotice(null);
   }
@@ -256,11 +261,21 @@ export function Step3DataImport() {
       setPdfPassword('');
     } catch (error) {
       if (isPdfNoTextLayerError(error)) {
+        trackCoinmirrorEvent('parse_failed', {
+          screen: 'upload',
+          source_format: 'pdf',
+          failure_code: 'NO_TEXT_LAYER',
+        });
         setNotice(showImagePdfGuide(error.pageCount));
         setPendingPdfBytes(null);
         setPdfPassword('');
         return;
       }
+      trackCoinmirrorEvent('parse_failed', {
+        screen: 'upload',
+        source_format: 'pdf',
+        failure_code: 'PDF_PASSWORD_FAILED',
+      });
       setNotice({
         tone: 'error',
         title: 'PDF를 열지 못했어요',
@@ -276,8 +291,14 @@ export function Step3DataImport() {
     setPendingPdfBytes(null);
     setPdfPassword('');
     setSelectedFileLabel(`${asset.name}${formatBytes(asset.size)}`);
+    trackCoinmirrorEvent('upload_attempt', { screen: 'upload', source_format: format });
 
     if (format === 'pdf' && !isPdfAsset(asset)) {
+      trackCoinmirrorEvent('parse_failed', {
+        screen: 'upload',
+        source_format: format,
+        failure_code: 'INVALID_FILE_TYPE',
+      });
       setNotice({
         tone: 'error',
         title: 'PDF 파일이 아니에요',
@@ -286,6 +307,11 @@ export function Step3DataImport() {
       return;
     }
     if (format === 'csv' && !isCsvAsset(asset)) {
+      trackCoinmirrorEvent('parse_failed', {
+        screen: 'upload',
+        source_format: format,
+        failure_code: 'INVALID_FILE_TYPE',
+      });
       setNotice({
         tone: 'error',
         title: 'CSV 파일이 아니에요',
@@ -306,6 +332,11 @@ export function Step3DataImport() {
           text = await extractPdfText(bytes);
         } catch (error) {
           if (isPdfPasswordRequiredError(error)) {
+            trackCoinmirrorEvent('parse_failed', {
+              screen: 'upload',
+              source_format: 'pdf',
+              failure_code: 'PDF_PASSWORD_REQUIRED',
+            });
             setPendingPdfBytes(bytes.slice(0));
             setNotice({
               tone: 'info',
@@ -315,6 +346,11 @@ export function Step3DataImport() {
             return;
           }
           if (isPdfNoTextLayerError(error)) {
+            trackCoinmirrorEvent('parse_failed', {
+              screen: 'upload',
+              source_format: 'pdf',
+              failure_code: 'NO_TEXT_LAYER',
+            });
             setNotice(showImagePdfGuide(error.pageCount));
             return;
           }
@@ -327,6 +363,11 @@ export function Step3DataImport() {
       }
       applyPreview(analyzeCsvInput(bytes, diagnosisAnswers));
     } catch (error) {
+      trackCoinmirrorEvent('parse_failed', {
+        screen: 'upload',
+        source_format: format,
+        failure_code: 'READ_OR_PARSE_ERROR',
+      });
       setNotice({
         tone: 'error',
         title: '거래내역을 읽지 못했어요',

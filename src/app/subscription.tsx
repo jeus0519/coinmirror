@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
+import { trackCoinmirrorEvent } from '@/lib/analytics';
 
 const COMPARE_ROWS = [
   {
@@ -82,6 +83,11 @@ function PreviewMock({ title, rows }: { title: string; rows: readonly string[] }
 }
 
 export default function SubscriptionPage() {
+  function handleWaitlistCta(cta: 'top' | 'bottom') {
+    trackCoinmirrorEvent('subscription_preview_click', { screen: 'subscription', cta });
+    router.push('/subscription-checkout');
+  }
+
   return (
     <ScrollView className="flex-1 bg-background" contentContainerClassName="gap-5 p-4 pb-12">
       <View className="gap-2">
@@ -104,7 +110,7 @@ export default function SubscriptionPage() {
             핵심 분석은 무료로 먼저 사용해요. 월간 리포트가 준비되면 알려드릴게요. 구독관리에서는
             이 결과를 기준선으로 저장하고, 다음 업로드 때 승률·손실 보유기간·거래 빈도 변화까지 비교합니다.
           </Text>
-          <Button onPress={() => router.push('/subscription-checkout')}>
+          <Button onPress={() => handleWaitlistCta('top')}>
             <Text>구독관리 출시 알림 받기</Text>
           </Button>
         </CardContent>
@@ -172,7 +178,7 @@ export default function SubscriptionPage() {
             지금은 결제 없이 무료 분석을 먼저 열어두는 단계예요. 구독관리 출시 알림을 남기면
             월간 리포트와 다음 업로드 비교가 준비될 때 안내받을 수 있어요.
           </Text>
-          <Button onPress={() => router.push('/subscription-checkout')}>
+          <Button onPress={() => handleWaitlistCta('bottom')}>
             <Text>구독관리 출시 알림 받기</Text>
           </Button>
         </CardContent>

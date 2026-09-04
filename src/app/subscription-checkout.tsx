@@ -1,11 +1,13 @@
 import { ArrowLeft, Bell, CheckCircle2, ShieldCheck } from 'lucide-react-native';
 import { router } from 'expo-router';
-import { ScrollView, View } from 'react-native';
+import { useState } from 'react';
+import { Linking, ScrollView, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
+import { trackCoinmirrorEvent } from '@/lib/analytics';
 
 const PLAN_ITEMS = [
   '이번 분석을 기준선으로 저장',
@@ -15,6 +17,23 @@ const PLAN_ITEMS = [
 ] as const;
 
 export default function SubscriptionCheckoutPage() {
+  const [submissionNotice, setSubmissionNotice] = useState<string | null>(null);
+  const waitlistFormUrl = process.env.EXPO_PUBLIC_WAITLIST_FORM_URL?.trim();
+
+  async function handleWaitlistInterestClick() {
+    trackCoinmirrorEvent('waitlist_interest_click', {
+      screen: 'subscription_waitlist',
+      has_form_url: Boolean(waitlistFormUrl),
+    });
+
+    if (!waitlistFormUrl) {
+      setSubmissionNotice('출시 알림 폼 URL이 아직 연결되지 않았어요. 지금은 관심 클릭만 익명으로 기록합니다.');
+      return;
+    }
+
+    await Linking.openURL(waitlistFormUrl);
+  }
+
   return (
     <ScrollView className="flex-1 bg-background" contentContainerClassName="gap-5 p-4 pb-12">
       <View className="gap-3">
@@ -59,10 +78,15 @@ export default function SubscriptionCheckoutPage() {
             ))}
           </View>
 
-          <Button disabled>
+          <Button onPress={handleWaitlistInterestClick}>
             <Icon as={Bell} size={16} className="text-primary-foreground" />
-            <Text>이메일 입력 폼 연결 예정</Text>
+            <Text>출시 알림 관심 표시하기</Text>
           </Button>
+          {submissionNotice && (
+            <View className="rounded-2xl border border-primary/30 bg-background/90 p-3">
+              <Text className="text-xs leading-5 text-foreground">{submissionNotice}</Text>
+            </View>
+          )}
           <Text className="text-[11px] leading-5 text-muted-foreground">
             이메일은 출시 알림과 월간 리포트 안내에만 사용합니다. 원본 PDF/CSV, PDF 비밀번호,
             개별 체결 원문은 저장하지 않아요.

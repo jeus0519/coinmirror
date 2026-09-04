@@ -4,6 +4,7 @@ import { ScrollView, View } from 'react-native';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
+import { trackCoinmirrorEvent } from '@/lib/analytics';
 import { baseMetrics, KIND_LABEL } from '@/lib/mock-metrics';
 import { useFlowStore } from '@/stores/use-flow-store';
 
@@ -26,12 +27,17 @@ const FLOW_STEPS = [
 export function Step1Start() {
   const setStep = useFlowStore((s) => s.setStep);
 
+  function handleStartClick(targetStep: 2 | 3, cta: 'diagnosis' | 'upload_first') {
+    trackCoinmirrorEvent('start_click', { screen: 'landing', cta });
+    setStep(targetStep);
+  }
+
   return (
     <ScrollView className="flex-1" contentContainerClassName="gap-10 p-4 pb-12">
       <View className="items-center gap-4 pt-4">
         <View className="rounded-full border border-primary/40 bg-primary/20 px-3.5 py-1.5">
           <Text className="text-xs font-bold text-primary-foreground">
-            투자 조언 없이, 기록만 또렷하게
+            무료 공개 MVP · 브라우저에서 바로 분석
           </Text>
         </View>
 
@@ -41,16 +47,16 @@ export function Step1Start() {
         </Text>
 
         <Text className="text-center text-[15px] leading-6 text-muted-foreground">
-          코인미러는 PDF/CSV 거래내역을 읽어 내 매매 리듬을 보여줘요. 사라, 팔라 말하지 않아요.
-          지나간 기록을 쉽게 돌아봅니다.
+          회원가입 없이 PDF/CSV 거래내역을 올리면 브라우저에서 바로 분석해요. 원본 파일은 장기 저장하지 않아요.
+          사라, 팔라 말하지 않고 지나간 기록만 쉽게 돌아봅니다.
         </Text>
 
         <View className="w-full gap-2.5">
-          <Button onPress={() => setStep(2)}>
-            <Text>바로 시작하기</Text>
+          <Button onPress={() => handleStartClick(2, 'diagnosis')}>
+            <Text>무료로 내 거래 습관 확인하기</Text>
           </Button>
-          <Button variant="outline" onPress={() => setStep(3)}>
-            <Text>자료부터 올리기</Text>
+          <Button variant="outline" onPress={() => handleStartClick(3, 'upload_first')}>
+            <Text>PDF/CSV 바로 올리기</Text>
           </Button>
         </View>
       </View>

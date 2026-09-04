@@ -4,8 +4,10 @@ import { PortalHost } from '@rn-primitives/portal';
 import { Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
+import { Platform } from 'react-native';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { buildAnalyticsConfig, installGoogleTag } from '@/lib/analytics';
 import { NAV_THEME } from '@/lib/theme';
 
 SplashScreen.preventAutoHideAsync();
@@ -15,6 +17,25 @@ export default function RootLayout() {
 
   useEffect(() => {
     SplashScreen.hideAsync();
+  }, []);
+
+  useEffect(() => {
+    const config = buildAnalyticsConfig({
+      measurementId: process.env.EXPO_PUBLIC_GA_MEASUREMENT_ID,
+      isProduction: process.env.NODE_ENV === 'production',
+      platform: Platform.OS,
+    });
+
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
+    const analyticsWindow = window as typeof window & {
+      dataLayer?: unknown[];
+      gtag?: (...args: unknown[]) => void;
+    };
+    analyticsWindow.dataLayer = analyticsWindow.dataLayer ?? [];
+    analyticsWindow.gtag = analyticsWindow.gtag ?? ((...args: unknown[]) => analyticsWindow.dataLayer?.push(args));
+
+    installGoogleTag(config, document, analyticsWindow.gtag);
   }, []);
 
   return (

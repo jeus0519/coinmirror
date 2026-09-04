@@ -1,7 +1,7 @@
 import { Lock } from 'lucide-react-native';
 import { router } from 'expo-router';
-import { useMemo } from 'react';
-import { ScrollView, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { Linking, ScrollView, View } from 'react-native';
 
 import { ShareCard } from '@/components/share-card';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +11,7 @@ import { Icon } from '@/components/ui/icon';
 import { MetricCard } from '@/components/ui/metric-card';
 import { Text } from '@/components/ui/text';
 import { buildAnalysisViewData } from '@/lib/analysis-view-data';
+import { trackCoinmirrorEvent } from '@/lib/analytics';
 import { buildExpectationComparisons } from '@/lib/onboarding-diagnosis';
 import { buildInvestmentTypeShareCard } from '@/lib/share-card';
 import { buildMonthlyHabitReport } from '@/lib/subscription/monthly-report';
@@ -62,6 +63,8 @@ export function Step2Analysis() {
   const setStep = useFlowStore((s) => s.setStep);
   const diagnosisAnswers = useFlowStore((s) => s.diagnosisAnswers);
   const tradeAnalysis = useFlowStore((s) => s.tradeAnalysis);
+  const [feedbackNotice, setFeedbackNotice] = useState<string | null>(null);
+  const feedbackFormUrl = process.env.EXPO_PUBLIC_FEEDBACK_FORM_URL?.trim();
   const analysis = useMemo(
     () => buildAnalysisViewData({ dataSource, tradeAnalysis, diagnosis: diagnosisAnswers }),
     [tradeAnalysis, dataSource, diagnosisAnswers]
@@ -89,6 +92,34 @@ export function Step2Analysis() {
       : '이번 분석을 저장해두면 다음 업로드 때 승률, 보유기간, 거래 빈도 변화를 비교할 수 있어요.';
   const snapshotSaveCta = subscriptionSnapshots.length > 0 ? '이번 분석 다시 저장하기' : '이번 분석 저장하기';
   const goalStatusTitle = hasSavedGoal ? '목표 저장 완료' : '목표는 비교가 생기면 저장할 수 있어요';
+
+  useEffect(() => {
+    trackCoinmirrorEvent('result_view', { screen: 'analysis', source_format: analysis.source });
+  }, [analysis.source]);
+
+  function handleSubscriptionPreviewClick(cta: 'pattern_tracking' | 'monthly_report') {
+    trackCoinmirrorEvent('subscription_preview_click', { screen: 'analysis', cta });
+    router.push('/subscription');
+  }
+
+  function handleClearLocalSummary() {
+    trackCoinmirrorEvent('delete_local_data_click', { screen: 'analysis' });
+    clearSubscriptionSnapshots();
+  }
+
+  async function handleFeedbackClick() {
+    trackCoinmirrorEvent('feedback_click', {
+      screen: 'analysis',
+      has_form_url: Boolean(feedbackFormUrl),
+    });
+
+    if (!feedbackFormUrl) {
+      setFeedbackNotice('피드백 폼 URL이 아직 연결되지 않았어요. 지금은 피드백 클릭만 익명으로 기록합니다.');
+      return;
+    }
+
+    await Linking.openURL(feedbackFormUrl);
+  }
 
   return (
     <ScrollView className="flex-1" contentContainerClassName="gap-6 p-4 pb-12">
@@ -183,7 +214,7 @@ export function Step2Analysis() {
               <Text className="text-xs text-foreground">• 월간 투자습관 리포트</Text>
               <Text className="text-xs text-foreground">• 내 약점 기반 목표 저장과 추적</Text>
             </View>
-            <Button onPress={() => router.push('/subscription')}>
+            <Button onPress={() => handleSubscriptionPreviewClick('pattern_tracking')}>
               <Text>내 패턴 변화 추적하기</Text>
             </Button>
           </CardContent>
@@ -223,7 +254,7 @@ export function Step2Analysis() {
               <Button size="sm" variant="outline" onPress={() => restoreSubscriptionState()}>
                 <Text className="text-xs">저장한 기준선 불러오기</Text>
               </Button>
-              <Button size="sm" variant="ghost" onPress={() => clearSubscriptionSnapshots()}>
+              <Button size="sm" variant="ghost" onPress={handleClearLocalSummary}>
                 <Text className="text-xs text-muted-foreground">
                   브라우저 저장 요약 삭제하기
                 </Text>
@@ -362,7 +393,7 @@ export function Step2Analysis() {
             {monthlyHabitReport.safetyCopy} 원본 PDF와 비밀번호는 저장하지 않아요.
           </Text>
           {subscriptionTier === 'free' && (
-            <Button variant="outline" onPress={() => router.push('/subscription')}>
+            <Button variant="outline" onPress={() => handleSubscriptionPreviewClick('monthly_report')}>
               <Text>월간 리포트 전체 보기</Text>
             </Button>
           )}
@@ -587,6 +618,26 @@ export function Step2Analysis() {
               <Text className="tabular-nums text-foreground">{row.shareLabel}</Text>
             </View>
           ))}
+        </CardContent>
+      </Card>
+
+      <Card className="border-primary/20 bg-primary/5">
+        <CardContent className="gap-3 pt-2">
+          <View className="gap-1">
+            <Text className="text-sm font-extrabold text-foreground">결과가 이해됐나요?</Text>
+            <Text className="text-xs leading-5 text-muted-foreground">
+              무료 공개 MVP 단계에서는 실제 사용자가 어디서 막히는지 확인하는 게 중요해요. 피드백은
+              외부 폼으로만 받고, GA에는 클릭 여부만 익명으로 기록합니다.
+            </Text>
+          </View>
+          <Button variant="outline" onPress={handleFeedbackClick}>
+            <Text>피드백 남기기</Text>
+          </Button>
+          {feedbackNotice && (
+            <View className="rounded-2xl border border-primary/30 bg-background/80 p-3">
+              <Text className="text-xs leading-5 text-foreground">{feedbackNotice}</Text>
+            </View>
+          )}
         </CardContent>
       </Card>
     </ScrollView>

@@ -75,8 +75,9 @@
 | P0 | 실제 업비트 PDF/CSV 파싱 신뢰성 | PDF 일부 검증, CSV 미해결 | 익명화 실제 샘플 5~10개 수집/회귀 테스트 |
 | P1 | 첫 사용자 온보딩 이해도 | 기능 구현 중심 | 파일 업로드 전 신뢰/가치 설명 강화 |
 | P1 | 분석 결과 해석 UX | 구현됨 | 위험 카피/과장 수치/표본 부족 상태 QA |
-| P1 | 무료 분석 후 출시 알림 전환 | 미구현 | 구독관리 출시 알림 CTA와 이메일 수집 최소 안내 추가 |
-| P1 | 배포 | 미정 | 웹 배포 후보 선택 및 preview/prod 분리 |
+| P1 | 무료 분석 후 출시 알림 전환 | 부분 구현 | 구독관리 출시 알림 CTA는 `EXPO_PUBLIC_WAITLIST_FORM_URL`, 피드백 CTA는 `EXPO_PUBLIC_FEEDBACK_FORM_URL`로 외부 폼 연결 가능 |
+| P1 | 웹 트래픽·퍼널 계측 | 부분 구현 | GA4 helper, Google tag bootstrap, 핵심 익명 퍼널 이벤트 연결 완료 |
+| P1 | 배포 | 부분 검증 | `npx expo export --platform web` 성공, 배포 플랫폼/도메인 선택 대기 |
 | P2 | 결제/구독 | 보류 | 가격표와 결제 버튼은 이해충돌 검토 전까지 노출하지 않는다 |
 
 ---
@@ -93,7 +94,8 @@
 4. 실제 업비트 PDF/CSV 익명화 샘플 회귀 테스트 확대
 5. 분석 실패/표본 부족 UX 강화
 6. 구독관리 출시 알림 CTA 추가
-7. 배포 방식 결정
+7. Google Analytics 4 웹 트래픽·퍼널 계측 설계
+8. 배포 방식 결정
 
 ### Week 2 — 무료 공개 운영 준비
 
@@ -102,10 +104,11 @@
 1. 배포 환경 오픈
 2. 첫 사용자 체크리스트 작성
 3. 출시 알림/피드백 폼 연결
-4. 링크를 공개 가능한 범위에서 배포
-5. 업로드 성공률/결과 조회/출시 알림 등록률 기록
-6. 치명 이슈 수정
-7. 유료화 진입 여부 판단
+4. Google Analytics 4/Google tag 설치와 Tag Assistant 검증
+5. 링크를 공개 가능한 범위에서 배포
+6. 업로드 성공률/결과 조회/출시 알림 등록률 기록
+7. 치명 이슈 수정
+8. 유료화 진입 여부 판단
 
 ---
 
@@ -286,11 +289,70 @@ npm run typecheck
 - 응답 정리 쉬움
 - 개인정보 수집 고지 필요
 
-**Recommended Default:** Google Form/Tally URL은 사용자가 정하면 연결. 그 전까지는 disabled CTA와 이메일 수집 최소 안내 문구만 둔다.
+**Recommended Default:** Google Form/Tally URL은 사용자가 정하면 `EXPO_PUBLIC_WAITLIST_FORM_URL`에 연결한다. 그 전까지는 CTA 클릭 시 관심 이벤트만 익명 계측하고, 이메일 원문은 GA로 보내지 않는다.
 
 ---
 
-### Task 7: 배포 방식 결정 및 환경 분리
+### Task 7: Google Analytics 4 웹 트래픽·퍼널 계측 추가
+
+**Objective:** 무료 공개 MVP 오픈 후 방문자 수, 시작 클릭, 업로드 시도, 파싱 성공/실패, 결과 조회, 구독관리 출시 알림 관심을 확인할 수 있게 Google Analytics 무료 도구를 설치한다.
+
+**Source:** Google Analytics는 웹/앱 데이터를 이벤트 기반으로 수집하는 현재 세대 Analytics이며, Google tag(gtag.js)는 Analytics 등 Google 측정 제품에 데이터를 보내기 위해 모든 추적 페이지에 설치하는 태그다.
+
+**Files:**
+- Modify or Create: Expo Web analytics bootstrap 파일
+- Modify if needed: `src/app/_layout.tsx` 또는 웹 전용 entry
+- Test: analytics helper가 민감 데이터를 event payload에 넣지 않는지 검증하는 테스트
+
+**Events:**
+
+```text
+page_view
+start_click
+diagnosis_complete
+upload_attempt
+parse_success
+parse_failed
+result_view
+subscription_preview_click
+waitlist_interest_click
+delete_local_data_click
+```
+
+**Privacy/Data Rule:**
+
+- 원본 PDF/CSV, 파일명, PDF 비밀번호, 개별 체결 원문, 계좌/고객 식별자, 종목별 금액/수량을 GA로 보내지 않는다.
+- 이벤트명, 화면명, source format(`pdf`/`csv`), 성공/실패 여부, 실패 사유 코드처럼 개인 식별성이 낮은 값만 보낸다.
+- 이메일 수집은 GA 이벤트와 분리하고, GA에는 이메일 원문이나 해시를 보내지 않는다.
+- GA Measurement ID는 공개 식별자이지만 환경변수/설정으로 분리하고, secret처럼 취급하지 않는다.
+
+**Implementation Notes:**
+
+- 무료 공개 전에는 GA4 속성과 Web data stream을 만들고 Measurement ID(`G-...`)를 확보한다.
+- Expo Web에서 client-side only로 로드한다.
+- 개발/테스트 환경에서는 실제 전송을 비활성화하거나 debug flag로 분리한다.
+- 설치 후 Google Tag Assistant 또는 GA DebugView로 page_view와 핵심 이벤트 수신을 확인한다.
+
+**Verification:**
+
+```bash
+npm test
+npm run lint
+npm run typecheck
+```
+
+Manual QA:
+
+```text
+1. 무료 공개 URL 접속
+2. Google Tag Assistant에서 tag 감지 확인
+3. 시작 클릭 → 업로드 시도 → 결과 조회 → 출시 알림 클릭 이벤트 확인
+4. 이벤트 payload에 파일명/종목/금액/비밀번호/이메일이 없는지 확인
+```
+
+---
+
+### Task 8: 배포 방식 결정 및 환경 분리
 
 **Objective:** localhost 데모가 아니라 외부 사용자가 접속 가능한 웹 URL을 만든다.
 
@@ -322,12 +384,12 @@ npm run web 또는 web export build 명령
 
 ---
 
-### Task 8: 런칭 피드백 운영 문서 작성
+### Task 9: 런칭 피드백 운영 문서 작성
 
 **Objective:** 기능 개발이 아니라 실제 고객 반응을 기록할 틀을 만든다.
 
 **Files:**
-- Create: `docs/launch/v1.0_closed_beta_feedback_tracker.md`
+- Create: `docs/launch/v1.0_free_public_mvp_feedback_tracker.md`
 
 **Fields:**
 
@@ -340,8 +402,8 @@ PDF/CSV 업로드 성공 여부
 가장 유용한 카드
 가장 불안한 부분
 2회차 업로드 의향
-월간 리포트 구독 의향
-월 4,900원 반응
+월간 리포트 출시 알림 의향
+구독관리 출시 알림/가격 의향 조사 동의 여부
 필수 개선 요청
 ```
 
@@ -372,6 +434,14 @@ PDF/CSV 업로드 성공 여부
 - [ ] 개별 체결 원문 장기 저장 없음.
 - [ ] localStorage 저장 key와 저장 필드가 문서화되어 있다.
 - [ ] 내 데이터 삭제가 실제 저장 요약을 지운다.
+
+### Analytics
+
+- [ ] GA4 속성과 Web data stream이 준비되어 있다.
+- [ ] Google tag가 무료 공개 웹 URL에서 로드된다.
+- [ ] page_view와 핵심 퍼널 이벤트가 수집된다.
+- [ ] GA 이벤트에 원본 파일명, 거래 원문, 종목별 금액/수량, PDF 비밀번호, 이메일이 포함되지 않는다.
+- [ ] 개발/테스트 환경에서는 실제 GA 전송을 막거나 분리한다.
 
 ### Compliance
 
@@ -405,8 +475,9 @@ PDF/CSV 업로드 성공 여부
 
 4. 실제 익명화 샘플 회귀 테스트 확대
 5. 구독관리 출시 알림 CTA 추가
-6. 배포 방식 결정
-7. 피드백 운영 문서 작성
+6. Google Analytics 4 웹 트래픽·퍼널 계측 추가
+7. 배포 방식 결정
+8. 피드백 운영 문서 작성
 
 ---
 
@@ -426,7 +497,22 @@ mailto: 또는 임시 Google Form/Tally
 - 개인정보 수집 동의 문구
 - 응답 저장 위치
 
-### B. 외부 배포 방식
+### B. Google Analytics 4 설정
+
+추천 기본값:
+
+```text
+GA4 Web data stream + Google tag(gtag.js)
+```
+
+결정 필요:
+
+- GA4 Measurement ID(`G-...`)
+- 운영/개발 환경 분리 방식
+- 수집할 이벤트명과 실패 사유 코드 목록
+- 쿠키/Analytics 사용 고지 문구 위치
+
+### C. 외부 배포 방식
 
 추천 기본값:
 
@@ -440,7 +526,7 @@ Vercel 또는 Netlify 웹 배포
 - 공개 범위: 링크 아는 사람만 / 완전 공개
 - 지원 결과 발표 전 노출 범위
 
-### C. 겸업·이해충돌 확인
+### D. 겸업·이해충돌 확인
 
 출시 전 최우선 게이트:
 
@@ -467,6 +553,12 @@ Vercel 또는 Netlify 웹 배포
 - 2026-09-03: 실제 업비트 내보내기와 가까운 **익명화 CSV/PDF 회귀 fixture**를 추가했다. CSV는 `거래종류`, `거래단가` 헤더 변형을, PDF는 `2026. 08. 18.`처럼 점 뒤 공백이 있는 날짜 포맷을 검증한다.
 
 - 2026-09-03: 런칭 전략을 **C+D 혼합형**으로 재확정했다. Closed Beta 모집보다 무료 공개 MVP를 우선하고, 핵심 분석은 무료로 먼저 사용하게 한 뒤 구독관리 출시 알림으로 후속 관심을 수집한다. 가격표와 결제 버튼은 이해충돌 검토 전까지 노출하지 않는다.
+
+- 2026-09-04: 무료 공개 MVP 운영에 필요한 **Google Analytics 4/Google tag 기반 웹 트래픽·퍼널 계측**을 계획에 추가했다. 단, GA에는 원본 파일명, 거래 원문, 종목별 금액/수량, PDF 비밀번호, 이메일을 보내지 않고 page_view와 익명 이벤트/실패 사유 코드만 수집한다.
+
+- 2026-09-04: `src/lib/analytics.ts`와 `tests/analytics.test.ts`를 추가해 GA4 이벤트 helper를 TDD로 구현했다. Measurement ID가 없거나 production web이 아니면 no-op이며, 민감 payload key를 제거하고 `_layout.tsx`에서 Google tag bootstrap을 client-side로만 초기화한다.
+- 2026-09-04: 무료 공개 MVP 핵심 퍼널 이벤트를 실제 화면에 연결했다. `start_click`, `upload_attempt`, `parse_success`, `parse_failed`, `result_view`, `subscription_preview_click`, `waitlist_interest_click`, `delete_local_data_click`을 민감정보 없는 payload로만 전송한다. `EXPO_PUBLIC_WAITLIST_FORM_URL`이 있으면 출시 알림 CTA가 외부 폼을 열고, 없으면 관심 클릭만 익명 기록한다. `npx expo export --platform web`으로 정적 web export도 검증했다.
+- 2026-09-04: 첫 화면 CTA를 무료 공개 MVP용으로 정리했다. `무료로 내 거래 습관 확인하기`, `PDF/CSV 바로 올리기`, 브라우저 분석/원본 장기 미저장 문구를 노출하고 `start_click`으로 CTA별 유입을 계측한다. 분석 결과 화면에는 `EXPO_PUBLIC_FEEDBACK_FORM_URL` 기반 피드백 CTA를 추가해, URL이 있으면 외부 폼을 열고 없으면 클릭 관심만 익명 기록한다.
 
 ### 8.2 현재 기준 결론
 
