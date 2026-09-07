@@ -217,6 +217,7 @@ export function Step3DataImport() {
   const confirmTradeAnalysis = useFlowStore((s) => s.confirmTradeAnalysis);
   const diagnosisAnswers = useFlowStore((s) => s.diagnosisAnswers);
   const setStep = useFlowStore((s) => s.setStep);
+  const subscriptionSnapshots = useFlowStore((s) => s.subscriptionSnapshots);
   const summary = summarizeDiagnosis(diagnosisAnswers as Parameters<typeof summarizeDiagnosis>[0]);
   const expectedType = buildExpectedInvestmentTypeProfile(diagnosisAnswers);
   const expectedShareCard = buildInvestmentTypeShareCard(expectedType, 'expected');
@@ -233,6 +234,7 @@ export function Step3DataImport() {
     trackCoinmirrorEvent('parse_success', {
       screen: 'upload',
       source_format: analysis.sourceFormat,
+      has_local_snapshot: subscriptionSnapshots.length > 0,
     });
     setTradeAnalysisPreview(analysis);
     setNotice(null);
@@ -474,6 +476,14 @@ export function Step3DataImport() {
         <Button onPress={runSample}>
           <Text>예시 데이터로 바로 체험하기</Text>
         </Button>
+        {subscriptionSnapshots.length > 0 && (
+          <View className="gap-1 rounded-2xl border border-primary/20 bg-primary/5 p-3">
+            <Text className="text-xs font-extrabold text-primary">지난 결과와 비교할 준비가 되어 있어요</Text>
+            <Text className="text-xs leading-5 text-muted-foreground">
+              기간은 넉넉하게 받아도 괜찮아요. 겹치는 거래는 한 번만 세고, 새 거래만 비교해요.
+            </Text>
+          </View>
+        )}
         <View className="gap-2 rounded-2xl border border-primary/20 bg-primary/5 p-3">
           <View className="gap-1">
             <Text className="text-xs font-extrabold text-primary">2회차 업로드 데모</Text>

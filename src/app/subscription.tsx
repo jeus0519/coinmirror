@@ -40,7 +40,7 @@ const BENEFITS = [
   {
     icon: LineChart,
     eyebrow: '1. 더 깊이 보기',
-    title: '기준선 저장',
+    title: '여러 달 비교',
     body: '방금 확인한 청산 승률, 수익·손실 보유기간, 거래 빈도를 기준선으로 남겨 다음 업로드 때 변화량을 자동 비교해요.',
     bullets: ['다음 업로드 때 변화량 자동 비교', '손실 보유기간이 줄었는지 추적', '반복되는 행동 패턴 TOP 3 정리'],
     previewTitle: '기준선 비교 미리보기',
@@ -84,6 +84,11 @@ function PreviewMock({ title, rows }: { title: string; rows: readonly string[] }
 
 export default function SubscriptionPage() {
   function handleWaitlistCta(cta: 'top' | 'bottom') {
+    trackCoinmirrorEvent('reanalysis_reminder_click', { screen: 'subscription', cta });
+    router.push('/subscription-checkout');
+  }
+
+  function handleBenefitsCta(cta: 'top' | 'bottom') {
     trackCoinmirrorEvent('subscription_preview_click', { screen: 'subscription', cta });
     router.push('/subscription-checkout');
   }
@@ -104,14 +109,17 @@ export default function SubscriptionPage() {
       <Card className="border-primary/30 bg-primary/5">
         <CardContent className="gap-3 pt-2">
           <Text className="text-base font-extrabold text-foreground">
-            무료 분석 후, 구독관리 출시 알림을 받아보세요
+            무료 분석 후, 다음 달 재분석 알림을 받아보세요
           </Text>
           <Text className="text-sm leading-6 text-foreground">
-            핵심 분석은 무료로 먼저 사용해요. 월간 리포트가 준비되면 알려드릴게요. 구독관리에서는
-            이 결과를 기준선으로 저장하고, 다음 업로드 때 승률·손실 보유기간·거래 빈도 변화까지 비교합니다.
+            핵심 분석은 무료로 먼저 사용해요. 다음 달 다시 분석할 시점에 알려드릴게요. 구독관리에서는
+            여러 달 비교, 월간 리포트, 목표 추적 같은 혜택 반응도 함께 확인합니다.
           </Text>
           <Button onPress={() => handleWaitlistCta('top')}>
-            <Text>구독관리 출시 알림 받기</Text>
+            <Text>다음 달 재분석 알림 받기</Text>
+          </Button>
+          <Button variant="outline" onPress={() => handleBenefitsCta('top')}>
+            <Text>구독관리 혜택 보기</Text>
           </Button>
         </CardContent>
       </Card>
@@ -172,14 +180,14 @@ export default function SubscriptionPage() {
       <Card className="border-primary/30 bg-primary/5">
         <CardContent className="gap-3 pt-2">
           <Text className="text-base font-extrabold text-foreground">
-            다음 달에도 내 거래 습관 변화를 보고 싶다면?
+            재분석 알림과 구독관리 혜택이 궁금하다면?
           </Text>
           <Text className="text-sm leading-6 text-muted-foreground">
-            지금은 결제 없이 무료 분석을 먼저 열어두는 단계예요. 구독관리 출시 알림을 남기면
-            월간 리포트와 다음 업로드 비교가 준비될 때 안내받을 수 있어요.
+            지금은 결제 없이 무료 분석을 먼저 열어두는 단계예요. 재분석 알림을 남기면
+            재분석 알림과 함께 여러 달 비교, 월간 리포트, 목표 추적 같은 구독관리 혜택도 확인할 수 있어요.
           </Text>
           <Button onPress={() => handleWaitlistCta('bottom')}>
-            <Text>구독관리 출시 알림 받기</Text>
+            <Text>다음 달 재분석 알림 받기</Text>
           </Button>
         </CardContent>
       </Card>

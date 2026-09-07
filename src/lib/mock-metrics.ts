@@ -21,6 +21,18 @@ export const KIND_LABEL: Record<MetricKind, string> = {
   composite: '종합',
 };
 
+
+export const DISPLAY_METRIC_NAMES: Partial<Record<Metric['id'], string>> = {
+  F1: '손실 관리',
+  F3: '급등 후 진입',
+  F6: '거래 빈도',
+  F8: '특정 자산 집중도',
+};
+
+export function displayMetricName(metric: Pick<Metric, 'id' | 'name'>) {
+  return DISPLAY_METRIC_NAMES[metric.id] ?? metric.name;
+}
+
 export function scoreLevel(score: number | null): ScoreLevel {
   if (score === null) return 'measuring';
   if (score >= 80) return 'stable';
@@ -31,7 +43,7 @@ export function scoreLevel(score: number | null): ScoreLevel {
 export const baseMetrics: Metric[] = [
   {
     id: 'F1',
-    name: '손절 습관',
+    name: '손실 관리',
     kind: 'habit',
     sampleSize: 72,
     measured: true,
@@ -55,7 +67,7 @@ export const baseMetrics: Metric[] = [
   },
   {
     id: 'F3',
-    name: '추격매수',
+    name: '급등 후 진입',
     kind: 'habit',
     sampleSize: 113,
     measured: true,
@@ -91,7 +103,7 @@ export const baseMetrics: Metric[] = [
   },
   {
     id: 'F6',
-    name: '과매매',
+    name: '거래 빈도',
     kind: 'habit',
     sampleSize: 214,
     measured: true,
@@ -115,7 +127,7 @@ export const baseMetrics: Metric[] = [
   },
   {
     id: 'F8',
-    name: '몰빵',
+    name: '특정 자산 집중도',
     kind: 'habit',
     sampleSize: 8,
     measured: false,

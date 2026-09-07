@@ -163,10 +163,11 @@ export function buildMonthlyHabitReport(
   goals: readonly SavedSubscriptionGoal[],
   options: { monthKey?: string } = {}
 ): MonthlyHabitReport {
-  const monthKey = options.monthKey ?? latestMonthKey(snapshots) ?? 'unknown';
+  const monthKey = options.monthKey ?? latestMonthKey(snapshots) ?? 'current';
+  const monthLabel = monthKey === 'current' ? '이번 달' : monthKey;
   const monthlySnapshots = snapshots.filter((snapshot) => monthKeyFrom(snapshot.createdAt) === monthKey);
   const safetyCopy = '원본 PDF, PDF 비밀번호, 개별 체결 원문은 저장하지 않고 분석 요약만으로 만든 회고예요.';
-  const title = `${monthKey} 월간 투자습관 리포트 미리보기`;
+  const title = `${monthLabel} 월간 투자습관 리포트 미리보기`;
   const subtitle = '이번 리포트는 이 달에 저장한 분석 요약을 기준으로 만든 회고예요.';
 
   if (monthlySnapshots.length < 2) {

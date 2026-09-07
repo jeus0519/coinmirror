@@ -44,7 +44,7 @@ export const principlePresets: PrinciplePreset[] = [
     id: 'avoid-chasing',
     label: '급등 직후 따라 사지 않기',
     description: '급등한 종목은 바로 진입하지 않고 한 번 더 관찰해요.',
-    check: '다음 분석에서 추격매수 비중 확인',
+    check: '다음 분석에서 급등 후 진입 비중 확인',
     current: '최근 14%',
     achieved: false,
   },

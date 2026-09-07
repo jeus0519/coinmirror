@@ -42,8 +42,9 @@ test('실제 분석 상단 거래 개요는 승률과 수익·손실 보유시�
 test('무료 분석 화면은 구독 혜택 페이지로 이어지는 자연스러운 배너를 제공한다', async () => {
   const source = await readFile(STEP_2, 'utf8');
 
-  assert.match(source, /이번 분석을 기준선으로 저장할까요/);
-  assert.match(source, /내 패턴 변화 추적하기/);
+  assert.match(source, /이 숫자, 다음 달에는 달라졌을까요/);
+  assert.match(source, /다음 달 재분석 알림 받기/);
+  assert.match(source, /구독관리 혜택 보기/);
   assert.match(source, /router\.push\('\/subscription'\)/);
   assert.match(source, /subscriptionTier === 'free'/);
 });
@@ -73,7 +74,7 @@ test('분석 화면은 개인화 핵심 패턴 카드와 구독관리 목표 추
 
   assert.match(source, /이번 분석에서 눈에 띄는 패턴/);
   assert.match(source, /subscriptionInsights\.map/);
-  assert.match(source, /구독관리에서 추적할 목표 후보/);
+  assert.match(source, /다음 달에 다시 볼 질문 후보/);
   assert.match(source, /trackingGoal/);
 });
 
@@ -82,7 +83,7 @@ test('분석 화면은 기준선 저장과 직전 분석 비교 UI를 제공한�
 
   assert.match(source, /saveCurrentAnalysisSnapshot/);
   assert.match(source, /snapshotComparison/);
-  assert.match(source, /이번 분석 저장하기/);
+  assert.match(source, /이번 결과 저장하기/);
   assert.match(source, /직전 분석과 비교/);
   assert.match(source, /snapshotComparison\.rows\.map/);
   assert.match(source, /원본 PDF와 비밀번호는 저장하지 않아요/);
@@ -104,7 +105,7 @@ test('분석 화면은 로컬 저장 복원과 내 데이터 삭제 액션을 �
 
   assert.match(source, /restoreSubscriptionState/);
   assert.match(source, /clearSubscriptionSnapshots/);
-  assert.match(source, /저장한 기준선 불러오기/);
+  assert.match(source, /저장한 결과 불러오기/);
   assert.match(source, /브라우저 저장 요약 삭제하기/);
   assert.match(source, /브라우저에 저장된 요약 데이터/);
 });
@@ -123,11 +124,11 @@ test('분석 화면은 기준선 저장 단계별로 CTA와 설명을 다르게 
   const source = await readFile(STEP_2, 'utf8');
 
   assert.match(source, /snapshotStatusTitle/);
-  assert.match(source, /첫 기준선이 아직 없어요/);
-  assert.match(source, /기준선 저장됨/);
+  assert.match(source, /첫 비교 준비가 아직 없어요/);
+  assert.match(source, /이번 결과 저장됨/);
   assert.match(source, /직전 분석과 비교 중/);
-  assert.match(source, /이번 분석 다시 저장하기/);
-  assert.match(source, /다음 업로드 때 자동 비교돼요/);
+  assert.match(source, /이번 결과 다시 저장하기/);
+  assert.match(source, /다음 거래내역을 올릴 때 변화량을 비교해요/);
   assert.match(source, /목표 저장 완료/);
 });
 
@@ -135,10 +136,10 @@ test('분석 화면은 중복 체결 자동 제외 결과를 비교 카드에 �
   const source = await readFile(STEP_2, 'utf8');
 
   assert.match(source, /snapshotComparison\.dedupe/);
-  assert.match(source, /중복 체결 자동 처리/);
+  assert.match(source, /겹치는 거래 처리/);
   assert.match(source, /duplicateExecutionCount > 0/);
-  assert.match(source, /신규 체결만 비교/);
-  assert.match(source, /원가 연결용/);
+  assert.match(source, /새 거래만 비교/);
+  assert.match(source, /이번 매도 계산에만 참고/);
 });
 
 test('분석 화면은 월간 투자습관 리포트 미리보기 카드를 제공한다', async () => {
@@ -151,4 +152,34 @@ test('분석 화면은 월간 투자습관 리포트 미리보기 카드를 제�
   assert.match(source, /원가 연결 보정/);
   assert.match(source, /목표 회고/);
   assert.match(source, /원본 PDF와 비밀번호는 저장하지 않아요/);
+});
+
+
+test('분석 화면은 로컬 스냅샷 기반 비교 한계를 재분석 알림 근처에서 안내한다', async () => {
+  const source = await readFile(STEP_2, 'utf8');
+
+  assert.match(source, /처음 분석했던 브라우저에서 다시 열면 비교가 이어집니다/);
+  assert.match(source, /다른 기기에서는 새 분석으로 시작될 수 있어요/);
+});
+
+
+test('분석 화면은 거래 개요 직후 AI 행동코칭을 먼저 보여주고 그 뒤에 예상 비교와 행동 점수를 이어간다', async () => {
+  const source = await readFile(STEP_2, 'utf8');
+
+  assert.match(source, /buildAiBehaviorCoaching/);
+  assert.match(source, /거래 개요/);
+  assert.match(source, /AI 행동코칭/);
+  assert.match(source, /내 예상 vs 기록/);
+  assert.match(source, /행동 점수/);
+  assert.doesNotMatch(source, /무료 행동 점수/);
+  assert.ok(source.indexOf('거래 개요') < source.indexOf('AI 행동코칭'));
+  assert.ok(source.indexOf('AI 행동코칭') < source.indexOf('내 예상 vs 기록'));
+  assert.ok(source.indexOf('내 예상 vs 기록') < source.indexOf('행동 점수'));
+  assert.ok(source.indexOf('행동 점수') < source.indexOf('투자거울 타입'));
+  assert.ok(source.indexOf('투자거울 타입') < source.indexOf('이번 분석에서 눈에 띄는 패턴'));
+  assert.match(source, /이번 기록을 바탕으로 정리한 AI 회고/);
+  assert.match(source, /줄여볼 행동/);
+  assert.match(source, /유지할 행동/);
+  assert.match(source, /다음 달 확인 질문/);
+  assert.match(source, /원본 거래내역과 PDF 비밀번호는 AI로 보내지 않아요/);
 });

@@ -34,7 +34,7 @@ export default function EntryDetailScreen() {
             <Row label="목표가" value={`${formatKrw(record.targetPrice)}원`} />
           )}
           {record.stopLossPrice != null && (
-            <Row label="손절가" value={`${formatKrw(record.stopLossPrice)}원`} />
+            <Row label="정리 기준가" value={`${formatKrw(record.stopLossPrice)}원`} />
           )}
         </CardContent>
       </Card>

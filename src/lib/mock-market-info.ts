@@ -133,7 +133,7 @@ export const exchangeEvents: ExchangeEvent[] = [
     period: '2026-08-10 ~ 2026-08-17',
     requirement: '이벤트 페이지에서 별도 응모',
     rewardForm: '추첨 리워드',
-    riskNote: '이벤트 참여를 위한 과도한 거래는 F6 과매매 점수에서 관찰할 수 있어요.',
+    riskNote: '이벤트 참여를 위한 과도한 거래는 F6 거래 빈도 점수에서 관찰할 수 있어요.',
     noticeUrl: 'https://feed.bithumb.com/notice',
     matchesMyHistory: false,
   },

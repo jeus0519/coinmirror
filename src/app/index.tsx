@@ -11,42 +11,54 @@ import { Step3Goals } from '@/components/steps/step-3-goals';
 import { Step4Info } from '@/components/steps/step-4-info';
 import { StepNav } from '@/components/steps/step-nav';
 import { Text } from '@/components/ui/text';
+import { trackCoinmirrorEvent } from '@/lib/analytics';
 import { useFlowStore } from '@/stores/use-flow-store';
 
 export default function AppScreen() {
   const currentStep = useFlowStore((s) => s.currentStep);
   const setStep = useFlowStore((s) => s.setStep);
   const runDuplicateUploadDemo = useFlowStore((s) => s.runDuplicateUploadDemo);
-  const params = useLocalSearchParams<{ step?: string; demo?: string }>();
+  const params = useLocalSearchParams<{ step?: string; demo?: string; source?: string; r?: string }>();
 
   useEffect(() => {
+    if (params.source === 'reanalysis-email') {
+      trackCoinmirrorEvent('reanalysis_return', {
+        screen: 'landing',
+        return_source: 'email',
+        has_return_token: Boolean(params.r),
+      });
+    }
+
     if (params.demo === 'duplicate-upload') {
       runDuplicateUploadDemo();
       return;
     }
     if (params.step === 'upload') setStep(3);
-  }, [params.demo, params.step, runDuplicateUploadDemo, setStep]);
+  }, [params.demo, params.r, params.source, params.step, runDuplicateUploadDemo, setStep]);
 
   return (
-    <SafeAreaView className="flex-1 bg-background" edges={['top']}>
-      <View className="flex-row items-center gap-2.5 px-4 pb-2 pt-1">
-        <View className="h-9 w-9 items-center justify-center rounded-2xl bg-primary">
-          <Text className="text-lg font-extrabold text-primary-foreground">미</Text>
+    <SafeAreaView className="flex-1 bg-background" edges={['top']} style={{ flex: 1 }}>
+      <View className="shrink-0 border-b border-border bg-background">
+        <View className="mx-auto w-full max-w-5xl flex-row items-center gap-2.5 px-4 pb-2 pt-1">
+          <View className="h-9 w-9 items-center justify-center rounded-2xl bg-primary">
+            <Text className="text-lg font-extrabold text-primary-foreground">미</Text>
+          </View>
+          <View>
+            <Text className="text-base font-extrabold text-foreground">코인미러</Text>
+            <Text className="text-[11px] text-muted-foreground">내 거래 습관을 비춰봐요</Text>
+          </View>
         </View>
-        <View>
-          <Text className="text-base font-extrabold text-foreground">코인미러</Text>
-          <Text className="text-[11px] text-muted-foreground">내 거래 습관을 비춰봐요</Text>
-        </View>
+        <StepNav />
       </View>
 
-      <StepNav />
-
-      {currentStep === 1 && <Step1Start />}
-      {currentStep === 2 && <Step2Diagnosis />}
-      {currentStep === 3 && <Step3DataImport />}
-      {currentStep === 4 && <Step2Analysis />}
-      {currentStep === 5 && <Step3Goals />}
-      {currentStep === 6 && <Step4Info />}
+      <View className="flex-1 overflow-hidden">
+        {currentStep === 1 && <Step1Start />}
+        {currentStep === 2 && <Step2Diagnosis />}
+        {currentStep === 3 && <Step3DataImport />}
+        {currentStep === 4 && <Step2Analysis />}
+        {currentStep === 5 && <Step3Goals />}
+        {currentStep === 6 && <Step4Info />}
+      </View>
     </SafeAreaView>
   );
 }

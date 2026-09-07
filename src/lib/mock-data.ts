@@ -38,7 +38,7 @@ export const mockRecords: MockRecord[] = [
     reasonTags: ['차트'],
     emotionTags: ['불안'],
     stopLossPrice: 800,
-    memo: '손절가 근처라 정리',
+    memo: '정한 기준가 근처라 정리',
   },
   {
     id: '3',
@@ -81,7 +81,7 @@ export const mockRecords: MockRecord[] = [
 export const mockWeeklySummary = {
   scoreValue: 68,
   scoreDelta: 4,
-  scoreDriver: '손절 규율 개선이 견인',
+  scoreDriver: '손실 관리 개선이 견인',
   tradeCount: 12,
   planComplianceRate: 62,
   riskHighlight: '최근 7일 매수 8건 중 5건이 근거 태그 없이 기록됐어요',

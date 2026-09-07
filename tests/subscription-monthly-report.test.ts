@@ -85,3 +85,13 @@ test('월간 리포트는 요청 월의 스냅샷만 묶고 최신 월을 기본
   assert.equal(report.monthKey, '2026-09');
   assert.equal(report.metrics.find((metric) => metric.key === 'analysisCount')?.value, '2개');
 });
+
+
+test('스냅샷이 없어도 unknown 같은 개발자용 fallback을 고객 제목에 노출하지 않는다', () => {
+  const report = buildMonthlyHabitReport([], []);
+
+  assert.equal(report.status, 'insufficient-data');
+  assert.equal(report.monthKey, 'current');
+  assert.doesNotMatch(report.title, /unknown/i);
+  assert.match(report.title, /이번 달 월간 투자습관 리포트 미리보기/);
+});

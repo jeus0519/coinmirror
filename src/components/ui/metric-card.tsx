@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Text } from '@/components/ui/text';
 import { cn } from '@/lib/utils';
-import { KIND_LABEL, type Metric, scoreLevel } from '@/lib/mock-metrics';
+import { KIND_LABEL, type Metric, displayMetricName, scoreLevel } from '@/lib/mock-metrics';
 
 const KIND_STYLE: Record<Metric['kind'], string> = {
   habit: 'bg-primary/15',
@@ -31,7 +31,7 @@ export function MetricCard({ metric }: { metric: Metric }) {
         <View className="flex-row items-start justify-between gap-3">
           <View className="flex-1 gap-1">
             <Text className="text-[15px] font-bold text-foreground">
-              {metric.id}. {metric.name}
+              {metric.id}. {displayMetricName(metric)}
             </Text>
             <View className={cn('self-start rounded-full px-2 py-0.5', KIND_STYLE[metric.kind])}>
               <Text className={cn('text-[10.5px] font-extrabold', KIND_TEXT_STYLE[metric.kind])}>

@@ -66,7 +66,7 @@ export const diagnosisQuestions: DiagnosisQuestion[] = [
     maxSelections: 2,
     options: [
       { id: 'chase', label: '오르는 코인을 따라 산다' },
-      { id: 'hold_loss', label: '손절을 못 하고 버틴다' },
+      { id: 'hold_loss', label: '손실 상태를 오래 보유한다' },
       { id: 'averaging', label: '물타기를 자주 한다' },
       { id: 'overtrade', label: '거래가 너무 잦다' },
       { id: 'night', label: '새벽에 충동 매매한다' },

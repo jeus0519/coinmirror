@@ -162,7 +162,7 @@ export default function NewEntryScreen() {
           />
         </View>
         <View className="flex-1 gap-2">
-          <Label>손절가 (선택)</Label>
+          <Label>정리 기준가 (선택)</Label>
           <Input
             value={stopLossPrice}
             onChangeText={setStopLossPrice}

@@ -10,6 +10,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Icon } from '@/components/ui/icon';
 import { MetricCard } from '@/components/ui/metric-card';
 import { Text } from '@/components/ui/text';
+import { buildAiBehaviorCoaching } from '@/lib/ai-coaching';
 import { buildAnalysisViewData } from '@/lib/analysis-view-data';
 import { trackCoinmirrorEvent } from '@/lib/analytics';
 import { buildExpectationComparisons } from '@/lib/onboarding-diagnosis';
@@ -70,6 +71,15 @@ export function Step2Analysis() {
     [tradeAnalysis, dataSource, diagnosisAnswers]
   );
   const derivedSeries = analysis.derivedSeries;
+  const aiBehaviorCoaching = useMemo(
+    () =>
+      buildAiBehaviorCoaching({
+        generalMbti: analysis.investmentType.generalMbti,
+        metrics: analysis.metrics,
+        comparisonCopy: analysis.investmentType.comparisonCopy,
+      }),
+    [analysis.investmentType.comparisonCopy, analysis.investmentType.generalMbti, analysis.metrics]
+  );
   const expectationComparisons = useMemo(
     () => buildExpectationComparisons(diagnosisAnswers, analysis.expectationActuals),
     [analysis.expectationActuals, diagnosisAnswers]
@@ -83,23 +93,40 @@ export function Step2Analysis() {
   const snapshotStatusTitle = snapshotComparison
     ? '직전 분석과 비교 중'
     : subscriptionSnapshots.length > 0
-      ? '기준선 저장됨'
-      : '첫 기준선이 아직 없어요';
+      ? '이번 결과 저장됨'
+      : '첫 비교 준비가 아직 없어요';
   const snapshotStatusDescription = snapshotComparison
     ? '직전 분석과 이번 분석의 차이를 바로 아래에서 확인할 수 있어요.'
     : subscriptionSnapshots.length > 0
-      ? '다음 업로드 때 자동 비교돼요. 새 거래내역을 올린 뒤 이번 분석 다시 저장하기를 눌러 변화량을 확인하세요.'
-      : '이번 분석을 저장해두면 다음 업로드 때 승률, 보유기간, 거래 빈도 변화를 비교할 수 있어요.';
-  const snapshotSaveCta = subscriptionSnapshots.length > 0 ? '이번 분석 다시 저장하기' : '이번 분석 저장하기';
+      ? '다음 거래내역을 올릴 때 변화량을 비교해요. 새 거래내역을 올린 뒤 이번 결과 다시 저장하기를 눌러 확인하세요.'
+      : '이번 결과를 저장해두면 다음 거래내역을 올릴 때 승률, 보유기간, 거래 빈도 변화를 비교할 수 있어요.';
+  const snapshotSaveCta = subscriptionSnapshots.length > 0 ? '이번 결과 다시 저장하기' : '이번 결과 저장하기';
   const goalStatusTitle = hasSavedGoal ? '목표 저장 완료' : '목표는 비교가 생기면 저장할 수 있어요';
 
   useEffect(() => {
     trackCoinmirrorEvent('result_view', { screen: 'analysis', source_format: analysis.source });
-  }, [analysis.source]);
+    if (snapshotComparison) {
+      trackCoinmirrorEvent('comparison_result_view', {
+        screen: 'analysis',
+        has_local_snapshot: subscriptionSnapshots.length > 0,
+        has_duplicate_executions: snapshotComparison.dedupe.duplicateExecutionCount > 0,
+        has_unique_executions: snapshotComparison.dedupe.uniqueExecutionCount > 0,
+      });
+    }
+  }, [analysis.source, snapshotComparison, subscriptionSnapshots.length]);
 
-  function handleSubscriptionPreviewClick(cta: 'pattern_tracking' | 'monthly_report') {
+  function handleSubscriptionPreviewClick(cta: 'pattern_tracking' | 'monthly_report' | 'benefits') {
     trackCoinmirrorEvent('subscription_preview_click', { screen: 'analysis', cta });
     router.push('/subscription');
+  }
+
+  async function handleReanalysisReminderClick() {
+    trackCoinmirrorEvent('reanalysis_reminder_click', {
+      screen: 'analysis',
+      has_local_snapshot: subscriptionSnapshots.length > 0,
+      has_form_url: Boolean(process.env.EXPO_PUBLIC_WAITLIST_FORM_URL?.trim()),
+    });
+    router.push('/subscription-checkout');
   }
 
   function handleClearLocalSummary() {
@@ -166,6 +193,179 @@ export function Step2Analysis() {
         </View>
       </View>
 
+      <Card className="border-primary/30 bg-primary/5">
+        <CardContent className="gap-3 pt-2">
+          <View className="gap-1">
+            <Text className="text-[11px] font-extrabold text-primary">
+              이번 기록을 바탕으로 정리한 AI 회고
+            </Text>
+            <Text className="text-base font-extrabold text-foreground">AI 행동코칭</Text>
+            <Text className="text-sm leading-6 text-muted-foreground">{aiBehaviorCoaching.intro}</Text>
+          </View>
+          <View className="gap-2 rounded-2xl bg-background/80 p-3">
+            <Text className="text-xs font-extrabold text-foreground">키 지표에서 눈에 띈 점</Text>
+            {aiBehaviorCoaching.keySignals.map((signal) => (
+              <Text key={signal} className="text-[11px] leading-4 text-muted-foreground">
+                • {signal}
+              </Text>
+            ))}
+          </View>
+          <View className="gap-2 rounded-2xl bg-background/80 p-3">
+            <Text className="text-xs font-extrabold text-foreground">줄여볼 행동</Text>
+            {aiBehaviorCoaching.reduceActions.map((action) => (
+              <Text key={action} className="text-[11px] leading-4 text-muted-foreground">
+                • {action}
+              </Text>
+            ))}
+          </View>
+          <View className="gap-2 rounded-2xl bg-background/80 p-3">
+            <Text className="text-xs font-extrabold text-foreground">유지할 행동</Text>
+            {aiBehaviorCoaching.reinforceActions.map((action) => (
+              <Text key={action} className="text-[11px] leading-4 text-muted-foreground">
+                • {action}
+              </Text>
+            ))}
+          </View>
+          <View className="gap-1.5 rounded-2xl border border-primary/20 bg-background/80 p-3">
+            <Text className="text-xs font-extrabold text-primary">다음 달 확인 질문</Text>
+            <Text className="text-xs leading-5 text-foreground">{aiBehaviorCoaching.nextQuestion}</Text>
+          </View>
+          <Text className="text-[11px] leading-4 text-muted-foreground">
+            원본 거래내역과 PDF 비밀번호는 AI로 보내지 않아요. {aiBehaviorCoaching.safetyCopy}
+          </Text>
+        </CardContent>
+      </Card>
+
+      <View className="gap-3">
+        <View className="gap-1">
+          <Text className="text-base font-extrabold text-foreground">내 예상 vs 기록</Text>
+          <Text className="text-xs text-muted-foreground">
+            맞고 틀림을 판단하지 않고, 답한 항목의 차이만 보여드려요.
+          </Text>
+        </View>
+        {expectationComparisons.length ? (
+          <View className="gap-2.5">
+            {expectationComparisons.map((item) => (
+              <Card key={item.questionId}>
+                <CardContent className="gap-2 pt-2">
+                  <View className="flex-row items-center justify-between gap-2">
+                    <Text className="text-sm font-bold text-foreground">{item.label}</Text>
+                    {item.source === 'sample' && (
+                      <Badge variant="outline">
+                        <Text>샘플</Text>
+                      </Badge>
+                    )}
+                  </View>
+                  <View className="flex-row gap-2">
+                    <View className="flex-1 rounded-xl bg-muted p-3">
+                      <Text className="text-[11px] text-muted-foreground">내 예상</Text>
+                      <Text className="text-[13px] font-bold text-foreground">{item.expected}</Text>
+                    </View>
+                    <View className="flex-1 rounded-xl bg-primary/10 p-3">
+                      <Text className="text-[11px] text-primary">기록된 실제</Text>
+                      <Text className="text-[13px] font-bold text-foreground">{item.actual}</Text>
+                    </View>
+                  </View>
+                  <Text className="text-xs text-muted-foreground">{item.observation}</Text>
+                </CardContent>
+              </Card>
+            ))}
+          </View>
+        ) : (
+          <Card>
+            <CardContent className="pt-2">
+              <Text className="text-xs text-muted-foreground">
+                예상 문항은 건너뛰었어요. 거래 점수는 그대로 볼 수 있어요.
+              </Text>
+            </CardContent>
+          </Card>
+        )}
+      </View>
+
+      <View className="gap-3">
+        <View className="gap-1">
+          <Text className="text-base font-extrabold text-foreground">행동 점수</Text>
+          <Text className="text-xs text-muted-foreground">
+            모든 점수는 0~100점이며 높을수록 절제·규율 상태가 안정적이에요. 거래 성과나 투자 실력을
+            평가하는 점수는 아닙니다.
+          </Text>
+        </View>
+        <View className="gap-3">
+          {analysis.metrics.map((m) => (
+            <MetricCard key={m.id} metric={m} />
+          ))}
+        </View>
+      </View>
+
+      <Card>
+        <CardContent className="gap-3 pt-2">
+          <View className="flex-row items-center justify-between gap-3">
+            <View className="flex-1 gap-1">
+              <Text className="text-xs font-bold text-primary">투자거울 타입</Text>
+              <Text className="text-xl font-extrabold text-foreground">
+                {analysis.investmentType.title}
+              </Text>
+              <Text className="text-xs text-muted-foreground">
+                코드 {analysis.investmentType.code}
+              </Text>
+            </View>
+            <View className="rounded-2xl bg-primary/10 px-3 py-2">
+              <Text className="text-xs font-bold text-primary">
+                MBTI{' '}
+                {analysis.investmentType.generalMbti &&
+                analysis.investmentType.generalMbti.length === 4
+                  ? analysis.investmentType.generalMbti
+                  : '선택 안 함'}
+              </Text>
+            </View>
+          </View>
+          <View className="flex-row flex-wrap gap-2">
+            {analysis.investmentType.axes.map((axis) => (
+              <View key={axis.axis} className="rounded-full bg-muted px-3 py-1.5">
+                <Text className="text-[11px] font-semibold text-foreground">
+                  {axis.code} · {axis.label}
+                </Text>
+              </View>
+            ))}
+          </View>
+          <Text className="text-xs leading-5 text-muted-foreground">
+            {analysis.investmentType.comparisonCopy}
+          </Text>
+          <View className="gap-2 rounded-2xl bg-muted p-3">
+            <Text className="text-xs font-extrabold text-foreground">장점</Text>
+            {analysis.investmentType.strengths.map((item) => (
+              <Text key={item} className="text-[11px] leading-4 text-muted-foreground">
+                • {item}
+              </Text>
+            ))}
+          </View>
+          <View className="gap-2 rounded-2xl bg-muted p-3">
+            <Text className="text-xs font-extrabold text-foreground">주의할 점</Text>
+            {analysis.investmentType.watchouts.map((item) => (
+              <Text key={item} className="text-[11px] leading-4 text-muted-foreground">
+                • {item}
+              </Text>
+            ))}
+          </View>
+          <View className="gap-2 rounded-2xl bg-primary/5 p-3">
+            <Text className="text-xs font-extrabold text-primary">개선하면 좋은 편향</Text>
+            {analysis.investmentType.biasSuggestions.map((item) => (
+              <Text key={item.metricId} className="text-[11px] leading-4 text-muted-foreground">
+                • {item.title}: {item.suggestion}
+              </Text>
+            ))}
+          </View>
+          <Text className="text-xs leading-5 text-muted-foreground">
+            {analysis.investmentType.similarMbtiCopy}
+          </Text>
+          <Text className="text-[11px] leading-4 text-muted-foreground">
+            {analysis.investmentType.disclaimer} 미래 행동을 제시하거나 성격을 단정하는 기능이
+            아닙니다.
+          </Text>
+          <ShareCard card={recordedShareCard} />
+        </CardContent>
+      </Card>
+
       {analysis.subscriptionInsights.length > 0 && (
         <View className="gap-3">
           <View className="gap-1">
@@ -185,7 +385,7 @@ export function Step2Analysis() {
                 </View>
                 <View className="gap-1.5 rounded-2xl bg-muted p-3">
                   <Text className="text-[11px] font-extrabold text-primary">
-                    구독관리에서 추적할 목표 후보
+                    다음 달에 다시 볼 질문 후보
                   </Text>
                   <Text className="text-xs leading-5 text-foreground">{insight.trackingGoal}</Text>
                 </View>
@@ -200,22 +400,25 @@ export function Step2Analysis() {
         <Card className="border-primary/30 bg-primary/5">
           <CardContent className="gap-3 pt-2">
             <View className="gap-1">
-              <Text className="text-[11px] font-extrabold text-primary">구독관리 미리보기</Text>
+              <Text className="text-[11px] font-extrabold text-primary">다음 달 비교 준비</Text>
               <Text className="text-base font-extrabold text-foreground">
-                이번 분석을 기준선으로 저장할까요?
+                이 숫자, 다음 달에는 달라졌을까요?
               </Text>
               <Text className="text-sm leading-6 text-muted-foreground">
-                방금 본 승률, 수익·손실 보유기간, 거래 빈도를 다음 업로드와 비교하면 반복되는
-                패턴이 더 선명해져요.
+                이번 결과 요약만 이 브라우저에 저장해두면 다음 거래내역을 올릴 때 변화량을 비교할 수 있어요.
+                처음 분석했던 브라우저에서 다시 열면 비교가 이어집니다. 다른 기기에서는 새 분석으로 시작될 수 있어요.
               </Text>
             </View>
             <View className="gap-1.5 rounded-2xl bg-background/80 p-3">
-              <Text className="text-xs text-foreground">• 다음 업로드 때 변화량 자동 비교</Text>
+              <Text className="text-xs text-foreground">• 다음 거래내역 업로드 때 변화량 비교</Text>
               <Text className="text-xs text-foreground">• 월간 투자습관 리포트</Text>
-              <Text className="text-xs text-foreground">• 내 약점 기반 목표 저장과 추적</Text>
+              <Text className="text-xs text-foreground">• 구독관리에서는 여러 달 비교와 목표 추적 준비</Text>
             </View>
-            <Button onPress={() => handleSubscriptionPreviewClick('pattern_tracking')}>
-              <Text>내 패턴 변화 추적하기</Text>
+            <Button onPress={handleReanalysisReminderClick}>
+              <Text>다음 달 재분석 알림 받기</Text>
+            </Button>
+            <Button variant="outline" onPress={() => handleSubscriptionPreviewClick('benefits')}>
+              <Text>구독관리 혜택 보기</Text>
             </Button>
           </CardContent>
         </Card>
@@ -224,10 +427,10 @@ export function Step2Analysis() {
       <Card>
         <CardContent className="gap-3 pt-2">
           <View className="gap-1">
-            <Text className="text-base font-extrabold text-foreground">구독관리 기준선</Text>
+            <Text className="text-base font-extrabold text-foreground">다음 달 비교 준비</Text>
             <Text className="text-xs font-extrabold text-primary">{snapshotStatusTitle}</Text>
             <Text className="text-xs leading-5 text-muted-foreground">
-              {snapshotStatusDescription} 이번 분석 저장하기를 누르면 투자거울 타입, 승률,
+              {snapshotStatusDescription} 이번 결과 저장하기를 누르면 투자거울 타입, 승률,
               보유기간 같은 분석 요약만 저장해요. 원본 PDF와 비밀번호는 저장하지 않아요.
             </Text>
           </View>
@@ -252,7 +455,7 @@ export function Step2Analysis() {
             </Text>
             <View className="flex-row flex-wrap gap-2">
               <Button size="sm" variant="outline" onPress={() => restoreSubscriptionState()}>
-                <Text className="text-xs">저장한 기준선 불러오기</Text>
+                <Text className="text-xs">저장한 결과 불러오기</Text>
               </Button>
               <Button size="sm" variant="ghost" onPress={handleClearLocalSummary}>
                 <Text className="text-xs text-muted-foreground">
@@ -270,11 +473,10 @@ export function Step2Analysis() {
               {snapshotComparison.dedupe.duplicateExecutionCount > 0 && (
                 <View className="gap-1 rounded-xl bg-background/80 p-2.5">
                   <Text className="text-[11px] font-extrabold text-primary">
-                    중복 체결 자동 처리
+                    겹치는 거래 처리
                   </Text>
                   <Text className="text-[11px] leading-4 text-muted-foreground">
-                    {snapshotComparison.dedupe.copy} 신규 체결만 비교 결과에 반영했어요. 기간 밖
-                    매수분은 중복 집계하지 않고 신규 매도 원가 연결용으로만 사용해요.
+                    {snapshotComparison.dedupe.copy} 새 거래만 비교 결과에 반영했어요. 이전에 산 기록은 새 거래로 세지 않고 이번 매도 계산에만 참고해요.
                   </Text>
                 </View>
               )}
@@ -394,141 +596,11 @@ export function Step2Analysis() {
           </Text>
           {subscriptionTier === 'free' && (
             <Button variant="outline" onPress={() => handleSubscriptionPreviewClick('monthly_report')}>
-              <Text>월간 리포트 전체 보기</Text>
+              <Text>구독관리 혜택 보기</Text>
             </Button>
           )}
         </CardContent>
       </Card>
-
-      <Card>
-        <CardContent className="gap-3 pt-2">
-          <View className="flex-row items-center justify-between gap-3">
-            <View className="flex-1 gap-1">
-              <Text className="text-xs font-bold text-primary">투자거울 타입</Text>
-              <Text className="text-xl font-extrabold text-foreground">
-                {analysis.investmentType.title}
-              </Text>
-              <Text className="text-xs text-muted-foreground">
-                코드 {analysis.investmentType.code}
-              </Text>
-            </View>
-            <View className="rounded-2xl bg-primary/10 px-3 py-2">
-              <Text className="text-xs font-bold text-primary">
-                MBTI{' '}
-                {analysis.investmentType.generalMbti &&
-                analysis.investmentType.generalMbti.length === 4
-                  ? analysis.investmentType.generalMbti
-                  : '선택 안 함'}
-              </Text>
-            </View>
-          </View>
-          <View className="flex-row flex-wrap gap-2">
-            {analysis.investmentType.axes.map((axis) => (
-              <View key={axis.axis} className="rounded-full bg-muted px-3 py-1.5">
-                <Text className="text-[11px] font-semibold text-foreground">
-                  {axis.code} · {axis.label}
-                </Text>
-              </View>
-            ))}
-          </View>
-          <Text className="text-xs leading-5 text-muted-foreground">
-            {analysis.investmentType.comparisonCopy}
-          </Text>
-          <View className="gap-2 rounded-2xl bg-muted p-3">
-            <Text className="text-xs font-extrabold text-foreground">장점</Text>
-            {analysis.investmentType.strengths.map((item) => (
-              <Text key={item} className="text-[11px] leading-4 text-muted-foreground">
-                • {item}
-              </Text>
-            ))}
-          </View>
-          <View className="gap-2 rounded-2xl bg-muted p-3">
-            <Text className="text-xs font-extrabold text-foreground">주의할 점</Text>
-            {analysis.investmentType.watchouts.map((item) => (
-              <Text key={item} className="text-[11px] leading-4 text-muted-foreground">
-                • {item}
-              </Text>
-            ))}
-          </View>
-          <View className="gap-2 rounded-2xl bg-primary/5 p-3">
-            <Text className="text-xs font-extrabold text-primary">개선하면 좋은 편향</Text>
-            {analysis.investmentType.biasSuggestions.map((item) => (
-              <Text key={item.metricId} className="text-[11px] leading-4 text-muted-foreground">
-                • {item.title}: {item.suggestion}
-              </Text>
-            ))}
-          </View>
-          <Text className="text-xs leading-5 text-muted-foreground">
-            {analysis.investmentType.similarMbtiCopy}
-          </Text>
-          <Text className="text-[11px] leading-4 text-muted-foreground">
-            {analysis.investmentType.disclaimer} 미래 행동을 제시하거나 성격을 단정하는 기능이
-            아닙니다.
-          </Text>
-          <ShareCard card={recordedShareCard} />
-        </CardContent>
-      </Card>
-
-      <View className="gap-3">
-        <View className="gap-1">
-          <Text className="text-base font-extrabold text-foreground">내 예상 vs 기록</Text>
-          <Text className="text-xs text-muted-foreground">
-            맞고 틀림을 판단하지 않고, 답한 항목의 차이만 보여드려요.
-          </Text>
-        </View>
-        {expectationComparisons.length ? (
-          <View className="gap-2.5">
-            {expectationComparisons.map((item) => (
-              <Card key={item.questionId}>
-                <CardContent className="gap-2 pt-2">
-                  <View className="flex-row items-center justify-between gap-2">
-                    <Text className="text-sm font-bold text-foreground">{item.label}</Text>
-                    {item.source === 'sample' && (
-                      <Badge variant="outline">
-                        <Text>샘플</Text>
-                      </Badge>
-                    )}
-                  </View>
-                  <View className="flex-row gap-2">
-                    <View className="flex-1 rounded-xl bg-muted p-3">
-                      <Text className="text-[11px] text-muted-foreground">내 예상</Text>
-                      <Text className="text-[13px] font-bold text-foreground">{item.expected}</Text>
-                    </View>
-                    <View className="flex-1 rounded-xl bg-primary/10 p-3">
-                      <Text className="text-[11px] text-primary">기록된 실제</Text>
-                      <Text className="text-[13px] font-bold text-foreground">{item.actual}</Text>
-                    </View>
-                  </View>
-                  <Text className="text-xs text-muted-foreground">{item.observation}</Text>
-                </CardContent>
-              </Card>
-            ))}
-          </View>
-        ) : (
-          <Card>
-            <CardContent className="pt-2">
-              <Text className="text-xs text-muted-foreground">
-                예상 문항은 건너뛰었어요. 거래 점수는 그대로 볼 수 있어요.
-              </Text>
-            </CardContent>
-          </Card>
-        )}
-      </View>
-
-      <View className="gap-3">
-        <View className="gap-1">
-          <Text className="text-base font-extrabold text-foreground">무료 행동 점수</Text>
-          <Text className="text-xs text-muted-foreground">
-            모든 점수는 0~100점이며 높을수록 절제·규율 상태가 안정적이에요. 거래 성과나 투자 실력을
-            평가하는 점수는 아닙니다.
-          </Text>
-        </View>
-        <View className="gap-3">
-          {analysis.metrics.map((m) => (
-            <MetricCard key={m.id} metric={m} />
-          ))}
-        </View>
-      </View>
 
       <View className="gap-3">
         <View className="flex-row items-center justify-between">
@@ -626,7 +698,7 @@ export function Step2Analysis() {
           <View className="gap-1">
             <Text className="text-sm font-extrabold text-foreground">결과가 이해됐나요?</Text>
             <Text className="text-xs leading-5 text-muted-foreground">
-              무료 공개 MVP 단계에서는 실제 사용자가 어디서 막히는지 확인하는 게 중요해요. 피드백은
+              무료 분석 단계에서는 실제 사용자가 어디서 막히는지 확인하는 게 중요해요. 피드백은
               외부 폼으로만 받고, GA에는 클릭 여부만 익명으로 기록합니다.
             </Text>
           </View>

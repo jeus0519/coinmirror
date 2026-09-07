@@ -22,8 +22,8 @@ export function StepNav() {
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      className="border-b border-border bg-card/80"
-      contentContainerClassName="flex-row items-center gap-1.5 px-4 py-2.5"
+      className="bg-background"
+      contentContainerClassName="mx-auto w-full max-w-5xl flex-row items-center gap-1.5 px-4 pb-3 pt-1"
     >
       {STEPS.map(({ step, label }) => {
         // 거래내역(3)은 진단 없이도 들어갈 수 있다 — 시작 화면의 "자료부터 올리기"와 같은 규칙.

@@ -13,6 +13,11 @@ export type AnalyticsEventName =
   | 'parse_failed'
   | 'result_view'
   | 'subscription_preview_click'
+  | 'subscription_benefits_view'
+  | 'subscription_interest_click'
+  | 'reanalysis_reminder_click'
+  | 'reanalysis_return'
+  | 'comparison_result_view'
   | 'waitlist_interest_click'
   | 'feedback_click'
   | 'delete_local_data_click';
@@ -51,6 +56,10 @@ const SENSITIVE_KEY_PATTERNS = [
   /user/i,
   /order/i,
   /uuid/i,
+  /^token$/i,
+  /^r$/i,
+  /duplicate.*count/i,
+  /execution.*count/i,
   /address/i,
   /wallet/i,
 ];

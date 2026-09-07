@@ -92,7 +92,7 @@ function scoreF1(roundTrips: RoundTrip[]) {
   ) {
     return measuringMetric(
       'F1',
-      '손절 습관',
+      '손실 관리',
       lossRTs.length,
       `측정 중 · 손실 청산 기록 ${Math.max(0, SCORE_CONSTANTS.f1.minLossExits - lossRTs.length)}건 더 필요`
     );
@@ -123,7 +123,7 @@ function scoreF1(roundTrips: RoundTrip[]) {
     }));
   return measuredMetric(
     'F1',
-    '손절 습관',
+    '손실 관리',
     score,
     lossRTs.length,
     '손실 거래를 이익 거래보다 얼마나 오래 보유했는지 계산했어요.',
@@ -140,7 +140,7 @@ function scoreF3(orders: Order[]) {
   if (buyOrders.length < SCORE_CONSTANTS.f3.minBuyOrders) {
     return measuringMetric(
       'F3',
-      '추격매수',
+      '급등 후 진입',
       buyOrders.length,
       `측정 중 · 매수 주문 ${Math.max(0, SCORE_CONSTANTS.f3.minBuyOrders - buyOrders.length)}건 더 필요`
     );
@@ -190,7 +190,7 @@ function scoreF3(orders: Order[]) {
   const score = clampScore(100 - penalty);
   return measuredMetric(
     'F3',
-    '추격매수',
+    '급등 후 진입',
     score,
     buyOrders.length,
     '이미 오른 가격을 뒤따라 들어간 매수 비중을 계산했어요.',
@@ -227,7 +227,7 @@ function scoreF6(orders: Order[], roundTrips: RoundTrip[], options: Phase1ScoreO
   if (orders.length < SCORE_CONSTANTS.f6.minOrders) {
     return measuringMetric(
       'F6',
-      '과매매',
+      '거래 빈도',
       orders.length,
       `측정 중 · 주문 ${Math.max(0, SCORE_CONSTANTS.f6.minOrders - orders.length)}건 더 필요`
     );
@@ -280,7 +280,7 @@ function scoreF6(orders: Order[], roundTrips: RoundTrip[], options: Phase1ScoreO
   }));
   return measuredMetric(
     'F6',
-    '과매매',
+    '거래 빈도',
     score,
     orders.length,
     '거래 횟수와 수수료 마찰을 최근 활동일 기준으로 계산했어요.',
@@ -305,7 +305,7 @@ function scoreF8(orders: Order[], options: Phase1ScoreOptions) {
   if (!options.maxSingleAssetWeightPct) {
     return measuringMetric(
       'F8',
-      '몰빵',
+      '특정 자산 집중도',
       buyOrders.length,
       'A4에서 한 종목 한도를 선택하면 다음 분석부터 대조할 수 있어요.'
     );
@@ -316,7 +316,7 @@ function scoreF8(orders: Order[], options: Phase1ScoreOptions) {
   ) {
     return measuringMetric(
       'F8',
-      '몰빵',
+      '특정 자산 집중도',
       buyOrders.length,
       '측정 중 · 매수 주문과 거래 종목 표본이 더 필요합니다.'
     );
@@ -337,7 +337,7 @@ function scoreF8(orders: Order[], options: Phase1ScoreOptions) {
   }));
   return measuredMetric(
     'F8',
-    '몰빵',
+    '특정 자산 집중도',
     score,
     buyOrders.length,
     '최근 매수 자금이 한 종목에 얼마나 몰렸는지 선언 한도와 대조했어요.',

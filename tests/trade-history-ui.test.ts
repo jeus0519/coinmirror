@@ -49,6 +49,16 @@ test('거래내역 업로드 화면은 웹 런칭용 브라우저 처리와 저�
   assert.doesNotMatch(source, /설치/);
 });
 
+
+
+test('업로드 화면은 저장된 분석이 있을 때만 재업로드 중복 허들을 낮추는 안내를 보여준다', async () => {
+  const source = await readStepSource();
+
+  assert.match(source, /subscriptionSnapshots\.length > 0/);
+  assert.match(source, /기간은 넉넉하게 받아도 괜찮아요/);
+  assert.match(source, /겹치는 거래는 한 번만 세고, 새 거래만 비교해요/);
+});
+
 test('인쇄 → PDF로 저장 우회를 권장하지 않는다', async () => {
   // 인쇄 저장본은 텍스트 레이어가 사라져 파싱이 불가능하고,
   // 암호가 풀린 거래내역서가 남아 오히려 위험하다. 권장 문구가 되살아나면 실패시킨다.
