@@ -638,6 +638,80 @@ Vercel 또는 Netlify 웹 배포
 - 초기에는 저가 모델을 사용하고, 고급 모델은 내부 품질 검토 또는 구독 기능으로 분리한다.
 - 분석 결과 전체가 아니라 요약 지표만 보내 토큰을 줄인다.
 
+### Phase 2.5 결정: 유형화된 rule 코칭 + 최소 실제 AI 문장 생성
+
+**위치:** Phase 2와 Phase 3 사이. 현재 rule/template 기반 AI 행동코칭을 유지하되, 실제 AI는 전체 분석이 아니라 이미 분류된 행동코칭 카드의 문장 일부만 다듬는 데 제한한다.
+
+**원칙:**
+- 점수 계산, 지표 산출, 코칭 유형 판정은 계속 브라우저 local-first/rule 기반으로 수행한다.
+- 실제 LLM은 `observedPattern`, `reduceAction`, `reinforceAction`, `nextQuestion`처럼 짧은 행동 회고 문장만 생성한다.
+- LLM 장애, timeout, 비용 한도 초과, 응답 검증 실패 시 현재 `buildAiBehaviorCoaching` rule/template 결과를 즉시 fallback으로 사용한다.
+- 사용자에게는 “AI 행동코칭”으로 노출하되, 안전 고지에는 “매수·매도 추천이 아니라 과거 기록 기반 행동 회고”와 “원본 거래내역과 PDF 비밀번호는 AI로 보내지 않음”을 유지한다.
+
+**코칭 유형 v1 후보:**
+1. `loss_management`: 손실 관리 점검형
+2. `profit_taking_rhythm`: 이익 정리 리듬 점검형
+3. `late_entry_check`: 급등 후 진입 점검형
+4. `averaging_down_check`: 하락 중 추가 진입 점검형
+5. `reentry_after_loss`: 손실 확정 후 재진입 점검형
+6. `trade_frequency_check`: 거래 빈도 점검형
+7. `late_night_trade_check`: 늦은 시간대 거래 점검형
+8. `asset_concentration_check`: 특정 자산 집중도 점검형
+9. `break_even_exit_check`: 본전 부근 정리 점검형
+10. `balanced_observation`: 뚜렷한 주의 지표가 없을 때의 균형 관찰형
+
+**LLM 전달 허용 payload:**
+```json
+{
+  "schemaVersion": "coinmirror.aiReflection.v1",
+  "generalMbti": "INTJ",
+  "coachingType": "reentry_after_loss",
+  "keySignals": [
+    {
+      "metricId": "F5",
+      "displayName": "복구매수",
+      "scoreBand": "caution",
+      "scoreBucket": "0_54",
+      "sampleSizeBucket": "10_49"
+    }
+  ],
+  "comparisonHint": "self_perception_available",
+  "requestedOutput": ["observedPattern", "reduceAction", "reinforceAction", "nextQuestion"]
+}
+```
+
+**LLM 전달 금지:**
+- 원본 PDF/CSV, PDF 비밀번호, 파일명, 개별 체결 원문
+- 주문번호, 계좌/고객 식별자, 이메일 또는 이메일 해시
+- 종목명, exact 금액/수량/가격, 체결 시각 원문, evidence row, raw stats 문자열
+- 사용자가 입력한 자유서술 원문 중 개인 식별 가능성이 있는 내용
+
+**서버리스 endpoint 구현 초안:**
+- Path: `/api/ai-reflection`
+- Method: `POST`
+- Input: `AiBehaviorCoachingSafePayload`만 허용
+- Output: 검증된 JSON `{ observedPattern, reduceAction, reinforceAction, nextQuestion }`
+- Timeout: `AI_REFLECTION_TIMEOUT_MS = 3500`으로 4초 이하 유지
+- Output cap: OpenAI-compatible 호출 기준 `max_tokens: 420`
+- Model default: `COINMIRROR_AI_REFLECTION_MODEL=gpt-4.1-mini`
+- Server-only API key: `COINMIRROR_AI_REFLECTION_OPENAI_API_KEY`; 절대 `EXPO_PUBLIC_*`로 두지 않는다.
+- Rate limit: IP/세션 기준 일 1~3회 또는 분석 1회당 1회. 현재 코드에는 아직 미구현이며 배포 플랫폼 선택 후 edge middleware/kv/host 기능으로 추가한다.
+- Cache key: 원본 데이터가 아니라 safe payload hash 기준. 이메일/파일명/종목명 포함 금지. 현재 코드에는 아직 미구현이다.
+- Logging: request body 전문 로그 금지. schemaVersion, coachingType, status, latency, error_code 정도만 기록. 현재 route는 request body를 별도로 로그하지 않는다.
+
+**구현 파일:**
+- `api/ai-reflection.ts`: 서버리스 POST route 초안. invalid/sensitive payload는 모델 호출 전 400으로 차단하고, 모델 미설정/실패/위험 응답은 fallback으로 반환한다.
+- `src/lib/ai-reflection-openai.ts`: 서버 전용 OpenAI-compatible 호출 함수. 키가 없으면 network call을 하지 않는다.
+- `src/lib/ai-reflection-api.ts`: request validation, prompt builder, timeout budget.
+- `src/lib/ai-reflection-runtime.ts`: output guardrail과 deterministic fallback.
+- `src/lib/ai-coaching.ts`: 코칭 유형 판정과 safe payload 생성.
+
+**비용 통제:**
+- 무료 공개 MVP에서는 기본 rule 코칭을 항상 먼저 생성한다.
+- 실제 AI 버튼/자동 호출은 초기엔 “첫 분석 1회” 또는 “구독 관심 확인 후 1회”로 제한한다.
+- 저가 모델 + 짧은 JSON 출력만 사용한다.
+- 비용 한도 초과 시 UI는 조용히 rule 코칭으로 대체하고, 사용자는 분석 실패로 느끼지 않게 한다.
+
 ### 권장 사용자 노출 카피
 - `AI가 과거 거래 기록과 자기인식 답변을 바탕으로 다음 달 확인할 행동 질문을 정리해요.`
 - `매수·매도 추천이 아니라, 지난 기록에서 반복된 행동을 회고하는 AI 코멘트예요.`

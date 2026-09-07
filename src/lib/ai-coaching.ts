@@ -1,5 +1,17 @@
 import { type GeneralMbti } from './investment-type';
-import { type Metric, displayMetricName } from './mock-metrics';
+import { type Metric, displayMetricName, scoreLevel } from './mock-metrics';
+
+export type AiBehaviorCoachingType =
+  | 'loss_management'
+  | 'profit_taking_rhythm'
+  | 'late_entry_check'
+  | 'averaging_down_check'
+  | 'reentry_after_loss'
+  | 'trade_frequency_check'
+  | 'late_night_trade_check'
+  | 'asset_concentration_check'
+  | 'break_even_exit_check'
+  | 'balanced_observation';
 
 export type AiBehaviorCoachingInput = {
   generalMbti?: GeneralMbti;
@@ -7,7 +19,23 @@ export type AiBehaviorCoachingInput = {
   comparisonCopy?: string;
 };
 
+export type AiBehaviorCoachingSafePayload = {
+  schemaVersion: 'coinmirror.aiReflection.v1';
+  generalMbti?: Exclude<GeneralMbti, 'unknown' | 'no_input'>;
+  coachingType: AiBehaviorCoachingType;
+  keySignals: {
+    metricId: Metric['id'];
+    displayName: string;
+    scoreBand: 'stable' | 'observe' | 'caution' | 'measuring';
+    scoreBucket: '80_100' | '55_79' | '0_54' | 'measuring';
+    sampleSizeBucket: '0' | '1_9' | '10_49' | '50_plus';
+  }[];
+  comparisonHint?: 'self_perception_available';
+  requestedOutput: ['observedPattern', 'reduceAction', 'reinforceAction', 'nextQuestion'];
+};
+
 export type AiBehaviorCoaching = {
+  coachingType: AiBehaviorCoachingType;
   title: string;
   eyebrow: string;
   intro: string;
@@ -33,6 +61,74 @@ function strongestMetrics(metrics: readonly Metric[]) {
 function mbtiLabel(mbti: GeneralMbti | undefined) {
   if (!mbti || mbti === 'unknown' || mbti === 'no_input') return '선택한 자기인식 답변';
   return `평소 MBTI(${mbti})`;
+}
+
+
+function coachingTypeFor(metric: Metric | undefined): AiBehaviorCoachingType {
+  if (!metric) return 'balanced_observation';
+  switch (metric.id) {
+    case 'F1':
+      return 'loss_management';
+    case 'F2':
+      return 'profit_taking_rhythm';
+    case 'F3':
+      return 'late_entry_check';
+    case 'F4':
+      return 'averaging_down_check';
+    case 'F5':
+      return 'reentry_after_loss';
+    case 'F6':
+      return 'trade_frequency_check';
+    case 'F7':
+      return 'late_night_trade_check';
+    case 'F8':
+      return 'asset_concentration_check';
+    case 'F9':
+      return 'break_even_exit_check';
+    default:
+      return 'balanced_observation';
+  }
+}
+
+function scoreBucket(score: Metric['score']): AiBehaviorCoachingSafePayload['keySignals'][number]['scoreBucket'] {
+  if (score === null) return 'measuring';
+  if (score >= 80) return '80_100';
+  if (score >= 55) return '55_79';
+  return '0_54';
+}
+
+function sampleSizeBucket(sampleSize: number): AiBehaviorCoachingSafePayload['keySignals'][number]['sampleSizeBucket'] {
+  if (sampleSize <= 0) return '0';
+  if (sampleSize < 10) return '1_9';
+  if (sampleSize < 50) return '10_49';
+  return '50_plus';
+}
+
+export function buildAiBehaviorCoachingSafePayload(input: AiBehaviorCoachingInput): AiBehaviorCoachingSafePayload {
+  const weakest = weakestMetrics(input.metrics);
+  const primaryWeak = weakest[0];
+  const keyMetrics = weakest.slice(0, 2);
+  const payload: AiBehaviorCoachingSafePayload = {
+    schemaVersion: 'coinmirror.aiReflection.v1',
+    coachingType: coachingTypeFor(primaryWeak),
+    keySignals: keyMetrics.map((metric) => ({
+      metricId: metric.id,
+      displayName: displayMetricName(metric),
+      scoreBand: scoreLevel(metric.score),
+      scoreBucket: scoreBucket(metric.score),
+      sampleSizeBucket: sampleSizeBucket(metric.sampleSize),
+    })),
+    requestedOutput: ['observedPattern', 'reduceAction', 'reinforceAction', 'nextQuestion'],
+  };
+
+  if (input.generalMbti && input.generalMbti !== 'unknown' && input.generalMbti !== 'no_input') {
+    payload.generalMbti = input.generalMbti;
+  }
+  if (input.comparisonCopy) {
+    payload.comparisonHint = 'self_perception_available';
+  }
+
+  return payload;
 }
 
 function reduceActionFor(metric: Metric | undefined) {
@@ -80,6 +176,7 @@ export function buildAiBehaviorCoaching(input: AiBehaviorCoachingInput): AiBehav
     .slice(0, 2);
 
   return {
+    coachingType: coachingTypeFor(primaryWeak),
     title: 'AI 행동코칭',
     eyebrow: '키 지표 다음에 보는 AI 회고',
     intro: `${mbti}과 이번 분석의 키 지표를 함께 보고, 다음 달에 줄여볼 행동과 유지할 행동을 짧게 정리했어요.`,
