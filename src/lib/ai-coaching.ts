@@ -178,8 +178,8 @@ export function buildAiBehaviorCoaching(input: AiBehaviorCoachingInput): AiBehav
   return {
     coachingType: coachingTypeFor(primaryWeak),
     title: 'AI 행동코칭',
-    eyebrow: '키 지표 다음에 보는 AI 회고',
-    intro: `${mbti}과 이번 분석의 키 지표를 함께 보고, 다음 달에 줄여볼 행동과 유지할 행동을 짧게 정리했어요.`,
+    eyebrow: '핵심 지표 다음에 보는 AI 회고',
+    intro: `${mbti}과 이번 분석의 핵심 지표를 함께 보고, 다음 달에 줄여볼 행동과 유지할 행동을 짧게 정리했어요.`,
     keySignals,
     reduceActions: [reduceActionFor(primaryWeak)],
     reinforceActions: [reinforceActionFor(primaryStrong)],

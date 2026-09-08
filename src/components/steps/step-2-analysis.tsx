@@ -10,7 +10,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Icon } from '@/components/ui/icon';
 import { MetricCard } from '@/components/ui/metric-card';
 import { Text } from '@/components/ui/text';
-import { buildAiBehaviorCoaching } from '@/lib/ai-coaching';
+import { buildAiBehaviorCoaching, buildAiBehaviorCoachingSafePayload } from '@/lib/ai-coaching';
 import { buildAnalysisViewData } from '@/lib/analysis-view-data';
 import { trackCoinmirrorEvent } from '@/lib/analytics';
 import { buildExpectationComparisons } from '@/lib/onboarding-diagnosis';
@@ -65,6 +65,15 @@ export function Step2Analysis() {
   const diagnosisAnswers = useFlowStore((s) => s.diagnosisAnswers);
   const tradeAnalysis = useFlowStore((s) => s.tradeAnalysis);
   const [feedbackNotice, setFeedbackNotice] = useState<string | null>(null);
+  const [showAiBehaviorCoaching, setShowAiBehaviorCoaching] = useState(false);
+  const [isAiReflectionLoading, setIsAiReflectionLoading] = useState(false);
+  const [aiReflectionOutput, setAiReflectionOutput] = useState<{
+    observedPattern: string;
+    reduceAction: string;
+    reinforceAction: string;
+    nextQuestion: string;
+  } | null>(null);
+  const [aiReflectionNotice, setAiReflectionNotice] = useState<string | null>(null);
   const feedbackFormUrl = process.env.EXPO_PUBLIC_FEEDBACK_FORM_URL?.trim();
   const analysis = useMemo(
     () => buildAnalysisViewData({ dataSource, tradeAnalysis, diagnosis: diagnosisAnswers }),
@@ -74,6 +83,15 @@ export function Step2Analysis() {
   const aiBehaviorCoaching = useMemo(
     () =>
       buildAiBehaviorCoaching({
+        generalMbti: analysis.investmentType.generalMbti,
+        metrics: analysis.metrics,
+        comparisonCopy: analysis.investmentType.comparisonCopy,
+      }),
+    [analysis.investmentType.comparisonCopy, analysis.investmentType.generalMbti, analysis.metrics]
+  );
+  const aiBehaviorCoachingPayload = useMemo(
+    () =>
+      buildAiBehaviorCoachingSafePayload({
         generalMbti: analysis.investmentType.generalMbti,
         metrics: analysis.metrics,
         comparisonCopy: analysis.investmentType.comparisonCopy,
@@ -132,6 +150,37 @@ export function Step2Analysis() {
   function handleClearLocalSummary() {
     trackCoinmirrorEvent('delete_local_data_click', { screen: 'analysis' });
     clearSubscriptionSnapshots();
+  }
+
+  async function handleAiBehaviorCoachingClick() {
+    trackCoinmirrorEvent('ai_coaching_request_click', {
+      screen: 'analysis',
+      source_format: analysis.source,
+    });
+    setShowAiBehaviorCoaching(true);
+    setAiReflectionNotice(null);
+
+    if (aiReflectionOutput || isAiReflectionLoading) return;
+
+    setIsAiReflectionLoading(true);
+    try {
+      const response = await fetch('/api/ai-reflection', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(aiBehaviorCoachingPayload),
+      });
+      const body = await response.json();
+
+      if (!response.ok || body?.ok !== true || !body.output) {
+        throw new Error('AI reflection fallback');
+      }
+
+      setAiReflectionOutput(body.output);
+    } catch {
+      setAiReflectionNotice('AI 문장 생성이 잠시 어려워 기본 행동코칭을 먼저 보여드릴게요.');
+    } finally {
+      setIsAiReflectionLoading(false);
+    }
   }
 
   async function handleFeedbackClick() {
@@ -200,36 +249,57 @@ export function Step2Analysis() {
               이번 기록을 바탕으로 정리한 AI 회고
             </Text>
             <Text className="text-base font-extrabold text-foreground">AI 행동코칭</Text>
-            <Text className="text-sm leading-6 text-muted-foreground">{aiBehaviorCoaching.intro}</Text>
+            <Text className="text-sm leading-6 text-muted-foreground">
+              버튼을 누르면 핵심 지표와 자기인식 답변을 바탕으로 다음 달 확인할 행동 질문을 정리해요.
+            </Text>
           </View>
-          <View className="gap-2 rounded-2xl bg-background/80 p-3">
-            <Text className="text-xs font-extrabold text-foreground">키 지표에서 눈에 띈 점</Text>
-            {aiBehaviorCoaching.keySignals.map((signal) => (
-              <Text key={signal} className="text-[11px] leading-4 text-muted-foreground">
-                • {signal}
+          {showAiBehaviorCoaching ? (
+            <>
+              {isAiReflectionLoading && (
+                <Text className="text-xs leading-5 text-primary">AI 행동코칭 문장을 정리하고 있어요...</Text>
+              )}
+              {aiReflectionNotice && (
+                <Text className="text-xs leading-5 text-muted-foreground">{aiReflectionNotice}</Text>
+              )}
+              <Text className="text-sm leading-6 text-muted-foreground">
+                {aiReflectionOutput?.observedPattern ?? aiBehaviorCoaching.intro}
               </Text>
-            ))}
-          </View>
-          <View className="gap-2 rounded-2xl bg-background/80 p-3">
-            <Text className="text-xs font-extrabold text-foreground">줄여볼 행동</Text>
-            {aiBehaviorCoaching.reduceActions.map((action) => (
-              <Text key={action} className="text-[11px] leading-4 text-muted-foreground">
-                • {action}
-              </Text>
-            ))}
-          </View>
-          <View className="gap-2 rounded-2xl bg-background/80 p-3">
-            <Text className="text-xs font-extrabold text-foreground">유지할 행동</Text>
-            {aiBehaviorCoaching.reinforceActions.map((action) => (
-              <Text key={action} className="text-[11px] leading-4 text-muted-foreground">
-                • {action}
-              </Text>
-            ))}
-          </View>
-          <View className="gap-1.5 rounded-2xl border border-primary/20 bg-background/80 p-3">
-            <Text className="text-xs font-extrabold text-primary">다음 달 확인 질문</Text>
-            <Text className="text-xs leading-5 text-foreground">{aiBehaviorCoaching.nextQuestion}</Text>
-          </View>
+              <View className="gap-2 rounded-2xl bg-background/80 p-3">
+                <Text className="text-xs font-extrabold text-foreground">핵심 지표에서 눈에 띈 점</Text>
+                {aiBehaviorCoaching.keySignals.map((signal) => (
+                  <Text key={signal} className="text-[11px] leading-4 text-muted-foreground">
+                    • {signal}
+                  </Text>
+                ))}
+              </View>
+              <View className="gap-2 rounded-2xl bg-background/80 p-3">
+                <Text className="text-xs font-extrabold text-foreground">줄여볼 행동</Text>
+                {(aiReflectionOutput ? [aiReflectionOutput.reduceAction] : aiBehaviorCoaching.reduceActions).map((action) => (
+                  <Text key={action} className="text-[11px] leading-4 text-muted-foreground">
+                    • {action}
+                  </Text>
+                ))}
+              </View>
+              <View className="gap-2 rounded-2xl bg-background/80 p-3">
+                <Text className="text-xs font-extrabold text-foreground">유지할 행동</Text>
+                {(aiReflectionOutput ? [aiReflectionOutput.reinforceAction] : aiBehaviorCoaching.reinforceActions).map((action) => (
+                  <Text key={action} className="text-[11px] leading-4 text-muted-foreground">
+                    • {action}
+                  </Text>
+                ))}
+              </View>
+              <View className="gap-1.5 rounded-2xl border border-primary/20 bg-background/80 p-3">
+                <Text className="text-xs font-extrabold text-primary">다음 달 확인 질문</Text>
+                <Text className="text-xs leading-5 text-foreground">
+                  {aiReflectionOutput?.nextQuestion ?? aiBehaviorCoaching.nextQuestion}
+                </Text>
+              </View>
+            </>
+          ) : (
+            <Button disabled={isAiReflectionLoading} onPress={handleAiBehaviorCoachingClick}>
+              <Text>{isAiReflectionLoading ? 'AI 행동코칭 준비 중' : 'AI 행동코칭 받기'}</Text>
+            </Button>
+          )}
           <Text className="text-[11px] leading-4 text-muted-foreground">
             원본 거래내역과 PDF 비밀번호는 AI로 보내지 않아요. {aiBehaviorCoaching.safetyCopy}
           </Text>

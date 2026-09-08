@@ -467,6 +467,9 @@ export function Step3DataImport() {
         <View className="gap-2 rounded-2xl border border-primary/20 bg-primary/5 p-3">
           <Text className="text-xs font-extrabold text-primary">웹에서 바로 분석해요</Text>
           <Text className="text-xs leading-5 text-foreground">
+            현재 공식 지원 범위는 업비트 PDF/CSV예요. 빗썸·다른 거래소·주식 거래내역은 서식 검증 후 지원 범위를 넓혀갈 예정입니다.
+          </Text>
+          <Text className="text-xs leading-5 text-foreground">
             원본 PDF/CSV 파일은 장기 저장하지 않아요. PDF 비밀번호는 분석 중에만 사용하고 저장하지 않아요.
           </Text>
           <Text className="text-xs leading-5 text-muted-foreground">

@@ -49,6 +49,9 @@ export function Step1Start() {
         <Text className="text-center text-[15px] leading-6 text-muted-foreground">
           업비트 PDF/CSV 거래내역을 올리면 내 투자 습관을 짧게 확인해요. 회원가입 없이 무료로 확인하고, 원본 파일은 서버에 저장하지 않아요.
         </Text>
+        <Text className="text-center text-xs leading-5 text-muted-foreground">
+          현재는 업비트 PDF/CSV를 먼저 지원해요. 빗썸·다른 거래소·주식 거래내역도 차례로 넓혀갈 예정입니다.
+        </Text>
 
         <View className="w-full max-w-2xl gap-2.5">
           <Button onPress={() => handleStartClick(2, 'diagnosis')}>

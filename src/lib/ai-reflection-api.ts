@@ -24,6 +24,8 @@ const ALLOWED_SCORE_BUCKETS = ['80_100', '55_79', '0_54', 'measuring'] as const;
 const ALLOWED_SAMPLE_SIZE_BUCKETS = ['0', '1_9', '10_49', '50_plus'] as const;
 const FORBIDDEN_KEY_PATTERN =
   /filename|filepath|pdfpassword|password|email|account|customer|userid|userid|orderid|executionid|raw|symbol|ticker|amount|quantity|price|balance|pnl|profit|lossamount|evidence|stats|fact|when/i;
+const FORBIDDEN_VALUE_PATTERN =
+  /[A-Z]{2,5}-[A-Z0-9]{2,12}|[\w.%+-]+@[\w.-]+\.[A-Za-z]{2,}|\d[\d,]*(?:원|krw|usd|개|수량|가격|금액)/i;
 
 export type AiReflectionValidationResult =
   | { ok: true; payload: AiBehaviorCoachingSafePayload }
@@ -44,6 +46,13 @@ function hasForbiddenKey(value: unknown): boolean {
   return Object.entries(value).some(([key, child]) => FORBIDDEN_KEY_PATTERN.test(key) || hasForbiddenKey(child));
 }
 
+function hasForbiddenValue(value: unknown): boolean {
+  if (typeof value === 'string') return FORBIDDEN_VALUE_PATTERN.test(value);
+  if (Array.isArray(value)) return value.some(hasForbiddenValue);
+  if (!isRecord(value)) return false;
+  return Object.values(value).some(hasForbiddenValue);
+}
+
 function isOneOf<T extends readonly string[]>(value: unknown, allowed: T): value is T[number] {
   return typeof value === 'string' && allowed.includes(value as T[number]);
 }
@@ -51,6 +60,7 @@ function isOneOf<T extends readonly string[]>(value: unknown, allowed: T): value
 export function validateAiReflectionRequest(input: unknown): AiReflectionValidationResult {
   if (!isRecord(input)) return { ok: false, error: 'invalid_request' };
   if (hasForbiddenKey(input)) return { ok: false, error: 'forbidden_sensitive_field' };
+  if (hasForbiddenValue(input)) return { ok: false, error: 'forbidden_sensitive_value' };
   if (input.schemaVersion !== ALLOWED_SCHEMA_VERSION) return { ok: false, error: 'invalid_schema_version' };
   if (!isOneOf(input.coachingType, ALLOWED_COACHING_TYPES)) return { ok: false, error: 'invalid_coaching_type' };
   if (input.generalMbti !== undefined && typeof input.generalMbti !== 'string') {

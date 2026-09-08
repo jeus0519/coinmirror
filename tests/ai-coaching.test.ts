@@ -4,7 +4,7 @@ import test from 'node:test';
 import { buildAiBehaviorCoaching, buildAiBehaviorCoachingSafePayload } from '../src/lib/ai-coaching.ts';
 import { baseMetrics } from '../src/lib/mock-metrics.ts';
 
-test('AI 행동코칭은 MBTI 자기인식과 키 지표를 바탕으로 회고용 행동 콘텐츠를 만든다', () => {
+test('AI 행동코칭은 MBTI 자기인식과 핵심 지표를 바탕으로 회고용 행동 콘텐츠를 만든다', () => {
   const coaching = buildAiBehaviorCoaching({
     generalMbti: 'INTJ',
     metrics: baseMetrics,
@@ -13,7 +13,7 @@ test('AI 행동코칭은 MBTI 자기인식과 키 지표를 바탕으로 회고�
 
   assert.equal(coaching.title, 'AI 행동코칭');
   assert.match(coaching.intro, /MBTI/);
-  assert.match(coaching.intro, /키 지표/);
+  assert.match(coaching.intro, /핵심 지표/);
   assert.ok(coaching.keySignals.length >= 2);
   assert.ok(coaching.reduceActions.length >= 1);
   assert.ok(coaching.reinforceActions.length >= 1);
@@ -34,7 +34,7 @@ test('AI 행동코칭은 투자 조언·가격 예측·매수매도 지시 문�
 });
 
 
-test('AI 행동코칭은 가장 낮은 키 지표를 기준으로 코칭 유형을 판정한다', () => {
+test('AI 행동코칭은 가장 낮은 핵심 지표를 기준으로 코칭 유형을 판정한다', () => {
   const coaching = buildAiBehaviorCoaching({
     generalMbti: 'INTJ',
     metrics: baseMetrics,

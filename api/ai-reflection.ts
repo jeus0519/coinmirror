@@ -9,6 +9,8 @@ export type AiReflectionRouteDependencies = {
 
 type JsonValue = Record<string, unknown>;
 
+const MAX_AI_REFLECTION_BODY_BYTES = 2048;
+
 function jsonResponse(body: JsonValue, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -28,7 +30,7 @@ function fallbackFromPayload(payload: AiBehaviorCoachingSafePayload): AiBehavior
     coachingType: payload.coachingType,
     title: 'AI 행동코칭',
     eyebrow: '이번 기록을 바탕으로 정리한 AI 회고',
-    intro: '이번 분석의 비식별 키 지표를 바탕으로 다음 달에 확인할 행동을 짧게 정리했어요.',
+    intro: '이번 분석의 비식별 핵심 지표를 바탕으로 다음 달에 확인할 행동을 짧게 정리했어요.',
     keySignals: [primarySignal, secondarySignal]
       .filter((signal): signal is AiBehaviorCoachingSafePayload['keySignals'][number] => Boolean(signal))
       .map((signal) => `${signal.displayName} · ${signal.scoreBand} · ${signal.scoreBucket}`),
@@ -49,6 +51,9 @@ async function parseJson(request: Request): Promise<unknown> {
 
 export async function POST(request: Request, dependencies: AiReflectionRouteDependencies = {}) {
   const body = await parseJson(request);
+  if (JSON.stringify(body ?? {}).length > MAX_AI_REFLECTION_BODY_BYTES) {
+    return jsonResponse({ ok: false, error: 'payload_too_large' }, 413);
+  }
   const validation = validateAiReflectionRequest(body);
   if (!validation.ok) {
     return jsonResponse({ ok: false, error: validation.error }, 400);

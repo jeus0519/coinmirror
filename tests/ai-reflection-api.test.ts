@@ -47,6 +47,26 @@ test('AI reflection request validation rejects raw trade or identity fields', ()
   assert.match(result.error ?? '', /forbidden/i);
 });
 
+test('AI reflection request validation rejects sensitive values even when keys are allowed', () => {
+  const payload = buildAiBehaviorCoachingSafePayload({
+    generalMbti: 'INTJ',
+    metrics: baseMetrics,
+  });
+
+  const result = validateAiReflectionRequest({
+    ...payload,
+    keySignals: [
+      {
+        ...payload.keySignals[0],
+        displayName: 'user@example.com 1,200,000원 KRW-BTC',
+      },
+    ],
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.error, 'forbidden_sensitive_value');
+});
+
 test('AI reflection prompt is short, behavior-only, and excludes investment advice instructions', () => {
   const payload = buildAiBehaviorCoachingSafePayload({
     generalMbti: 'ENFP',

@@ -183,3 +183,27 @@ test('분석 화면은 거래 개요 직후 AI 행동코칭을 먼저 보여주�
   assert.match(source, /다음 달 확인 질문/);
   assert.match(source, /원본 거래내역과 PDF 비밀번호는 AI로 보내지 않아요/);
 });
+
+test('분석 화면은 AI 행동코칭을 자동 노출하지 않고 버튼으로 받게 안내한다', async () => {
+  const source = await readFile(STEP_2, 'utf8');
+
+  assert.match(source, /showAiBehaviorCoaching/);
+  assert.match(source, /setShowAiBehaviorCoaching/);
+  assert.match(source, /AI 행동코칭 받기/);
+  assert.match(source, /버튼을 누르면/);
+  assert.match(source, /ai_coaching_request_click/);
+  assert.match(source, /showAiBehaviorCoaching \? \(/);
+});
+
+test('AI 행동코칭 받기 버튼은 safe payload로 api를 호출하고 실패하면 rule 코칭을 보여준다', async () => {
+  const source = await readFile(STEP_2, 'utf8');
+
+  assert.match(source, /buildAiBehaviorCoachingSafePayload/);
+  assert.match(source, /aiBehaviorCoachingPayload/);
+  assert.match(source, /fetch\('\/api\/ai-reflection'/);
+  assert.match(source, /method: 'POST'/);
+  assert.match(source, /JSON\.stringify\(aiBehaviorCoachingPayload\)/);
+  assert.match(source, /aiReflectionOutput/);
+  assert.match(source, /setAiReflectionNotice/);
+  assert.match(source, /기본 행동코칭을 먼저 보여드릴게요/);
+});

@@ -18,6 +18,7 @@ export type AnalyticsEventName =
   | 'reanalysis_reminder_click'
   | 'reanalysis_return'
   | 'comparison_result_view'
+  | 'ai_coaching_request_click'
   | 'waitlist_interest_click'
   | 'feedback_click'
   | 'delete_local_data_click';

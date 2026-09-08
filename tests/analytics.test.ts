@@ -86,6 +86,7 @@ test('무료 공개 MVP 핵심 화면은 GA4 익명 퍼널 이벤트를 연결�
   assert.match(analysisSource, /trackCoinmirrorEvent\('result_view'/);
   assert.match(analysisSource, /trackCoinmirrorEvent\('reanalysis_reminder_click'/);
   assert.match(analysisSource, /trackCoinmirrorEvent\('subscription_preview_click'/);
+  assert.match(analysisSource, /trackCoinmirrorEvent\('ai_coaching_request_click'/);
   assert.match(analysisSource, /trackCoinmirrorEvent\('delete_local_data_click'/);
   assert.match(subscriptionSource, /trackCoinmirrorEvent\('subscription_preview_click'/);
   assert.match(waitlistSource, /trackCoinmirrorEvent\('reanalysis_reminder_click'/);
@@ -107,6 +108,8 @@ test('첫 화면 CTA는 MVP 용어 없이 무료 분석과 브라우저 파일 �
   assert.match(source, /PDF\/CSV 바로 올리기/);
   assert.match(source, /파일은 내 브라우저에서만/);
   assert.match(source, /서버에 저장하지 않아요/);
+  assert.match(source, /현재는 업비트 PDF\/CSV를 먼저 지원해요/);
+  assert.match(source, /빗썸·다른 거래소·주식 거래내역도 차례로 넓혀갈 예정/);
   assert.doesNotMatch(source, /무료 공개 MVP/);
 });
 

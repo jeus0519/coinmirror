@@ -78,3 +78,28 @@ test('/api/ai-reflection falls back when model output violates guardrails', asyn
   assert.equal(json.source, 'fallback');
   assert.doesNotMatch(JSON.stringify(json), /매수하세요|목표가/);
 });
+
+test('/api/ai-reflection rejects oversized payloads before any model call', async () => {
+  const payload = buildAiBehaviorCoachingSafePayload({ generalMbti: 'INTJ', metrics: baseMetrics });
+  let called = false;
+  const response = await POST(
+    request({
+      ...payload,
+      keySignals: payload.keySignals.map((signal) => ({
+        ...signal,
+        displayName: '손실 관리'.repeat(1000),
+      })),
+    }),
+    {
+      generate: async () => {
+        called = true;
+        return {};
+      },
+    },
+  );
+  const json = await response.json();
+
+  assert.equal(response.status, 413);
+  assert.equal(called, false);
+  assert.equal(json.error, 'payload_too_large');
+});

@@ -49,6 +49,15 @@ test('거래내역 업로드 화면은 웹 런칭용 브라우저 처리와 저�
   assert.doesNotMatch(source, /설치/);
 });
 
+test('거래내역 업로드 화면은 현재 지원 범위와 이후 확장 계획을 명확히 안내한다', async () => {
+  const source = await readStepSource();
+
+  assert.match(source, /현재 공식 지원/);
+  assert.match(source, /업비트 PDF\/CSV/);
+  assert.match(source, /빗썸·다른 거래소·주식 거래내역/);
+  assert.match(source, /서식 검증 후 지원 범위를 넓혀갈 예정/);
+});
+
 
 
 test('업로드 화면은 저장된 분석이 있을 때만 재업로드 중복 허들을 낮추는 안내를 보여준다', async () => {

@@ -15,6 +15,8 @@
 최근까지의 작업은 “지원/데모에서 보여줄 수 있는 기능”을 빠르게 강화하는 쪽이었다. 현재는 다음 기능이 이미 존재한다.
 
 - 업비트 PDF/CSV 업로드
+- 고객 노출 공식 지원 범위 안내: 현재는 업비트 PDF/CSV를 먼저 지원
+- 확장 예고 안내: 빗썸·다른 거래소·주식 거래내역은 서식 검증 후 지원 범위를 넓혀갈 예정
 - 공통 거래 분석 파이프라인
 - 투자거울 타입과 행동 점수
 - 기준선 저장과 직전 분석 비교
@@ -696,6 +698,8 @@ Vercel 또는 Netlify 웹 배포
 - Model default: `COINMIRROR_AI_REFLECTION_MODEL=gpt-4.1-mini`
 - Server-only API key: `COINMIRROR_AI_REFLECTION_OPENAI_API_KEY`; 절대 `EXPO_PUBLIC_*`로 두지 않는다.
 - Rate limit: IP/세션 기준 일 1~3회 또는 분석 1회당 1회. 현재 코드에는 아직 미구현이며 배포 플랫폼 선택 후 edge middleware/kv/host 기능으로 추가한다.
+- Request size cap: route에서 JSON 직렬화 기준 `MAX_AI_REFLECTION_BODY_BYTES = 2048`을 넘으면 모델 호출 전 `413 payload_too_large`로 차단한다.
+- Sensitive value guard: 금지 key뿐 아니라 허용 필드 안에 이메일, 티커 형태, 금액/수량/가격성 문자열이 섞여 들어와도 `forbidden_sensitive_value`로 차단한다.
 - Cache key: 원본 데이터가 아니라 safe payload hash 기준. 이메일/파일명/종목명 포함 금지. 현재 코드에는 아직 미구현이다.
 - Logging: request body 전문 로그 금지. schemaVersion, coachingType, status, latency, error_code 정도만 기록. 현재 route는 request body를 별도로 로그하지 않는다.
 
