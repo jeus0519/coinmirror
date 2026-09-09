@@ -140,12 +140,12 @@ function scoreF3(orders: Order[]) {
   if (buyOrders.length < SCORE_CONSTANTS.f3.minBuyOrders) {
     return measuringMetric(
       'F3',
-      '급등 후 진입',
+      '직전 거래가 대비 높은 매수',
       buyOrders.length,
       `측정 중 · 매수 주문 ${Math.max(0, SCORE_CONSTANTS.f3.minBuyOrders - buyOrders.length)}건 더 필요`
     );
   }
-  const lastPriceBySymbol = new Map<string, number>();
+  const lastPriceBySymbol = new Map<string, { price: number; executedAt: string }>();
   const chaseBySymbol = new Map<string, number>();
   const chaseEvidence: MetricEvidence[] = [];
   let chaseAmount = 0;
@@ -154,24 +154,27 @@ function scoreF3(orders: Order[]) {
   for (const order of orders) {
     if (order.side === 'buy') {
       buyAmount += order.amount;
-      const lastPrice = lastPriceBySymbol.get(order.symbol);
-      if (
-        lastPrice &&
-        order.price >= lastPrice * (1 + SCORE_CONSTANTS.f3.selfReferenceRisePct / 100)
-      ) {
-        const risePct = Math.round(((order.price - lastPrice) / lastPrice) * 100);
-        chaseAmount += order.amount;
-        chaseBySymbol.set(order.symbol, (chaseBySymbol.get(order.symbol) ?? 0) + 1);
-        if (chaseEvidence.length < 3) {
-          chaseEvidence.push({
-            when: shortDate(order.executedAt),
-            symbol: order.symbol,
-            fact: `직전 본인 체결가보다 ${risePct}% 높은 가격에 매수`,
-          });
+      const lastTrade = lastPriceBySymbol.get(order.symbol);
+      if (lastTrade) {
+        const timeDiffMs = new Date(order.executedAt).getTime() - new Date(lastTrade.executedAt).getTime();
+        const timeDiffDays = timeDiffMs / (1000 * 60 * 60 * 24);
+        if (timeDiffDays <= SCORE_CONSTANTS.chaseLookbackDays) {
+          if (order.price >= lastTrade.price * (1 + SCORE_CONSTANTS.f3.selfReferenceRisePct / 100)) {
+            const risePct = Math.round(((order.price - lastTrade.price) / lastTrade.price) * 100);
+            chaseAmount += order.amount;
+            chaseBySymbol.set(order.symbol, (chaseBySymbol.get(order.symbol) ?? 0) + 1);
+            if (chaseEvidence.length < 3) {
+              chaseEvidence.push({
+                when: shortDate(order.executedAt),
+                symbol: order.symbol,
+                fact: `직전 본인 체결가보다 ${risePct}% 높은 가격에 매수`,
+              });
+            }
+          }
         }
       }
     }
-    lastPriceBySymbol.set(order.symbol, order.price);
+    lastPriceBySymbol.set(order.symbol, { price: order.price, executedAt: order.executedAt });
   }
 
   const chaseShare = buyAmount ? chaseAmount / buyAmount : 0;
@@ -190,13 +193,13 @@ function scoreF3(orders: Order[]) {
   const score = clampScore(100 - penalty);
   return measuredMetric(
     'F3',
-    '급등 후 진입',
+    '직전 거래가 대비 높은 매수',
     score,
     buyOrders.length,
-    '이미 오른 가격을 뒤따라 들어간 매수 비중을 계산했어요.',
+    '직전 본인 체결가 대비 일정 비율 높아진 가격에 매수한 비중을 계산했어요.',
     {
-      '추격 진입 비중': `${Math.round(chaseShare * 100)}%`,
-      '반복 추격 종목': `${Math.round(repeatedSymbolShare * 100)}%`,
+      '직전 대비 높은 매수 비중': `${Math.round(chaseShare * 100)}%`,
+      '직전 대비 높은 매수 반복 종목': `${Math.round(repeatedSymbolShare * 100)}%`,
     },
     chaseEvidence
   );
@@ -305,9 +308,9 @@ function scoreF8(orders: Order[], options: Phase1ScoreOptions) {
   if (!options.maxSingleAssetWeightPct) {
     return measuringMetric(
       'F8',
-      '특정 자산 집중도',
+      '기간 내 매수금액 집중도',
       buyOrders.length,
-      'A4에서 한 종목 한도를 선택하면 다음 분석부터 대조할 수 있어요.'
+      'A4에서 분석 기간 매수금액 한도를 선택하면 다음 분석부터 대조할 수 있어요.'
     );
   }
   if (
@@ -316,7 +319,7 @@ function scoreF8(orders: Order[], options: Phase1ScoreOptions) {
   ) {
     return measuringMetric(
       'F8',
-      '특정 자산 집중도',
+      '기간 내 매수금액 집중도',
       buyOrders.length,
       '측정 중 · 매수 주문과 거래 종목 표본이 더 필요합니다.'
     );
@@ -333,16 +336,16 @@ function scoreF8(orders: Order[], options: Phase1ScoreOptions) {
   const evidence = sortedSymbolAmounts.slice(0, 3).map(([symbol, amount], index) => ({
     when: '기간합계',
     symbol,
-    fact: `매수금액 비중 ${index + 1}위 · 전체 매수 중 ${Math.round((amount / totalBuyAmount) * 100)}%`,
+    fact: `매수금액 비중 ${index + 1}위 · 분석 기간 전체 매수 중 ${Math.round((amount / totalBuyAmount) * 100)}%`,
   }));
   return measuredMetric(
     'F8',
-    '특정 자산 집중도',
+    '기간 내 매수금액 집중도',
     score,
     buyOrders.length,
-    '최근 매수 자금이 한 종목에 얼마나 몰렸는지 선언 한도와 대조했어요.',
+    '분석 기간 내 매수 자금이 한 종목에 얼마나 몰렸는지 선언 한도와 대조했어요.',
     {
-      '최대 종목 비중': `${Math.round(topShare * 100)}%`,
+      '기간 내 최대 매수금액 비중': `${Math.round(topShare * 100)}%`,
       '선언 한도': `${options.maxSingleAssetWeightPct}%`,
     },
     evidence

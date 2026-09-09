@@ -41,19 +41,38 @@ function fallbackFromPayload(payload: AiBehaviorCoachingSafePayload): AiBehavior
   };
 }
 
-async function parseJson(request: Request): Promise<unknown> {
-  try {
-    return await request.json();
-  } catch {
-    return undefined;
-  }
-}
-
 export async function POST(request: Request, dependencies: AiReflectionRouteDependencies = {}) {
-  const body = await parseJson(request);
-  if (JSON.stringify(body ?? {}).length > MAX_AI_REFLECTION_BODY_BYTES) {
+  // 1. Inspect Content-Length early when valid
+  const contentLength = request.headers.get('content-length');
+  if (contentLength !== null) {
+    const parsedLength = parseInt(contentLength, 10);
+    if (!isNaN(parsedLength) && parsedLength > MAX_AI_REFLECTION_BODY_BYTES) {
+      return jsonResponse({ ok: false, error: 'payload_too_large' }, 413);
+    }
+  }
+
+  // 2. Read text once
+  let text = '';
+  try {
+    text = await request.text();
+  } catch {
+    return jsonResponse({ ok: false, error: 'invalid_request' }, 400);
+  }
+
+  // 3. Count UTF-8 bytes with TextEncoder, reject 413
+  const bytes = new TextEncoder().encode(text).length;
+  if (bytes > MAX_AI_REFLECTION_BODY_BYTES) {
     return jsonResponse({ ok: false, error: 'payload_too_large' }, 413);
   }
+
+  // 4. Then JSON.parse safely
+  let body: unknown;
+  try {
+    body = JSON.parse(text);
+  } catch {
+    return jsonResponse({ ok: false, error: 'invalid_request' }, 400);
+  }
+
   const validation = validateAiReflectionRequest(body);
   if (!validation.ok) {
     return jsonResponse({ ok: false, error: validation.error }, 400);
@@ -63,7 +82,7 @@ export async function POST(request: Request, dependencies: AiReflectionRouteDepe
   const generator =
     dependencies.generate ??
     createOpenAiReflectionGenerator({
-      apiKey: process.env.COINMIRROR_AI_REFLECTION_OPENAI_API_KEY,
+      apiKey: process.env.COINMIRROR_AI_REFLECTION_API_KEY,
       model: process.env.COINMIRROR_AI_REFLECTION_MODEL,
     });
   const result = await buildAiReflectionResult({

@@ -200,9 +200,8 @@ test('AI 행동코칭 받기 버튼은 safe payload로 api를 호출하고 실�
 
   assert.match(source, /buildAiBehaviorCoachingSafePayload/);
   assert.match(source, /aiBehaviorCoachingPayload/);
-  assert.match(source, /fetch\('\/api\/ai-reflection'/);
-  assert.match(source, /method: 'POST'/);
-  assert.match(source, /JSON\.stringify\(aiBehaviorCoachingPayload\)/);
+  assert.match(source, /requestAiReflection/);
+  assert.doesNotMatch(source, /fetch\('\/api\/ai-reflection'/);
   assert.match(source, /aiReflectionOutput/);
   assert.match(source, /setAiReflectionNotice/);
   assert.match(source, /기본 행동코칭을 먼저 보여드릴게요/);

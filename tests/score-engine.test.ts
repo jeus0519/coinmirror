@@ -46,6 +46,43 @@ test('Order 전처리는 30분 이내 같은 종목·방향 체결을 1건으로
   assert.equal(orders[0].sourceExecutionIds.length, 2);
 });
 
+test('Order 전처리는 타 종목 체결이 사이에 있어도 같은 종목의 연속 매수 체결을 병합한다', () => {
+  const orders = mergeExecutionsToOrders([
+    {
+      id: 'btc-1',
+      symbol: 'BTC',
+      side: 'buy',
+      price: 100,
+      quantity: 1,
+      fee: 1,
+      executedAt: '2026-01-01T09:00:00+09:00',
+    },
+    {
+      id: 'eth-1',
+      symbol: 'ETH',
+      side: 'buy',
+      price: 50,
+      quantity: 1,
+      fee: 0.5,
+      executedAt: '2026-01-01T09:01:00+09:00',
+    },
+    {
+      id: 'btc-2',
+      symbol: 'BTC',
+      side: 'buy',
+      price: 110,
+      quantity: 1,
+      fee: 1,
+      executedAt: '2026-01-01T09:02:00+09:00',
+    },
+  ]);
+
+  const btcOrder = orders.find((order) => order.symbol === 'BTC');
+  assert.equal(orders.length, 2);
+  assert.deepEqual(btcOrder?.sourceExecutionIds, ['btc-1', 'btc-2']);
+  assert.equal(btcOrder?.price, 105);
+});
+
 test('FIFO RoundTrip은 매도 1건을 기존 매수 로트와 연결해 손익과 보유시간을 산출한다', () => {
   const orders = mergeExecutionsToOrders([
     {
@@ -87,7 +124,7 @@ test('FIFO RoundTrip은 매도 1건을 기존 매수 로트와 연결해 손익�
 
 test('합성 픽스처 3종은 의도한 투자거울 타입 4축으로 판정된다', () => {
   const cases = [
-    { id: 'chaser', expectedCode: 'C-R-X-D', expectedTitle: '추격형 단기 반응가' },
+    { id: 'chaser', expectedCode: 'C-R-X-D', expectedTitle: '추격형 (직전가 대비) 단기 반응가' },
     { id: 'lossHolder', expectedCode: 'W-H-L-D', expectedTitle: '손실보류형 관찰가' },
     { id: 'normal', expectedCode: 'W-H-X-D', expectedTitle: '분산형 안정 관찰가' },
   ] as const;
@@ -206,4 +243,115 @@ test('실제 거래내역 분석은 A4 답변이 없어도 자금 배분 축을 
 
   assert.equal(type.axes.find((axis) => axis.axis === 'allocation')?.code, 'N');
   assert.equal(type.code.endsWith('-N'), true);
+});
+
+test('F3은 90일(SCORE_CONSTANTS.chaseLookbackDays) 이내의 직전 거래만 추격으로 인정하고, 90일을 초과한 거래는 인정하지 않는다', () => {
+  // Scenario 1: Older than 90 days (e.g., 92 days) -> Should NOT count as chase (score remains 100)
+  const executionsOlderThan90: any[] = [
+    { id: 'b1', symbol: 'BTC', side: 'buy', price: 100, quantity: 1, fee: 0, executedAt: '2026-01-01T00:00:00Z' },
+    { id: 'b2', symbol: 'BTC', side: 'buy', price: 108, quantity: 1, fee: 0, executedAt: '2026-04-03T00:00:00Z' }, // 92 days later (rise 8% >= 7%)
+  ];
+  // Add 8 more buy orders to satisfy minBuyOrders = 10
+  for (let i = 3; i <= 10; i++) {
+    executionsOlderThan90.push({
+      id: `b${i}`,
+      symbol: 'BTC',
+      side: 'buy',
+      price: 108,
+      quantity: 1,
+      fee: 0,
+      executedAt: `2026-04-04T0${i}:00:00Z` // Hour-separated to prevent merging
+    });
+  }
+
+  const metricsOlder = buildPhase1ScoreMetrics(executionsOlderThan90, { maxSingleAssetWeightPct: 50 });
+  const f3Older = metricsOlder.find(m => m.id === 'F3');
+  assert.ok(f3Older);
+  assert.equal(f3Older.score, 100); // Because the only price rise was >90 days ago, so 0% chase share
+
+  // Scenario 2: Within 90 days (e.g., 88 days) -> Should COUNT as chase (score should be < 100)
+  const executionsWithin90: any[] = [
+    { id: 'b1', symbol: 'BTC', side: 'buy', price: 100, quantity: 1, fee: 0, executedAt: '2026-01-01T00:00:00Z' },
+    { id: 'b2', symbol: 'BTC', side: 'buy', price: 108, quantity: 1, fee: 0, executedAt: '2026-03-30T00:00:00Z' }, // 88 days later (rise 8% >= 7%)
+  ];
+  for (let i = 3; i <= 10; i++) {
+    executionsWithin90.push({
+      id: `b${i}`,
+      symbol: 'BTC',
+      side: 'buy',
+      price: 108,
+      quantity: 1,
+      fee: 0,
+      executedAt: `2026-03-31T0${i}:00:00Z` // Hour-separated to prevent merging
+    });
+  }
+
+  const metricsWithin = buildPhase1ScoreMetrics(executionsWithin90, { maxSingleAssetWeightPct: 50 });
+  const f3Within = metricsWithin.find(m => m.id === 'F3');
+  assert.ok(f3Within);
+  assert.ok(f3Within.score !== null && f3Within.score < 100); // Should have a penalty
+});
+
+test('FIFO RoundTrip은 full close 시 매수 수수료를 entryCost(진입 원가)와 pnlPct 분모에 포함하여 계산한다', () => {
+  const orders = mergeExecutionsToOrders([
+    {
+      id: 'b1',
+      symbol: 'BTC',
+      side: 'buy',
+      price: 100,
+      quantity: 1,
+      fee: 2,
+      executedAt: '2026-01-01T09:00:00+09:00',
+    },
+    {
+      id: 's1',
+      symbol: 'BTC',
+      side: 'sell',
+      price: 101,
+      quantity: 1,
+      fee: 0,
+      executedAt: '2026-01-01T10:00:00+09:00',
+    },
+  ]);
+  const { roundTrips, openLots } = reconstructRoundTrips(orders);
+
+  assert.equal(roundTrips.length, 1);
+  assert.equal(roundTrips[0].amount, 102); // 100 * 1 + 2 (buy fee)
+  assert.equal(roundTrips[0].pnl, -1);     // 101 - 102
+  assert.equal(roundTrips[0].pnlPct, -0.98); // (-1 / 102) * 100
+  assert.equal(openLots.length, 0);
+});
+
+test('FIFO RoundTrip은 partial close 시 매수 수수료를 비례 분배하고 남은 openLot에 잔여 수수료와 원가 정보를 유지한다', () => {
+  const orders = mergeExecutionsToOrders([
+    {
+      id: 'b1',
+      symbol: 'ETH',
+      side: 'buy',
+      price: 100,
+      quantity: 2,
+      fee: 4,
+      executedAt: '2026-01-01T09:00:00+09:00',
+    },
+    {
+      id: 's1',
+      symbol: 'ETH',
+      side: 'sell',
+      price: 105,
+      quantity: 0.5,
+      fee: 1,
+      executedAt: '2026-01-01T10:00:00+09:00',
+    },
+  ]);
+  const { roundTrips, openLots } = reconstructRoundTrips(orders);
+
+  assert.equal(roundTrips.length, 1);
+  assert.equal(roundTrips[0].quantity, 0.5);
+  assert.equal(roundTrips[0].amount, 51); // 0.5 * 100 + (4 * 0.5/2) = 51
+  assert.equal(roundTrips[0].pnl, 0.5);    // 52.5 - 51 - 1 = 0.5
+  assert.equal(roundTrips[0].pnlPct, 0.98); // (0.5 / 51) * 100 = 0.98
+  assert.equal(openLots.length, 1);
+  assert.equal(openLots[0].quantity, 1.5);
+  assert.equal(openLots[0].amount, 150);
+  assert.equal(openLots[0].fee, 3);       // 4 - 1 = 3
 });

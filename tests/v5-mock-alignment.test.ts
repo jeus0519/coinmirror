@@ -146,7 +146,7 @@ test('설문만으로 거래내역 업로드 전 예상 투자거울 타입을 �
     generalMbti: 'ENFP',
   });
 
-  assert.equal(expected.title, '예상 추격형 단기 반응가');
+  assert.equal(expected.title, '예상 추격형 (직전가 대비) 단기 반응가');
   assert.equal(expected.code, 'C-R-?-N');
   assert.match(expected.disclaimer, /예상 타입/);
   assert.match(expected.comparisonCopy ?? '', /업로드 후 기록된 타입/);

@@ -11,6 +11,7 @@ import { Icon } from '@/components/ui/icon';
 import { MetricCard } from '@/components/ui/metric-card';
 import { Text } from '@/components/ui/text';
 import { buildAiBehaviorCoaching, buildAiBehaviorCoachingSafePayload } from '@/lib/ai-coaching';
+import { requestAiReflection } from '@/lib/ai-reflection-client';
 import { buildAnalysisViewData } from '@/lib/analysis-view-data';
 import { trackCoinmirrorEvent } from '@/lib/analytics';
 import { buildExpectationComparisons } from '@/lib/onboarding-diagnosis';
@@ -164,18 +165,12 @@ export function Step2Analysis() {
 
     setIsAiReflectionLoading(true);
     try {
-      const response = await fetch('/api/ai-reflection', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(aiBehaviorCoachingPayload),
-      });
-      const body = await response.json();
-
-      if (!response.ok || body?.ok !== true || !body.output) {
-        throw new Error('AI reflection fallback');
+      const result = await requestAiReflection(aiBehaviorCoachingPayload);
+      if (result.success) {
+        setAiReflectionOutput(result.output);
+      } else {
+        setAiReflectionNotice('AI 문장 생성이 잠시 어려워 기본 행동코칭을 먼저 보여드릴게요.');
       }
-
-      setAiReflectionOutput(body.output);
     } catch {
       setAiReflectionNotice('AI 문장 생성이 잠시 어려워 기본 행동코칭을 먼저 보여드릴게요.');
     } finally {

@@ -24,9 +24,9 @@ export const KIND_LABEL: Record<MetricKind, string> = {
 
 export const DISPLAY_METRIC_NAMES: Partial<Record<Metric['id'], string>> = {
   F1: '손실 관리',
-  F3: '급등 후 진입',
+  F3: '직전 거래가 대비 높은 매수',
   F6: '거래 빈도',
-  F8: '특정 자산 집중도',
+  F8: '기간 내 매수금액 집중도',
 };
 
 export function displayMetricName(metric: Pick<Metric, 'id' | 'name'>) {
@@ -67,15 +67,15 @@ export const baseMetrics: Metric[] = [
   },
   {
     id: 'F3',
-    name: '급등 후 진입',
+    name: '직전 거래가 대비 높은 매수',
     kind: 'habit',
     sampleSize: 113,
     measured: true,
     score: 73,
     band: '관찰',
-    headline: '급등 직후 높은 가격에서 이어진 매수는 14%였어요.',
-    stats: { '추격 진입 비중': '14%', '평균 추격폭': '+7.8%' },
-    evidence: [{ when: '06-21', symbol: 'SOL', fact: '24시간 상승 뒤 추가 매수' }],
+    headline: '직전 본인 체결가 대비 높은 가격에서 이어진 매수는 14%였어요.',
+    stats: { '직전 대비 높은 매수 비중': '14%', '평균 상승 폭': '+7.8%' },
+    evidence: [{ when: '06-21', symbol: 'SOL', fact: '직전 본인 체결가보다 7.8% 높은 가격에 매수' }],
   },
   {
     id: 'F4',
@@ -127,16 +127,16 @@ export const baseMetrics: Metric[] = [
   },
   {
     id: 'F8',
-    name: '특정 자산 집중도',
+    name: '기간 내 매수금액 집중도',
     kind: 'habit',
     sampleSize: 8,
     measured: false,
     score: null,
     band: '측정 중',
-    headline: '선언한 종목 한도가 없어 실측 집중도만 보여드려요.',
-    stats: { '최대 종목 비중': '24%' },
+    headline: '분석 기간 매수금액 한도가 없어 실측 집중도만 보여드려요.',
+    stats: { '기간 내 최대 매수금액 비중': '24%' },
     evidence: [],
-    limitation: 'A4에서 한도를 선택하면 다음 분석부터 대조할 수 있어요.',
+    limitation: 'A4에서 분석 기간 매수금액 한도를 선택하면 다음 분석부터 대조할 수 있어요.',
   },
   {
     id: 'F9',

@@ -27,8 +27,8 @@ export const principlePresets: PrinciplePreset[] = [
   {
     id: 'one-position-limit',
     label: '한 종목 집중 피하기',
-    description: '한 종목 비중이 스스로 정한 범위를 넘는지 확인해요.',
-    check: '다음 분석에서 최대 종목 집중도 확인',
+    description: '분석 기간 내 특정 종목 매수 비중이 정해둔 범위를 넘는지 확인해요.',
+    check: '다음 분석에서 기간 내 매수금액 집중도 확인',
     current: '최근 24%',
     achieved: null,
   },
@@ -42,9 +42,9 @@ export const principlePresets: PrinciplePreset[] = [
   },
   {
     id: 'avoid-chasing',
-    label: '급등 직후 따라 사지 않기',
-    description: '급등한 종목은 바로 진입하지 않고 한 번 더 관찰해요.',
-    check: '다음 분석에서 급등 후 진입 비중 확인',
+    label: '직전가 대비 높은 매수 피하기',
+    description: '직전 본인 체결가보다 상승한 가격은 바로 진입하지 않고 한 번 더 관찰해요.',
+    check: '다음 분석에서 직전 대비 높은 매수 비중 확인',
     current: '최근 14%',
     achieved: false,
   },

@@ -571,6 +571,7 @@ export function Step3DataImport() {
               autoCapitalize="none"
               autoCorrect={false}
               autoComplete="off"
+              textContentType="none"
               onSubmitEditing={analyzePendingPdfWithPassword}
             />
             <View className="flex-row gap-2">

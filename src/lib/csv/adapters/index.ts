@@ -1,1 +1,2 @@
-export { upbitAdapter, parseUpbitCsv, upbitMappings } from './upbit';
+export { upbitAdapter, upbitMappings } from './upbit';
+export { parseUpbitCsv } from '../parse-upbit-csv';

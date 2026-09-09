@@ -653,12 +653,12 @@ Vercel 또는 Netlify 웹 배포
 **코칭 유형 v1 후보:**
 1. `loss_management`: 손실 관리 점검형
 2. `profit_taking_rhythm`: 이익 정리 리듬 점검형
-3. `late_entry_check`: 급등 후 진입 점검형
+3. `late_entry_check`: 직전 거래가 대비 높은 매수 점검형
 4. `averaging_down_check`: 하락 중 추가 진입 점검형
 5. `reentry_after_loss`: 손실 확정 후 재진입 점검형
 6. `trade_frequency_check`: 거래 빈도 점검형
 7. `late_night_trade_check`: 늦은 시간대 거래 점검형
-8. `asset_concentration_check`: 특정 자산 집중도 점검형
+8. `asset_concentration_check`: 기간 내 매수금액 집중도 점검형
 9. `break_even_exit_check`: 본전 부근 정리 점검형
 10. `balanced_observation`: 뚜렷한 주의 지표가 없을 때의 균형 관찰형
 

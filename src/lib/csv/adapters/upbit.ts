@@ -1,5 +1,4 @@
-import { parseCsv } from '../parse-csv';
-import { type CsvAdapter, type ParseResult } from '../types';
+import { type CsvAdapter } from '../types';
 
 function read(row: Record<string, string>, mapping: Record<string, string>, field: string) {
   const header = mapping[field];
@@ -7,7 +6,10 @@ function read(row: Record<string, string>, mapping: Record<string, string>, fiel
 }
 
 export function parseNumber(value: string, label: string) {
-  const normalized = value.replace(/[₩원,$\s]/g, '').replace(/,/g, '');
+  const trimmed = value.trim();
+  if (trimmed === '') throw new Error(`${label} 값이 비어 있습니다`);
+  const normalized = trimmed.replace(/[₩원,$\s]/g, '');
+  if (normalized === '') throw new Error(`${label} 숫자를 인식하지 못했습니다`);
   const parsed = Number(normalized);
   if (!Number.isFinite(parsed)) throw new Error(`${label} 숫자를 인식하지 못했습니다`);
   return parsed;
@@ -26,6 +28,30 @@ export function normalizeSymbol(value: string) {
   return raw.replace(/^KRW[-_/]/, '').replace(/[-_/]KRW$/, '');
 }
 
+function isLeapYear(year: number) {
+  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+}
+
+function isValidDateAndTime(y: string, m: string, d: string, hh: string, mm: string, ss: string) {
+  const year = parseInt(y, 10);
+  const month = parseInt(m, 10);
+  const day = parseInt(d, 10);
+  const hour = parseInt(hh, 10);
+  const minute = parseInt(mm, 10);
+  const second = parseInt(ss, 10);
+
+  if (month < 1 || month > 12) return false;
+  if (hour < 0 || hour > 23) return false;
+  if (minute < 0 || minute > 59) return false;
+  if (second < 0 || second > 59) return false;
+  if (day < 1) return false;
+
+  const daysInMonth = [31, isLeapYear(year) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  if (day > daysInMonth[month - 1]) return false;
+
+  return true;
+}
+
 export function normalizeKstDate(value: string) {
   const trimmed = value.trim();
   const match = trimmed.match(
@@ -33,6 +59,11 @@ export function normalizeKstDate(value: string) {
   );
   if (!match) throw new Error(`체결시간 날짜를 인식하지 못했습니다: ${value}`);
   const [, y, m, d, hh = '0', mm = '0', ss = '0'] = match;
+
+  if (!isValidDateAndTime(y, m, d, hh, mm, ss)) {
+    throw new Error(`유효하지 않은 체결시간 날짜/시간입니다: ${value}`);
+  }
+
   return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}T${hh.padStart(2, '0')}:${mm.padStart(2, '0')}:${ss.padStart(2, '0')}+09:00`;
 }
 
@@ -74,21 +105,32 @@ export const upbitAdapter: CsvAdapter = {
   label: '업비트 KRW 추정 CSV',
   mappings: upbitMappings,
   parseRow(row, _rowNumber, mapping, index, feePolicy) {
+    const price = parseNumber(read(row, mapping, 'price'), '체결가');
+    if (price <= 0) {
+      throw new Error('체결가는 0보다 커야 합니다');
+    }
+
+    const quantity = parseNumber(read(row, mapping, 'quantity'), '수량');
+    if (quantity <= 0) {
+      throw new Error('수량은 0보다 커야 합니다');
+    }
+
+    const fee =
+      feePolicy === 'missing_fee_column'
+        ? 0
+        : parseNumber(read(row, mapping, 'fee') || '0', '수수료');
+    if (fee < 0) {
+      throw new Error('수수료는 0보다 작을 수 없습니다');
+    }
+
     return {
       id: `upbit-${index + 1}`,
       symbol: normalizeSymbol(read(row, mapping, 'symbol')),
       side: parseSide(read(row, mapping, 'side')),
-      price: parseNumber(read(row, mapping, 'price'), '체결가'),
-      quantity: parseNumber(read(row, mapping, 'quantity'), '수량'),
-      fee:
-        feePolicy === 'missing_fee_column'
-          ? 0
-          : parseNumber(read(row, mapping, 'fee') || '0', '수수료'),
+      price,
+      quantity,
+      fee,
       executedAt: normalizeKstDate(read(row, mapping, 'executedAt')),
     };
   },
 };
-
-export function parseUpbitCsv(input: string | Uint8Array | ArrayBuffer): ParseResult {
-  return parseCsv(input, { adapter: 'upbit' });
-}

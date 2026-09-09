@@ -42,6 +42,7 @@ export type OpenLot = {
   price: number;
   quantity: number;
   amount: number;
+  fee: number;
   executedAt: string;
 };
 
@@ -56,10 +57,11 @@ function round(value: number, digits = 6) {
 export function mergeExecutionsToOrders(executions: readonly RawExecution[]): Order[] {
   const sorted = [...executions].sort((a, b) => toTime(a.executedAt) - toTime(b.executedAt));
   const orders: Order[] = [];
+  const lastOrderBySymbol = new Map<string, Order>();
   const windowMs = SCORE_CONSTANTS.orderMergeWindowMinutes * 60 * 1000;
 
   for (const execution of sorted) {
-    const prev = orders.at(-1);
+    const prev = lastOrderBySymbol.get(execution.symbol);
     const canMerge =
       prev &&
       prev.symbol === execution.symbol &&
@@ -67,7 +69,7 @@ export function mergeExecutionsToOrders(executions: readonly RawExecution[]): Or
       toTime(execution.executedAt) - toTime(prev.executedAt) <= windowMs;
 
     if (!canMerge) {
-      orders.push({
+      const order: Order = {
         id: execution.id,
         symbol: execution.symbol,
         side: execution.side,
@@ -77,7 +79,9 @@ export function mergeExecutionsToOrders(executions: readonly RawExecution[]): Or
         fee: execution.fee,
         executedAt: execution.executedAt,
         sourceExecutionIds: [execution.id],
-      });
+      };
+      orders.push(order);
+      lastOrderBySymbol.set(execution.symbol, order);
       continue;
     }
 
@@ -104,6 +108,7 @@ export function reconstructRoundTrips(orders: readonly Order[]) {
         price: order.price,
         quantity: order.quantity,
         amount: order.amount,
+        fee: order.fee,
         executedAt: order.executedAt,
       });
       lotsBySymbol.set(order.symbol, lots);
@@ -118,11 +123,13 @@ export function reconstructRoundTrips(orders: readonly Order[]) {
     while (remaining > 0 && lots.length) {
       const lot = lots[0];
       const consumed = Math.min(remaining, lot.quantity);
-      entryCost += consumed * lot.price;
+      const proportionalBuyFee = lot.quantity > 0 ? lot.fee * (consumed / lot.quantity) : 0;
+      entryCost += consumed * lot.price + proportionalBuyFee;
       earliestEntryAt =
         toTime(lot.executedAt) < toTime(earliestEntryAt) ? lot.executedAt : earliestEntryAt;
       lot.quantity = round(lot.quantity - consumed);
       lot.amount = round(lot.quantity * lot.price);
+      lot.fee = round(lot.fee - proportionalBuyFee);
       remaining = round(remaining - consumed);
       if (lot.quantity <= 0.000001) lots.shift();
     }

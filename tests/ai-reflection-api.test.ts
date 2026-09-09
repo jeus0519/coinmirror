@@ -23,6 +23,130 @@ test('AI reflection request validation accepts only the safe coaching payload co
   assert.equal(result.payload?.coachingType, 'reentry_after_loss');
 });
 
+test('AI reflection request validation rejects extra top-level field', () => {
+  const payload = buildAiBehaviorCoachingSafePayload({
+    generalMbti: 'INTJ',
+    metrics: baseMetrics,
+  });
+
+  const result = validateAiReflectionRequest({
+    ...payload,
+    extraField: 'should_be_rejected',
+  });
+
+  assert.equal(result.ok, false);
+  assert.match(result.error ?? '', /invalid_request|extra_field/i);
+});
+
+test('AI reflection request validation rejects unsupported MBTI while valid MBTIs pass', () => {
+  const payload = buildAiBehaviorCoachingSafePayload({
+    generalMbti: 'INTJ',
+    metrics: baseMetrics,
+  });
+
+  // Valid MBTI passes
+  const resultValid = validateAiReflectionRequest({
+    ...payload,
+    generalMbti: 'ENFP',
+  });
+  assert.equal(resultValid.ok, true);
+
+  // Unsupported or unknown/no_input MBTI fails
+  const resultUnknown = validateAiReflectionRequest({
+    ...payload,
+    generalMbti: 'unknown',
+  });
+  assert.equal(resultUnknown.ok, false);
+  assert.match(resultUnknown.error ?? '', /invalid_general_mbti/i);
+
+  const resultNoInput = validateAiReflectionRequest({
+    ...payload,
+    generalMbti: 'no_input',
+  });
+  assert.equal(resultNoInput.ok, false);
+  assert.match(resultNoInput.error ?? '', /invalid_general_mbti/i);
+
+  const resultInvalidStr = validateAiReflectionRequest({
+    ...payload,
+    generalMbti: 'XYZ',
+  });
+  assert.equal(resultInvalidStr.ok, false);
+  assert.match(resultInvalidStr.error ?? '', /invalid_general_mbti/i);
+});
+
+test('AI reflection request validation rejects metricId outside supported F1-F10', () => {
+  const payload = buildAiBehaviorCoachingSafePayload({
+    generalMbti: 'INTJ',
+    metrics: baseMetrics,
+  });
+
+  // Valid F1-F10 passes
+  for (let i = 1; i <= 10; i++) {
+    const res = validateAiReflectionRequest({
+      ...payload,
+      keySignals: [
+        {
+          ...payload.keySignals[0],
+          metricId: `F${i}`,
+        },
+      ],
+    });
+    assert.equal(res.ok, true, `F${i} should be accepted`);
+  }
+
+  // F0 fails
+  const resF0 = validateAiReflectionRequest({
+    ...payload,
+    keySignals: [
+      {
+        ...payload.keySignals[0],
+        metricId: 'F0',
+      },
+    ],
+  });
+  assert.equal(resF0.ok, false);
+  assert.match(resF0.error ?? '', /invalid_metric_id/i);
+
+  // F11 fails
+  const resF11 = validateAiReflectionRequest({
+    ...payload,
+    keySignals: [
+      {
+        ...payload.keySignals[0],
+        metricId: 'F11',
+      },
+    ],
+  });
+  assert.equal(resF11.ok, false);
+  assert.match(resF11.error ?? '', /invalid_metric_id/i);
+});
+
+test('AI reflection request validation reconstructs displayName from trusted mapping and returns a new object', () => {
+  const payload = buildAiBehaviorCoachingSafePayload({
+    generalMbti: 'INTJ',
+    metrics: baseMetrics,
+  });
+
+  // Ensure keySignals[0] is F5 (normally F5 is weakest in baseMetrics)
+  assert.equal(payload.keySignals[0].metricId, 'F5');
+
+  const inputPayload = {
+    ...payload,
+    keySignals: [
+      {
+        ...payload.keySignals[0],
+        displayName: 'Fake Display Name', // different from standard '복구매수'
+      },
+    ],
+  };
+
+  const result = validateAiReflectionRequest(inputPayload);
+
+  assert.equal(result.ok, true);
+  assert.notEqual(result.payload, inputPayload); // should be a new object
+  assert.equal(result.payload?.keySignals[0].displayName, '복구매수'); // reconstructed
+});
+
 test('AI reflection request validation rejects raw trade or identity fields', () => {
   const payload = buildAiBehaviorCoachingSafePayload({
     generalMbti: 'INTJ',

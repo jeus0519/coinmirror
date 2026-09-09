@@ -88,7 +88,7 @@ type ExpectedTypeInput = Partial<{
 
 const AXIS_LABELS: Record<InvestmentTypeAxisName, { low: string; high: string; missing: string }> =
   {
-    entry: { low: '추격형', high: '대기형', missing: '진입 방식 측정 중' },
+    entry: { low: '추격형 (직전 대비)', high: '대기형', missing: '진입 방식 측정 중' },
     tempo: { low: '단기반응형', high: '장기보유형', missing: '거래 속도 측정 중' },
     loss: { low: '손실보류형', high: '손실정리형', missing: '손실 대응 측정 중' },
     allocation: { low: '집중형', high: '분산형', missing: '자금 배분 측정 중' },
@@ -130,10 +130,10 @@ function titleFromAxes(axes: InvestmentTypeAxis[]) {
     .map((axis) => axis.label);
   const codeLabels = new Set(measuredLabels);
 
-  if (codeLabels.has('추격형') && codeLabels.has('단기반응형')) return '추격형 단기 반응가';
+  if (codeLabels.has('추격형 (직전 대비)') && codeLabels.has('단기반응형')) return '추격형 (직전가 대비) 단기 반응가';
   if (codeLabels.has('집중형') && codeLabels.has('손실보류형')) return '집중형 손실 보류가';
   if (codeLabels.has('손실보류형')) return '손실보류형 관찰가';
-  if (codeLabels.has('추격형') && codeLabels.has('집중형')) return '집중 추격 관찰가';
+  if (codeLabels.has('추격형 (직전 대비)') && codeLabels.has('집중형')) return '집중 추격 (직전가 대비) 관찰가';
   if (codeLabels.has('단기반응형') && codeLabels.has('손실정리형')) return '짧은 점검형 반응가';
   if (codeLabels.has('대기형') && codeLabels.has('장기보유형')) return '분산형 안정 관찰가';
   return `${measuredLabels[0] ?? '측정 중'} 관찰가`;
@@ -150,7 +150,7 @@ function buildStrengths(metrics: Metric[], axes: InvestmentTypeAxis[]) {
   const strengths: string[] = [];
   if (metricById(metrics, 'F3')?.score && metricById(metrics, 'F3')!.score! >= 55) {
     strengths.push(
-      '급등 직후 따라 들어가는 비중이 과도하게 높지는 않아, 한 번 더 보고 들어가는 여지가 있어요.'
+      '직전 본인 체결가보다 상승한 가격에서 뒤따라 매수하는 비중이 과도하게 높지 않아요.'
     );
   }
   if (metricById(metrics, 'F6')?.score && metricById(metrics, 'F6')!.score! >= 55) {
@@ -198,8 +198,8 @@ function buildBiasSuggestions(metrics: Metric[]) {
   if (chase?.score !== null && chase?.score !== undefined && chase.score < 80) {
     suggestions.push({
       metricId: 'F3',
-      title: 'FOMO·주의 기반 매수',
-      suggestion: '급등을 본 직후에는 바로 매수하지 않고 30분 뒤에도 같은 판단인지 확인해 보세요.',
+      title: '직전 대비 높은 가격 매수 패턴',
+      suggestion: '직전 본인 체결가보다 높은 가격에 매수할 때에는 30분 대기 시간을 둔 뒤 다시 확인해 보세요.',
     });
   }
   return suggestions.slice(0, 2);
@@ -208,7 +208,7 @@ function buildBiasSuggestions(metrics: Metric[]) {
 function buildSimilarMbti(axes: InvestmentTypeAxis[]) {
   const labels = new Set(axes.map((axis) => axis.label));
   if (labels.has('대기형') && labels.has('장기보유형')) return ['ISTJ', 'INTJ'] as GeneralMbti[];
-  if (labels.has('추격형') && labels.has('단기반응형')) return ['ESTP', 'ENTP'] as GeneralMbti[];
+  if (labels.has('추격형 (직전 대비)') && labels.has('단기반응형')) return ['ESTP', 'ENTP'] as GeneralMbti[];
   if (labels.has('손실보류형') && labels.has('집중형')) return ['ISFJ', 'INFJ'] as GeneralMbti[];
   if (labels.has('단기반응형')) return ['ESTP', 'ESFP'] as GeneralMbti[];
   return ['ISTJ', 'INTJ'] as GeneralMbti[];
@@ -249,7 +249,7 @@ export function buildExpectedInvestmentTypeProfile(
     expectedAxis(
       'entry',
       concerns.includes('chase') || input.A1 === 'momentum' ? 'C' : 'W',
-      concerns.includes('chase') || input.A1 === 'momentum' ? '추격형' : '대기형',
+      concerns.includes('chase') || input.A1 === 'momentum' ? '추격형 (직전 대비)' : '대기형',
       'F3',
       entryAnswered
     ),

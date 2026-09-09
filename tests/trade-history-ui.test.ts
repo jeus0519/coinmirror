@@ -135,6 +135,8 @@ test('암호화 PDF는 브라우저 prompt가 아니라 화면 안에서 비밀�
   assert.match(source, /isPdfPasswordRequiredError/);
   assert.match(source, /pendingPdfBytes/);
   assert.match(source, /secureTextEntry/);
+  assert.match(source, /autoComplete="off"/);
+  assert.match(source, /textContentType="none"/);
   assert.match(source, /비밀번호 입력 후 분석/);
 });
 

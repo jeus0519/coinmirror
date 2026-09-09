@@ -22,6 +22,35 @@ const ALLOWED_COACHING_TYPES: readonly AiBehaviorCoachingType[] = [
 const ALLOWED_SCORE_BANDS = ['stable', 'observe', 'caution', 'measuring'] as const;
 const ALLOWED_SCORE_BUCKETS = ['80_100', '55_79', '0_54', 'measuring'] as const;
 const ALLOWED_SAMPLE_SIZE_BUCKETS = ['0', '1_9', '10_49', '50_plus'] as const;
+const ALLOWED_TOP_LEVEL_KEYS = [
+  'schemaVersion',
+  'generalMbti',
+  'coachingType',
+  'keySignals',
+  'comparisonHint',
+  'requestedOutput',
+] as const;
+const ALLOWED_MBTIS = [
+  'INTJ', 'INTP', 'ENTJ', 'ENTP',
+  'INFJ', 'INFP', 'ENFJ', 'ENFP',
+  'ISTJ', 'ISFJ', 'ESTJ', 'ESFJ',
+  'ISTP', 'ISFP', 'ESTP', 'ESFP',
+] as const;
+const ALLOWED_METRIC_IDS = [
+  'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10'
+] as const;
+const TRUSTED_METRIC_NAMES: Record<(typeof ALLOWED_METRIC_IDS)[number], string> = {
+  F1: '손실 관리',
+  F2: '익절 습관',
+  F3: '직전 거래가 대비 높은 매수',
+  F4: '물타기',
+  F5: '복구매수',
+  F6: '거래 빈도',
+  F7: '새벽거래',
+  F8: '기간 내 매수금액 집중도',
+  F9: '본전 탈출',
+  F10: '투자 체력 종합점수',
+};
 const FORBIDDEN_KEY_PATTERN =
   /filename|filepath|pdfpassword|password|email|account|customer|userid|userid|orderid|executionid|raw|symbol|ticker|amount|quantity|price|balance|pnl|profit|lossamount|evidence|stats|fact|when/i;
 const FORBIDDEN_VALUE_PATTERN =
@@ -61,9 +90,12 @@ export function validateAiReflectionRequest(input: unknown): AiReflectionValidat
   if (!isRecord(input)) return { ok: false, error: 'invalid_request' };
   if (hasForbiddenKey(input)) return { ok: false, error: 'forbidden_sensitive_field' };
   if (hasForbiddenValue(input)) return { ok: false, error: 'forbidden_sensitive_value' };
+  if (Object.keys(input).some((key) => !ALLOWED_TOP_LEVEL_KEYS.includes(key as any))) {
+    return { ok: false, error: 'invalid_request_field' };
+  }
   if (input.schemaVersion !== ALLOWED_SCHEMA_VERSION) return { ok: false, error: 'invalid_schema_version' };
   if (!isOneOf(input.coachingType, ALLOWED_COACHING_TYPES)) return { ok: false, error: 'invalid_coaching_type' };
-  if (input.generalMbti !== undefined && typeof input.generalMbti !== 'string') {
+  if (input.generalMbti !== undefined && !isOneOf(input.generalMbti, ALLOWED_MBTIS)) {
     return { ok: false, error: 'invalid_general_mbti' };
   }
   if (input.comparisonHint !== undefined && input.comparisonHint !== 'self_perception_available') {
@@ -78,7 +110,9 @@ export function validateAiReflectionRequest(input: unknown): AiReflectionValidat
     if (Object.keys(signal).some((key) => !['metricId', 'displayName', 'scoreBand', 'scoreBucket', 'sampleSizeBucket'].includes(key))) {
       return { ok: false, error: 'invalid_key_signal_field' };
     }
-    if (typeof signal.metricId !== 'string' || !/^F\d+$/.test(signal.metricId)) return { ok: false, error: 'invalid_metric_id' };
+    if (typeof signal.metricId !== 'string' || !isOneOf(signal.metricId, ALLOWED_METRIC_IDS)) {
+      return { ok: false, error: 'invalid_metric_id' };
+    }
     if (typeof signal.displayName !== 'string' || signal.displayName.length > 40) return { ok: false, error: 'invalid_display_name' };
     if (!isOneOf(signal.scoreBand, ALLOWED_SCORE_BANDS)) return { ok: false, error: 'invalid_score_band' };
     if (!isOneOf(signal.scoreBucket, ALLOWED_SCORE_BUCKETS)) return { ok: false, error: 'invalid_score_bucket' };
@@ -90,7 +124,29 @@ export function validateAiReflectionRequest(input: unknown): AiReflectionValidat
     return { ok: false, error: 'invalid_requested_output' };
   }
 
-  return { ok: true, payload: input as AiBehaviorCoachingSafePayload };
+  const reconstructedSignals = (input.keySignals as any[]).map((signal) => ({
+    metricId: signal.metricId,
+    displayName: TRUSTED_METRIC_NAMES[signal.metricId as (typeof ALLOWED_METRIC_IDS)[number]],
+    scoreBand: signal.scoreBand,
+    scoreBucket: signal.scoreBucket,
+    sampleSizeBucket: signal.sampleSizeBucket,
+  }));
+
+  const payload: AiBehaviorCoachingSafePayload = {
+    schemaVersion: ALLOWED_SCHEMA_VERSION,
+    coachingType: input.coachingType as AiBehaviorCoachingType,
+    keySignals: reconstructedSignals,
+    requestedOutput: ['observedPattern', 'reduceAction', 'reinforceAction', 'nextQuestion'],
+  };
+
+  if (input.generalMbti !== undefined) {
+    payload.generalMbti = input.generalMbti as any;
+  }
+  if (input.comparisonHint !== undefined) {
+    payload.comparisonHint = input.comparisonHint as any;
+  }
+
+  return { ok: true, payload };
 }
 
 export function buildAiReflectionPrompt(payload: AiBehaviorCoachingSafePayload): AiReflectionPrompt {

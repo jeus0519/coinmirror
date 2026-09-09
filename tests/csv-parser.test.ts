@@ -6,8 +6,15 @@ import { resolve } from 'node:path';
 import { buildSampleInvestmentTypeProfile } from '../src/lib/investment-type.ts';
 import { analyzeCsvInput } from '../src/lib/csv/analyze-csv.ts';
 import { parseCsv } from '../src/lib/csv/parse-csv.ts';
-import { parseUpbitCsv } from '../src/lib/csv/adapters/upbit.ts';
+import { parseUpbitCsv } from '../src/lib/csv/parse-upbit-csv.ts';
 import { buildPhase1ScoreMetrics } from '../src/lib/score-engine/index.ts';
+
+test('CSV 어댑터는 공통 파서 구현을 import하지 않아 순환 의존 경고를 만들지 않는다', async () => {
+  const source = await readFile(resolve('src/lib/csv/adapters/upbit.ts'), 'utf8');
+
+  assert.doesNotMatch(source, /from ['"]\.\.\/parse-csv['"]/);
+  assert.doesNotMatch(source, /from ['"]\.\.\/parse-csv\.ts['"]/);
+});
 
 test('업비트 합성 CSV는 선언형 매핑으로 RawExecution으로 변환된다', async () => {
   const csv = await readFile(resolve('src/lib/csv/fixtures/upbit-sample.csv'), 'utf8');
@@ -136,4 +143,95 @@ test('analyzeCsvInput은 A4 답변이 없어도 실제 거래내역의 자금 �
 
   assert.match(result.investmentType.code, /^[CW]-[RH]-[LX]-[ND]$/);
   assert.notEqual(result.investmentType.axes.find((axis) => axis.axis === 'allocation')?.code, '?');
+});
+
+test('업비트 CSV 검증: 필수 체결가 누락/빈 값 행 거부', () => {
+  const csv = `마켓,구분,체결시간,체결가,수량\nKRW-BTC,매수,2026-01-01 09:00:00,,1\n`;
+  const result = parseUpbitCsv(csv);
+  assert.equal(result.executions.length, 0);
+  assert.equal(result.errors.length, 1);
+  assert.match(result.errors[0].reason, /체결가/);
+});
+
+test('업비트 CSV 검증: 체결가 <= 0 행 거부', () => {
+  const csvZero = `마켓,구분,체결시간,체결가,수량\nKRW-BTC,매수,2026-01-01 09:00:00,0,1\n`;
+  const csvNegative = `마켓,구분,체결시간,체결가,수량\nKRW-BTC,매수,2026-01-01 09:00:00,-100,1\n`;
+
+  const resultZero = parseUpbitCsv(csvZero);
+  assert.equal(resultZero.executions.length, 0);
+  assert.equal(resultZero.errors.length, 1);
+  assert.match(resultZero.errors[0].reason, /체결가/);
+
+  const resultNegative = parseUpbitCsv(csvNegative);
+  assert.equal(resultNegative.executions.length, 0);
+  assert.equal(resultNegative.errors.length, 1);
+  assert.match(resultNegative.errors[0].reason, /체결가/);
+});
+
+test('업비트 CSV 검증: 수량 <= 0 행 거부', () => {
+  const csvZero = `마켓,구분,체결시간,체결가,수량\nKRW-BTC,매수,2026-01-01 09:00:00,100,0\n`;
+  const csvNegative = `마켓,구분,체결시간,체결가,수량\nKRW-BTC,매수,2026-01-01 09:00:00,100,-0.5\n`;
+
+  const resultZero = parseUpbitCsv(csvZero);
+  assert.equal(resultZero.executions.length, 0);
+  assert.equal(resultZero.errors.length, 1);
+  assert.match(resultZero.errors[0].reason, /수량/);
+
+  const resultNegative = parseUpbitCsv(csvNegative);
+  assert.equal(resultNegative.executions.length, 0);
+  assert.equal(resultNegative.errors.length, 1);
+  assert.match(resultNegative.errors[0].reason, /수량/);
+});
+
+test('업비트 CSV 검증: 수수료 < 0 행 거부 (0은 허용)', () => {
+  const csvZeroFee = `마켓,구분,체결시간,체결가,수량,수수료\nKRW-BTC,매수,2026-01-01 09:00:00,100,1,0\n`;
+  const csvNegativeFee = `마켓,구분,체결시간,체결가,수량,수수료\nKRW-BTC,매수,2026-01-01 09:00:00,100,1,-0.05\n`;
+
+  const resultZero = parseUpbitCsv(csvZeroFee);
+  assert.equal(resultZero.executions.length, 1);
+  assert.equal(resultZero.errors.length, 0);
+  assert.equal(resultZero.executions[0].fee, 0);
+
+  const resultNegative = parseUpbitCsv(csvNegativeFee);
+  assert.equal(resultNegative.executions.length, 0);
+  assert.equal(resultNegative.errors.length, 1);
+  assert.match(resultNegative.errors[0].reason, /수수료/);
+});
+
+test('업비트 CSV 검증: 유효하지 않은 달력 날짜 및 시간 거부', () => {
+  const csvInvalidDate = `마켓,구분,체결시간,체결가,수량\nKRW-BTC,매수,2026-02-31 09:00:00,100,1\n`;
+  const csvInvalidHour = `마켓,구분,체결시간,체결가,수량\nKRW-BTC,매수,2026-01-01 25:00:00,100,1\n`;
+  const csvInvalidMonth = `마켓,구분,체결시간,체결가,수량\nKRW-BTC,매수,2026-13-01 09:00:00,100,1\n`;
+  const csvInvalidMin = `마켓,구분,체결시간,체결가,수량\nKRW-BTC,매수,2026-01-01 09:61:00,100,1\n`;
+  const csvLeapYearInvalid = `마켓,구분,체결시간,체결가,수량\nKRW-BTC,매수,2026-02-29 09:00:00,100,1\n`;
+  const csvLeapYearValid = `마켓,구분,체결시간,체결가,수량\nKRW-BTC,매수,2024-02-29 09:00:00,100,1\n`;
+
+  const resInvalidDate = parseUpbitCsv(csvInvalidDate);
+  assert.equal(resInvalidDate.executions.length, 0);
+  assert.equal(resInvalidDate.errors.length, 1);
+  assert.match(resInvalidDate.errors[0].reason, /체결시간|날짜|시간/);
+
+  const resInvalidHour = parseUpbitCsv(csvInvalidHour);
+  assert.equal(resInvalidHour.executions.length, 0);
+  assert.equal(resInvalidHour.errors.length, 1);
+  assert.match(resInvalidHour.errors[0].reason, /체결시간|날짜|시간/);
+
+  const resInvalidMonth = parseUpbitCsv(csvInvalidMonth);
+  assert.equal(resInvalidMonth.executions.length, 0);
+  assert.equal(resInvalidMonth.errors.length, 1);
+  assert.match(resInvalidMonth.errors[0].reason, /체결시간|날짜|시간/);
+
+  const resInvalidMin = parseUpbitCsv(csvInvalidMin);
+  assert.equal(resInvalidMin.executions.length, 0);
+  assert.equal(resInvalidMin.errors.length, 1);
+  assert.match(resInvalidMin.errors[0].reason, /체결시간|날짜|시간/);
+
+  const resLeapYearInvalid = parseUpbitCsv(csvLeapYearInvalid);
+  assert.equal(resLeapYearInvalid.executions.length, 0);
+  assert.equal(resLeapYearInvalid.errors.length, 1);
+  assert.match(resLeapYearInvalid.errors[0].reason, /체결시간|날짜|시간/);
+
+  const resLeapYearValid = parseUpbitCsv(csvLeapYearValid);
+  assert.equal(resLeapYearValid.executions.length, 1);
+  assert.equal(resLeapYearValid.errors.length, 0);
 });

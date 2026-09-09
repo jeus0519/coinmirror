@@ -103,3 +103,78 @@ test('/api/ai-reflection rejects oversized payloads before any model call', asyn
   assert.equal(called, false);
   assert.equal(json.error, 'payload_too_large');
 });
+
+test('/api/ai-reflection rejects UTF-8 multibyte payload over 2048 bytes with 413 even if JS string length <= 2048', async () => {
+  const payload = buildAiBehaviorCoachingSafePayload({ generalMbti: 'INTJ', metrics: baseMetrics });
+  let called = false;
+  // '한' is 3 bytes in UTF-8. 700 * 3 = 2100 bytes. JS string length of '한'.repeat(700) is 700.
+  const largeKoreanText = '한'.repeat(700);
+  const body = {
+    ...payload,
+    extra: largeKoreanText,
+  };
+
+  const jsStringLength = JSON.stringify(body).length;
+  // Assert that JS string length is indeed <= 2048 so we are testing the right thing
+  assert.ok(jsStringLength <= 2048, `JS string length (${jsStringLength}) must be <= 2048`);
+
+  const response = await POST(
+    request(body),
+    {
+      generate: async () => {
+        called = true;
+        return {};
+      },
+    },
+  );
+  const json = await response.json();
+
+  assert.equal(response.status, 413);
+  assert.equal(called, false);
+  assert.equal(json.error, 'payload_too_large');
+});
+
+test('/api/ai-reflection rejects based on Content-Length >2048 before parsing malformed body', async () => {
+  let called = false;
+  const req = new Request('https://coinmirror.test/api/ai-reflection', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'content-length': '2500',
+    },
+    body: '{"invalid-json": ', // Malformed JSON
+  });
+
+  const response = await POST(req, {
+    generate: async () => {
+      called = true;
+      return {};
+    },
+  });
+  const json = await response.json();
+
+  assert.equal(response.status, 413);
+  assert.equal(called, false);
+  assert.equal(json.error, 'payload_too_large');
+});
+
+test('/api/ai-reflection rejects malformed JSON with 400 invalid_request and no generator call', async () => {
+  let called = false;
+  const req = new Request('https://coinmirror.test/api/ai-reflection', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: '{"invalid-json": ', // Malformed JSON
+  });
+
+  const response = await POST(req, {
+    generate: async () => {
+      called = true;
+      return {};
+    },
+  });
+  const json = await response.json();
+
+  assert.equal(response.status, 400);
+  assert.equal(called, false);
+  assert.equal(json.error, 'invalid_request');
+});
