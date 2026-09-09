@@ -283,6 +283,7 @@ export function Step3DataImport() {
         title: 'PDF를 열지 못했어요',
         body: '비밀번호가 맞는지 확인해 주세요. 원본 파일과 비밀번호는 저장하지 않아요.',
       });
+      setPdfPassword('');
     } finally {
       setProgress(null);
     }

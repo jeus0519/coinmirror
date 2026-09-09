@@ -156,6 +156,14 @@ test('비밀번호 값은 화면 문구나 로그로 새어 나가지 않는다'
   assert.doesNotMatch(code, /setProgress\([^)]*pdfPassword/);
 });
 
+test('PDF 비밀번호로 열기 실패 후 입력 상태를 지운다', async () => {
+  const code = await readStepCode();
+  const failureBlock = code.match(/title: 'PDF를 열지 못했어요'[\s\S]*?} finally/)?.[0];
+
+  assert.ok(failureBlock);
+  assert.match(failureBlock, /setPdfPassword\(''\)/);
+});
+
 test('PDF 비밀번호는 입력값 그대로 쓰고 원본 바이트를 복사해 재시도한다', async () => {
   const code = await readStepCode();
 
