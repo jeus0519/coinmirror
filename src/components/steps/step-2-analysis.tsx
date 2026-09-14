@@ -548,7 +548,7 @@ export function Step2Analysis() {
             <View className="gap-2 rounded-2xl border border-primary/20 bg-primary/5 p-3">
               <Text className="text-sm font-extrabold text-foreground">직전 분석과 비교</Text>
               <Text className="text-xs leading-5 text-muted-foreground">
-                {snapshotComparison.summary}
+                {snapshotComparison.summary} 목표 달성 여부는 저장한 목표 카드에서 판단해요.
               </Text>
               {snapshotComparison.dedupe.duplicateExecutionCount > 0 && (
                 <View className="gap-1 rounded-xl bg-background/80 p-2.5">
@@ -567,10 +567,10 @@ export function Step2Analysis() {
                   <Text className="text-[11px] font-semibold text-primary">
                     {row.status === 'pending'
                       ? '판단 보류'
-                      : row.direction === 'improved'
-                        ? '개선'
-                        : row.direction === 'worsened'
-                          ? '악화'
+                      : row.delta !== null && row.delta > 0
+                        ? '증가'
+                        : row.delta !== null && row.delta < 0
+                          ? '감소'
                           : '유지'}
                   </Text>
                 </View>

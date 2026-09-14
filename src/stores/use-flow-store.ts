@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 import { analyzeCsvInput } from '@/lib/csv/analyze-csv';
-import { type TradeHistoryAnalysisResult } from '@/lib/trade-history/build-analysis';
+import { analyzeParseResult, type TradeHistoryAnalysisResult } from '@/lib/trade-history/build-analysis';
 import { type DiagnosisProfile } from '@/lib/onboarding-diagnosis';
 import {
   buildIncrementalSnapshotFromAnalysis,
@@ -88,7 +88,17 @@ export const useFlowStore = create<FlowState>((set) => ({
   setStep: (step) =>
     set((state) => ({ currentStep: canEnterStep(state, step) ? step : state.currentStep })),
   saveDiagnosis: (answers) =>
-    set({ hasDiagnosis: true, diagnosisAnswers: answers, currentStep: 3 }),
+    set((state) => {
+      const tradeAnalysis = state.tradeAnalysis
+        ? analyzeParseResult(state.tradeAnalysis.parse, answers, state.tradeAnalysis.sourceFormat)
+        : state.tradeAnalysis;
+      return {
+        hasDiagnosis: true,
+        diagnosisAnswers: answers,
+        tradeAnalysis,
+        currentStep: state.hasAnalyzed ? state.currentStep : 3,
+      };
+    }),
   runSample: () =>
     set({ hasAnalyzed: true, dataSource: 'sample', tradeAnalysis: null, currentStep: 4 }),
   runDuplicateUploadDemo: (storage) =>
@@ -202,8 +212,11 @@ export const useFlowStore = create<FlowState>((set) => ({
       const previous = persisted.snapshots.at(-2) ?? null;
       const current = persisted.snapshots.at(-1) ?? null;
       const comparison = previous && current ? compareSnapshots(previous, current) : null;
+      const hasRestoredSnapshots = persisted.snapshots.length > 0;
       return {
         ...state,
+        currentStep: hasRestoredSnapshots && !state.tradeAnalysis ? 4 : state.currentStep,
+        hasAnalyzed: hasRestoredSnapshots || state.hasAnalyzed,
         subscriptionSnapshots: persisted.snapshots,
         snapshotComparison: comparison,
         suggestedSubscriptionGoal: buildGoalCandidateFromComparison(comparison),

@@ -34,6 +34,27 @@ function sampleAnalysis(price: number) {
   );
 }
 
+
+function concentrationAnalysis() {
+  return analyzeCsvInput(
+    [
+      '마켓,구분,체결시간,체결가,수량,수수료',
+      'KRW-BTC,매수,2026-01-01 09:00:00,100,1,0',
+      'KRW-BTC,매수,2026-01-01 10:00:00,100,1,0',
+      'KRW-BTC,매수,2026-01-01 11:00:00,100,1,0',
+      'KRW-BTC,매수,2026-01-01 12:00:00,100,1,0',
+      'KRW-BTC,매수,2026-01-01 13:00:00,100,1,0',
+      'KRW-BTC,매수,2026-01-01 14:00:00,100,1,0',
+      'KRW-BTC,매수,2026-01-01 15:00:00,100,1,0',
+      'KRW-BTC,매수,2026-01-01 16:00:00,100,1,0',
+      'KRW-ETH,매수,2026-01-01 17:00:00,100,1,0',
+      'KRW-XRP,매수,2026-01-01 18:00:00,100,1,0',
+    ].join('\n'),
+    { A4: '50' }
+  );
+}
+
+
 function overlappingAnalysis() {
   return analyzeCsvInput(
     [
@@ -120,6 +141,59 @@ function memoryStorage() {
     removeItem: (key: string) => map.delete(key),
   };
 }
+
+
+test('저장된 스냅샷을 복원하면 재방문자가 분석 이력 화면에 바로 진입할 수 있다', () => {
+  const storage = memoryStorage();
+  useFlowStore.setState({
+    currentStep: 1,
+    hasDiagnosis: false,
+    hasAnalyzed: true,
+    dataSource: 'csv',
+    diagnosisAnswers: {},
+    tradeAnalysis: sampleAnalysis(120),
+    subscriptionSnapshots: [],
+    snapshotComparison: null,
+    suggestedSubscriptionGoal: null,
+    savedSubscriptionGoals: [],
+  });
+  useFlowStore.getState().saveCurrentAnalysisSnapshot(storage);
+
+  useFlowStore.setState({
+    currentStep: 1,
+    hasAnalyzed: false,
+    dataSource: null,
+    tradeAnalysis: null,
+    subscriptionSnapshots: [],
+  });
+  useFlowStore.getState().restoreSubscriptionState(storage);
+
+  assert.equal(useFlowStore.getState().currentStep, 4);
+  assert.equal(useFlowStore.getState().hasAnalyzed, true);
+  assert.equal(useFlowStore.getState().subscriptionSnapshots.length, 1);
+});
+
+test('설문 기준을 변경하면 보존된 parse 결과로 현재 거래 분석을 새 기준에 맞게 재계산한다', () => {
+  useFlowStore.setState({
+    currentStep: 4,
+    hasDiagnosis: true,
+    hasAnalyzed: true,
+    dataSource: 'csv',
+    diagnosisAnswers: { A4: '50' },
+    tradeAnalysis: concentrationAnalysis(),
+    subscriptionSnapshots: [],
+    snapshotComparison: null,
+  });
+  const before = useFlowStore.getState().tradeAnalysis?.metrics.find((metric) => metric.id === 'F8')?.score;
+
+  useFlowStore.getState().saveDiagnosis({ A4: '10' });
+
+  const state = useFlowStore.getState();
+  const after = state.tradeAnalysis?.metrics.find((metric) => metric.id === 'F8')?.score;
+  assert.notEqual(after, before);
+  assert.equal(state.currentStep, 4);
+  assert.equal(state.hasAnalyzed, true);
+});
 
 test('구독 스냅샷과 목표는 명시적 로컬 저장소에 저장·복원·삭제된다', () => {
   const storage = memoryStorage();

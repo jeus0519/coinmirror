@@ -233,7 +233,7 @@ export function buildTradeAnalysisViewData(
     tradeAnalysis.derivedSeries ?? buildSeriesFromExecutions(tradeAnalysis.parse.executions);
   const unmatchedSellCount = countUnmatchedSellExecutions(tradeAnalysis.parse.executions);
   const summaryText = unmatchedSellCount
-    ? `${tradeAnalysis.preview.sourceFormatLabel}에서 정상 ${tradeAnalysis.preview.normalRowCount}행을 읽었지만, 매수 원가를 알 수 없는 매도 ${unmatchedSellCount}건이 있어 손익·승률은 판단 보류가 포함됩니다. 오류 ${tradeAnalysis.preview.errorRowCount}행은 점수에 넣지 않았습니다.`
+    ? `${tradeAnalysis.preview.sourceFormatLabel}에서 정상 ${tradeAnalysis.preview.normalRowCount}행을 읽었지만, 매수 원가를 알 수 없는 매도 ${unmatchedSellCount}건이 있어 손익·승률은 판단 보류가 포함됩니다. 다음 달 파일만 올린 경우 이전 기간 매수 기록이 함께 있어야 원가 연결과 비교가 더 정확해요. 오류 ${tradeAnalysis.preview.errorRowCount}행은 점수에 넣지 않았습니다.`
     : `${tradeAnalysis.preview.sourceFormatLabel}에서 정상 ${tradeAnalysis.preview.normalRowCount}행을 읽어 F1/F3/F6/F8과 투자거울 타입을 계산했어요. 오류 ${tradeAnalysis.preview.errorRowCount}행은 점수에 넣지 않았습니다.`;
   return buildViewData({
     source: tradeAnalysis.sourceFormat,

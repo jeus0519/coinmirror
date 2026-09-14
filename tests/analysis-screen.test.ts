@@ -52,6 +52,18 @@ test('매수 원가가 빠진 매도만 있는 거래내역은 확정 분석처�
   assert.ok(view.statTiles.some((tile) => /원가 누락/.test(tile.label)));
 });
 
+test('다음 달 파일만 업로드해 매수 원가가 빠진 경우 이전 기간 파일 포함 필요를 안내한다', () => {
+  const csv = [
+    '마켓,구분,체결시간,체결가,수량,수수료',
+    'KRW-BTC,매도,2026-02-01 09:00:00,120,1,0',
+  ].join('\n');
+  const tradeAnalysis = analyzeCsvInput(csv, {});
+  const view = buildTradeAnalysisViewData(tradeAnalysis, {});
+
+  assert.match(view.summaryText, /다음 달 파일만 올린 경우/);
+  assert.match(view.summaryText, /이전 기간 매수 기록/);
+});
+
 test('무료 분석 화면은 구독 혜택 페이지로 이어지는 자연스러운 배너를 제공한다', async () => {
   const source = await readFile(STEP_2, 'utf8');
 
@@ -141,6 +153,16 @@ test('분석 화면은 현재 분석 fingerprint가 마지막 저장본과 같�
   assert.match(source, /currentAnalysisSaved\s*\?/);
   assert.match(source, /이번 결과는 아직 저장하지 않았어요/);
   assert.doesNotMatch(source, /subscriptionSnapshots\.length > 0\s*\? '이번 결과 저장됨'/);
+});
+
+test('직전 비교 UI는 저장 목표가 없는 상태에서 개선·악화 단정 대신 증가·감소로 표시한다', async () => {
+  const source = await readFile(STEP_2, 'utf8');
+
+  assert.doesNotMatch(source, /\? '개선'/);
+  assert.doesNotMatch(source, /\? '악화'/);
+  assert.match(source, /'증가'/);
+  assert.match(source, /'감소'/);
+  assert.match(source, /목표 달성 여부는 저장한 목표 카드에서 판단해요/);
 });
 
 test('분석 화면은 기준선 저장 단계별로 CTA와 설명을 다르게 보여준다', async () => {
