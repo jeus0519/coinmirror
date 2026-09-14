@@ -31,7 +31,7 @@ export default function SubscriptionCheckoutPage() {
     });
 
     if (!waitlistFormUrl) {
-      setSubmissionNotice('재분석 알림 폼 URL이 아직 연결되지 않았어요. 지금은 관심 클릭만 익명으로 기록합니다.');
+      setSubmissionNotice('알림 신청 폼이 준비되면 연결할게요. 지금은 관심 클릭만 익명으로 기록합니다.');
       return;
     }
 

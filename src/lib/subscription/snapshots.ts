@@ -117,6 +117,10 @@ function sourceFingerprintFrom(executionFingerprints: readonly string[]) {
   return stableHash([...executionFingerprints].sort().join('|'));
 }
 
+export function buildAnalysisSourceFingerprint(analysis: TradeHistoryAnalysisResult) {
+  return sourceFingerprintFrom(analysis.parse.executions.map(buildExecutionFingerprint));
+}
+
 function dedupeCopy(total: number, duplicate: number, unique: number, context = 0) {
   const contextCopy = context > 0 ? ` 기간 밖 매수 ${context}건을 원가 연결용으로만 사용했어요.` : '';
   if (duplicate === 0) return `중복 체결 없이 ${unique}건을 기준으로 저장했어요.`;

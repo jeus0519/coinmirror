@@ -39,6 +39,19 @@ test('실제 분석 상단 거래 개요는 승률과 수익·손실 보유시�
   assert.match(view.statTiles[0].value, /%/);
 });
 
+test('매수 원가가 빠진 매도만 있는 거래내역은 확정 분석처럼 말하지 않고 판단 보류를 안내한다', async () => {
+  const csv = [
+    '마켓,구분,체결시간,체결가,수량,수수료',
+    'KRW-BTC,매도,2026-02-01 09:00:00,120,1,0',
+  ].join('\n');
+  const tradeAnalysis = analyzeCsvInput(csv, {});
+  const view = buildTradeAnalysisViewData(tradeAnalysis, {});
+
+  assert.match(view.summaryText, /매수 원가를 알 수 없는 매도/);
+  assert.match(view.summaryText, /손익·승률은 판단 보류/);
+  assert.ok(view.statTiles.some((tile) => /원가 누락/.test(tile.label)));
+});
+
 test('무료 분석 화면은 구독 혜택 페이지로 이어지는 자연스러운 배너를 제공한다', async () => {
   const source = await readFile(STEP_2, 'utf8');
 
@@ -120,12 +133,23 @@ test('분석 화면의 삭제 CTA는 원본 파일 삭제가 아니라 브라우
   assert.doesNotMatch(source, /원본 파일 삭제하기/);
 });
 
+test('분석 화면은 현재 분석 fingerprint가 마지막 저장본과 같을 때만 이번 결과 저장됨으로 표시한다', async () => {
+  const source = await readFile(STEP_2, 'utf8');
+
+  assert.match(source, /buildAnalysisSourceFingerprint/);
+  assert.match(source, /currentAnalysisSaved/);
+  assert.match(source, /currentAnalysisSaved\s*\?/);
+  assert.match(source, /이번 결과는 아직 저장하지 않았어요/);
+  assert.doesNotMatch(source, /subscriptionSnapshots\.length > 0\s*\? '이번 결과 저장됨'/);
+});
+
 test('분석 화면은 기준선 저장 단계별로 CTA와 설명을 다르게 보여준다', async () => {
   const source = await readFile(STEP_2, 'utf8');
 
   assert.match(source, /snapshotStatusTitle/);
   assert.match(source, /첫 비교 준비가 아직 없어요/);
   assert.match(source, /이번 결과 저장됨/);
+  assert.match(source, /이번 결과는 아직 저장하지 않았어요/);
   assert.match(source, /직전 분석과 비교 중/);
   assert.match(source, /이번 결과 다시 저장하기/);
   assert.match(source, /다음 거래내역을 올릴 때 변화량을 비교해요/);
@@ -172,8 +196,9 @@ test('분석 화면은 거래 개요 직후 AI 행동코칭을 먼저 보여주�
   assert.match(source, /내 예상 vs 기록/);
   assert.match(source, /행동 점수/);
   assert.doesNotMatch(source, /무료 행동 점수/);
-  assert.ok(source.indexOf('거래 개요') < source.indexOf('AI 행동코칭'));
-  assert.ok(source.indexOf('AI 행동코칭') < source.indexOf('내 예상 vs 기록'));
+  const aiHeadingIndex = source.indexOf('>AI 행동코칭</Text>');
+  assert.ok(source.indexOf('거래 개요') < aiHeadingIndex);
+  assert.ok(aiHeadingIndex < source.indexOf('내 예상 vs 기록'));
   assert.ok(source.indexOf('내 예상 vs 기록') < source.indexOf('행동 점수'));
   assert.ok(source.indexOf('행동 점수') < source.indexOf('투자거울 타입'));
   assert.ok(source.indexOf('투자거울 타입') < source.indexOf('이번 분석에서 눈에 띄는 패턴'));
@@ -193,6 +218,15 @@ test('분석 화면은 AI 행동코칭을 자동 노출하지 않고 버튼으�
   assert.match(source, /버튼을 누르면/);
   assert.match(source, /ai_coaching_request_click/);
   assert.match(source, /showAiBehaviorCoaching \? \(/);
+});
+
+test('AI 행동코칭 받기는 측정 가능한 지표가 없으면 API를 호출하지 않고 원인을 안내한다', async () => {
+  const source = await readFile(STEP_2, 'utf8');
+
+  assert.match(source, /hasAiReflectionSignal/);
+  assert.match(source, /측정 가능한 행동 지표가 아직 부족해요/);
+  assert.match(source, /if \(!hasAiReflectionSignal\)/);
+  assert.match(source, /return;/);
 });
 
 test('AI 행동코칭 받기 버튼은 safe payload로 api를 호출하고 실패하면 rule 코칭을 보여준다', async () => {

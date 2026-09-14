@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 
 export function Step3Goals() {
   const [selectedPrincipleId, setSelectedPrincipleId] = useState(principlePresets[0].id);
+  const [notice, setNotice] = useState<string | null>(null);
   const selected = principlePresets.find((item) => item.id === selectedPrincipleId)!;
   const maxTradeCount = Math.max(...weeklyTrend.map((item) => item.tradeCount), 1);
 
@@ -19,7 +20,8 @@ export function Step3Goals() {
       <View className="gap-2">
         <Text className="text-lg font-extrabold text-foreground">P7 · 원칙 지키기</Text>
         <Text className="text-xs leading-5 text-muted-foreground">
-          숫자 입력 대신 원칙 하나만 골라요. 다음 분석에서 같은 기준으로 볼게요.
+          체험용 원칙 후보를 하나 골라요. 실제 저장은 아직 하지 않아요. 다음 분석에서 어떤
+          기준을 볼 수 있을지 미리 확인하는 화면입니다.
         </Text>
       </View>
 
@@ -57,9 +59,20 @@ export function Step3Goals() {
         })}
       </View>
 
-      <Button onPress={() => Alert.alert('원칙 선택됨(목업)', selected.label)}>
+      <Button
+        onPress={() =>
+          setNotice(
+            `${selected.label} 기준을 선택했어요. 공개 MVP에서는 저장하지 않고, 실제 목표 저장은 분석 비교 화면에서만 제공해요.`
+          )
+        }
+      >
         <Text>이 원칙으로 4주 관찰하기</Text>
       </Button>
+      {notice && (
+        <View className="rounded-2xl border border-primary/30 bg-primary/5 p-3">
+          <Text className="text-xs leading-5 text-foreground">{notice}</Text>
+        </View>
+      )}
 
       <Card>
         <CardContent className="gap-3 pt-2">

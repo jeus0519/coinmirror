@@ -140,6 +140,14 @@ test('암호화 PDF는 브라우저 prompt가 아니라 화면 안에서 비밀�
   assert.match(source, /비밀번호 입력 후 분석/);
 });
 
+test('새 파일을 고르면 기존 분석 미리보기를 먼저 지워 실패한 파일과 이전 결과가 섞이지 않는다', async () => {
+  const code = await readStepCode();
+  const handlerStart = code.match(/async function handlePickedAsset[\s\S]*?trackCoinmirrorEvent\('upload_attempt'/)?.[0];
+
+  assert.ok(handlerStart);
+  assert.match(handlerStart, /clearTradeAnalysis\(\)/);
+});
+
 test('파싱에 성공하면 그 데이터로 분석을 이어갈 수 있다', async () => {
   const source = await readStepSource();
 

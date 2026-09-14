@@ -17,6 +17,7 @@ import { trackCoinmirrorEvent } from '@/lib/analytics';
 import { buildExpectationComparisons } from '@/lib/onboarding-diagnosis';
 import { buildInvestmentTypeShareCard } from '@/lib/share-card';
 import { buildMonthlyHabitReport } from '@/lib/subscription/monthly-report';
+import { buildAnalysisSourceFingerprint } from '@/lib/subscription/snapshots';
 import { useFlowStore } from '@/stores/use-flow-store';
 
 function StatTile({
@@ -81,6 +82,7 @@ export function Step2Analysis() {
     [tradeAnalysis, dataSource, diagnosisAnswers]
   );
   const derivedSeries = analysis.derivedSeries;
+  const hasAiReflectionSignal = analysis.metrics.some((metric) => metric.measured && metric.score !== null);
   const aiBehaviorCoaching = useMemo(
     () =>
       buildAiBehaviorCoaching({
@@ -109,17 +111,26 @@ export function Step2Analysis() {
     [subscriptionSnapshots, savedSubscriptionGoals]
   );
   const hasSavedGoal = savedSubscriptionGoals.length > 0;
+  const currentAnalysisFingerprint = tradeAnalysis ? buildAnalysisSourceFingerprint(tradeAnalysis) : null;
+  const lastSavedSnapshot = subscriptionSnapshots.at(-1) ?? null;
+  const currentAnalysisSaved = Boolean(
+    currentAnalysisFingerprint && lastSavedSnapshot?.sourceFingerprint === currentAnalysisFingerprint
+  );
   const snapshotStatusTitle = snapshotComparison
     ? '직전 분석과 비교 중'
-    : subscriptionSnapshots.length > 0
+    : currentAnalysisSaved
       ? '이번 결과 저장됨'
-      : '첫 비교 준비가 아직 없어요';
+      : subscriptionSnapshots.length > 0
+        ? '이번 결과는 아직 저장하지 않았어요'
+        : '첫 비교 준비가 아직 없어요';
   const snapshotStatusDescription = snapshotComparison
     ? '직전 분석과 이번 분석의 차이를 바로 아래에서 확인할 수 있어요.'
-    : subscriptionSnapshots.length > 0
-      ? '다음 거래내역을 올릴 때 변화량을 비교해요. 새 거래내역을 올린 뒤 이번 결과 다시 저장하기를 눌러 확인하세요.'
-      : '이번 결과를 저장해두면 다음 거래내역을 올릴 때 승률, 보유기간, 거래 빈도 변화를 비교할 수 있어요.';
-  const snapshotSaveCta = subscriptionSnapshots.length > 0 ? '이번 결과 다시 저장하기' : '이번 결과 저장하기';
+    : currentAnalysisSaved
+      ? '다음 거래내역을 올릴 때 변화량을 비교해요. 같은 결과를 다시 저장하면 중복 기준선이 생길 수 있어요.'
+      : subscriptionSnapshots.length > 0
+        ? '저장된 이전 결과는 있지만, 지금 화면의 새 분석은 아직 저장하지 않았어요. 종료 전 이번 결과 저장하기를 눌러 주세요.'
+        : '이번 결과를 저장해두면 다음 거래내역을 올릴 때 승률, 보유기간, 거래 빈도 변화를 비교할 수 있어요.';
+  const snapshotSaveCta = currentAnalysisSaved ? '이번 결과 다시 저장하기' : '이번 결과 저장하기';
   const goalStatusTitle = hasSavedGoal ? '목표 저장 완료' : '목표는 비교가 생기면 저장할 수 있어요';
 
   useEffect(() => {
@@ -161,6 +172,10 @@ export function Step2Analysis() {
     setShowAiBehaviorCoaching(true);
     setAiReflectionNotice(null);
 
+    if (!hasAiReflectionSignal) {
+      setAiReflectionNotice('측정 가능한 행동 지표가 아직 부족해요. 거래 기록이 더 쌓이면 AI 행동코칭을 정리할 수 있어요.');
+      return;
+    }
     if (aiReflectionOutput || isAiReflectionLoading) return;
 
     setIsAiReflectionLoading(true);

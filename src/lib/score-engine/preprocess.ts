@@ -50,7 +50,9 @@ function toTime(value: string) {
   return new Date(value).getTime();
 }
 
-function round(value: number, digits = 6) {
+const QUANTITY_EPSILON = 1e-12;
+
+function round(value: number, digits = 12) {
   return Number(value.toFixed(digits));
 }
 
@@ -131,7 +133,7 @@ export function reconstructRoundTrips(orders: readonly Order[]) {
       lot.amount = round(lot.quantity * lot.price);
       lot.fee = round(lot.fee - proportionalBuyFee);
       remaining = round(remaining - consumed);
-      if (lot.quantity <= 0.000001) lots.shift();
+      if (lot.quantity <= QUANTITY_EPSILON) lots.shift();
     }
 
     const soldQuantity = round(order.quantity - remaining);

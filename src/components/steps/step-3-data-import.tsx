@@ -291,6 +291,7 @@ export function Step3DataImport() {
 
   async function handlePickedAsset(asset: PickedAsset, format: UploadFormat) {
     setNotice(null);
+    clearTradeAnalysis();
     setPendingPdfBytes(null);
     setPdfPassword('');
     setSelectedFileLabel(`${asset.name}${formatBytes(asset.size)}`);

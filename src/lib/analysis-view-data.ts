@@ -73,6 +73,23 @@ function formatHoldingHours(hours: number | null) {
   return `${(hours / 24).toFixed(1)}일`;
 }
 
+function countUnmatchedSellExecutions(executions: readonly RawExecution[]) {
+  const quantitiesBySymbol = new Map<string, number>();
+  let unmatchedSellCount = 0;
+  for (const execution of [...executions].sort((a, b) => a.executedAt.localeCompare(b.executedAt))) {
+    const currentQuantity = quantitiesBySymbol.get(execution.symbol) ?? 0;
+    if (execution.side === 'buy') {
+      quantitiesBySymbol.set(execution.symbol, currentQuantity + execution.quantity);
+      continue;
+    }
+    if (currentQuantity <= 0 || currentQuantity < execution.quantity) {
+      unmatchedSellCount += 1;
+    }
+    quantitiesBySymbol.set(execution.symbol, Math.max(0, currentQuantity - execution.quantity));
+  }
+  return unmatchedSellCount;
+}
+
 function buildSubscriptionInsights(derivedSeries: Phase1DerivedSeries): SubscriptionInsight[] {
   const insights: SubscriptionInsight[] = [];
   const profitHours = derivedSeries.medianHoldingHours.profit;
@@ -119,6 +136,7 @@ function buildViewData(input: {
   derivedSeries: Phase1DerivedSeries;
   expectationActuals?: ExpectationActuals;
   summaryText: string;
+  unmatchedSellCount?: number;
 }): AnalysisViewData {
   const hourlyBars = buildBars(input.derivedSeries.hourlyAmount).map((bar) => ({
     hour: bar.index,
@@ -135,6 +153,15 @@ function buildViewData(input: {
     ...input,
     lockedMetrics,
     statTiles: [
+      ...(input.unmatchedSellCount
+        ? [
+            {
+              label: '원가 누락 매도',
+              value: `${input.unmatchedSellCount}건`,
+              sub: '매수 원가 없어 손익·승률 판단 보류',
+            },
+          ]
+        : []),
       {
         label: '청산 승률',
         value: formatRate(input.derivedSeries.winRate),
@@ -204,13 +231,18 @@ export function buildTradeAnalysisViewData(
 ): AnalysisViewData {
   const derivedSeries =
     tradeAnalysis.derivedSeries ?? buildSeriesFromExecutions(tradeAnalysis.parse.executions);
+  const unmatchedSellCount = countUnmatchedSellExecutions(tradeAnalysis.parse.executions);
+  const summaryText = unmatchedSellCount
+    ? `${tradeAnalysis.preview.sourceFormatLabel}에서 정상 ${tradeAnalysis.preview.normalRowCount}행을 읽었지만, 매수 원가를 알 수 없는 매도 ${unmatchedSellCount}건이 있어 손익·승률은 판단 보류가 포함됩니다. 오류 ${tradeAnalysis.preview.errorRowCount}행은 점수에 넣지 않았습니다.`
+    : `${tradeAnalysis.preview.sourceFormatLabel}에서 정상 ${tradeAnalysis.preview.normalRowCount}행을 읽어 F1/F3/F6/F8과 투자거울 타입을 계산했어요. 오류 ${tradeAnalysis.preview.errorRowCount}행은 점수에 넣지 않았습니다.`;
   return buildViewData({
     source: tradeAnalysis.sourceFormat,
     metrics: tradeAnalysis.metrics,
     investmentType: tradeAnalysis.investmentType,
     derivedSeries,
     expectationActuals: tradeAnalysis.expectationActuals,
-    summaryText: `${tradeAnalysis.preview.sourceFormatLabel}에서 정상 ${tradeAnalysis.preview.normalRowCount}행을 읽어 F1/F3/F6/F8과 투자거울 타입을 계산했어요. 오류 ${tradeAnalysis.preview.errorRowCount}행은 점수에 넣지 않았습니다.`,
+    unmatchedSellCount,
+    summaryText,
   });
 }
 

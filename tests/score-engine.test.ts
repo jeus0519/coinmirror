@@ -83,6 +83,37 @@ test('Order 전처리는 타 종목 체결이 사이에 있어도 같은 종목�
   assert.equal(btcOrder?.price, 105);
 });
 
+test('FIFO RoundTrip은 BTC 8자리 소수 수량도 손익과 승률 계산에서 누락하지 않는다', () => {
+  const orders = mergeExecutionsToOrders([
+    {
+      id: 'btc-small-buy',
+      symbol: 'BTC',
+      side: 'buy',
+      price: 100_000_000,
+      quantity: 0.00000001,
+      fee: 0,
+      executedAt: '2026-01-01T09:00:00+09:00',
+    },
+    {
+      id: 'btc-small-sell',
+      symbol: 'BTC',
+      side: 'sell',
+      price: 110_000_000,
+      quantity: 0.00000001,
+      fee: 0,
+      executedAt: '2026-01-02T09:00:00+09:00',
+    },
+  ]);
+
+  const { roundTrips, openLots } = reconstructRoundTrips(orders);
+
+  assert.equal(roundTrips.length, 1);
+  assert.equal(roundTrips[0].quantity, 0.00000001);
+  assert.equal(roundTrips[0].pnl, 0.1);
+  assert.equal(roundTrips[0].pnlPct, 10);
+  assert.equal(openLots.length, 0);
+});
+
 test('FIFO RoundTrip은 매도 1건을 기존 매수 로트와 연결해 손익과 보유시간을 산출한다', () => {
   const orders = mergeExecutionsToOrders([
     {
@@ -116,7 +147,7 @@ test('FIFO RoundTrip은 매도 1건을 기존 매수 로트와 연결해 손익�
   const { roundTrips, openLots } = reconstructRoundTrips(orders);
 
   assert.equal(roundTrips.length, 1);
-  assert.equal(roundTrips[0].avgEntryPrice, 106.666667);
+  assert.equal(roundTrips[0].avgEntryPrice, 106.666666666667);
   assert.equal(roundTrips[0].pnl, 65);
   assert.equal(roundTrips[0].pnlPct, 40.625);
   assert.equal(openLots[0].quantity, 0.5);

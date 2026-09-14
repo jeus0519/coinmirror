@@ -46,6 +46,18 @@ test('고객 노출 화면에는 투자 조언이나 수익 보장으로 오해�
   assert.deepEqual(violations, []);
 });
 
+test('공개 MVP 화면은 목업 완료 alert 대신 체험용/준비 중 문구로 범위를 분리한다', () => {
+  const goalsSource = readProjectFile('src/components/steps/step-3-goals.tsx');
+  const checkoutSource = readProjectFile('src/app/subscription-checkout.tsx');
+
+  assert.doesNotMatch(goalsSource, /Alert\.alert/);
+  assert.doesNotMatch(goalsSource, /목업/);
+  assert.match(goalsSource, /체험용 원칙 후보/);
+  assert.match(goalsSource, /실제 저장은 아직 하지 않아요/);
+  assert.doesNotMatch(checkoutSource, /폼 URL이 아직 연결되지 않았어요/);
+  assert.match(checkoutSource, /알림 신청 폼이 준비되면/);
+});
+
 test('무료 공개 MVP 계획은 Closed Beta 모집보다 즉시 무료 사용과 선택형 출시 알림을 우선한다', () => {
   const plan = readProjectFile('docs/exec-plans/active/009-customer-launch-readiness-plan.md');
 
