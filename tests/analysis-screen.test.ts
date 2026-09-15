@@ -94,6 +94,14 @@ test('실제 분석은 구독관리에서 추적할 개인화 핵심 패턴과 �
   assert.match(view.subscriptionInsights[0].trackingGoal, /손실 보유기간/);
 });
 
+test('투자거울 타입 카드는 타입 성향을 1~2줄로 설명한다', async () => {
+  const source = await readFile(STEP_2, 'utf8');
+
+  assert.match(source, /typeDetail/);
+  assert.match(source, /이 타입은 어떤 성향인가요/);
+  assert.match(source, /analysis\.investmentType\.typeDetail/);
+});
+
 test('분석 화면은 개인화 핵심 패턴 카드와 구독관리 목표 추적 프리뷰를 보여준다', async () => {
   const source = await readFile(STEP_2, 'utf8');
 
@@ -229,6 +237,16 @@ test('분석 화면은 거래 개요 직후 AI 행동코칭을 먼저 보여주�
   assert.match(source, /유지할 행동/);
   assert.match(source, /다음 달 확인 질문/);
   assert.match(source, /원본 거래내역과 PDF 비밀번호는 AI로 보내지 않아요/);
+});
+
+
+
+test('AI 행동코칭 안내는 초보자도 이해할 수 있는 심리 설명 기대를 만든다', async () => {
+  const source = await readFile('src/components/steps/step-2-analysis.tsx', 'utf8');
+
+  assert.match(source, /심리 패턴/);
+  assert.match(source, /초보자|쉽게/);
+  assert.match(source, /투자 조언이 아니라/);
 });
 
 test('분석 화면은 AI 행동코칭을 자동 노출하지 않고 버튼으로 받게 안내한다', async () => {

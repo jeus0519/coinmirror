@@ -62,6 +62,7 @@ export type InvestmentTypeProfile = {
   };
   code: string;
   title: string;
+  typeDetail: string;
   axes: InvestmentTypeAxis[];
   generalMbti?: GeneralMbti;
   comparisonCopy?: string;
@@ -137,6 +138,43 @@ function titleFromAxes(axes: InvestmentTypeAxis[]) {
   if (codeLabels.has('단기반응형') && codeLabels.has('손실정리형')) return '짧은 점검형 반응가';
   if (codeLabels.has('대기형') && codeLabels.has('장기보유형')) return '분산형 안정 관찰가';
   return `${measuredLabels[0] ?? '측정 중'} 관찰가`;
+}
+
+
+function buildTypeDetail(axes: InvestmentTypeAxis[], context: 'expected' | 'recorded') {
+  const labels = new Set(axes.filter((axis) => axis.confidence !== 'insufficient').map((axis) => axis.label));
+  const prefix = context === 'expected' ? '스스로 예상한 기준으로는' : '최근 거래 기록상';
+
+  if (labels.has('추격형 (직전 대비)') && labels.has('단기반응형')) {
+    return `${prefix} 가격 움직임에 빠르게 반응하고, 직전 체결가보다 높은 구간에서도 진입을 서두르는 성향이 보여요. 좋은 기회를 놓치지 않는 장점이 있지만, 매수 전 한 번 더 멈추는 기준이 중요해요.`;
+  }
+  if (labels.has('집중형') && labels.has('손실보류형')) {
+    return `${prefix} 확신이 생긴 종목에 비중이 모이고, 손실 포지션을 바로 정리하기보다 더 지켜보는 쪽에 가까워요. 회복을 기다리는 힘은 있지만, 원칙 없는 물타기와 방치는 구분할 필요가 있어요.`;
+  }
+  if (labels.has('손실보류형')) {
+    return `${prefix} 손실이 난 거래를 바로 끊기보다 판단을 미루며 관찰하는 성향이 있어요. 시간을 두고 회복을 볼 수 있지만, 손실 한도와 재점검 시점을 먼저 정해두는 편이 안전해요.`;
+  }
+  if (labels.has('추격형 (직전 대비)') && labels.has('집중형')) {
+    return `${prefix} 눈에 띄는 가격 흐름을 발견하면 특정 종목에 빠르게 비중을 싣는 성향이 보여요. 추진력은 강하지만, 진입 가격과 종목 비중을 동시에 점검하는 장치가 필요해요.`;
+  }
+  if (labels.has('단기반응형') && labels.has('손실정리형')) {
+    return `${prefix} 짧은 호흡으로 결과를 확인하고, 손실 거래도 비교적 빨리 정리하려는 성향이에요. 민첩한 점검은 장점이지만, 잦은 매매가 수수료와 감정 반응으로 이어지지 않는지 봐야 해요.`;
+  }
+  if (labels.has('대기형') && labels.has('장기보유형')) {
+    return `${prefix} 무리하게 따라붙기보다 기다렸다가 들어가고, 보유 기간도 비교적 길게 가져가는 성향이에요. 안정적이지만, 손실 포지션을 오래 들고 가는 신호와는 구분해 점검해야 해요.`;
+  }
+  if (labels.has('대기형')) {
+    return `${prefix} 즉시 따라붙기보다 한 번 관찰한 뒤 진입하려는 성향이 보여요. 신중함은 장점이지만, 기준이 모호하면 좋은 기회와 회피를 구분하기 어려울 수 있어요.`;
+  }
+  if (labels.has('단기반응형')) {
+    return `${prefix} 시장 변화에 민감하게 반응하고 짧은 주기로 판단을 갱신하는 성향이에요. 빠른 대응은 장점이지만, 반복 매매가 습관화되는지는 함께 확인해야 해요.`;
+  }
+  if (labels.has('집중형')) {
+    return `${prefix} 여러 종목에 넓게 나누기보다 확신이 있는 쪽에 비중을 두는 성향이에요. 판단이 맞을 때는 효율적이지만, 한 종목 리스크가 커지지 않도록 상한선을 정해두는 게 좋아요.`;
+  }
+  return context === 'expected'
+    ? '아직 답변이 적어 타입 성향을 단정하기는 어려워요. 업로드 전에는 가설로만 보고, 실제 거래내역을 올린 뒤 기록 기반 타입과 비교해 보세요.'
+    : '아직 측정 가능한 거래 신호가 부족해 타입 성향을 단정하지 않아요. 거래 기록이 더 쌓이면 진입 방식, 보유 리듬, 손실 대응, 비중 관리 축을 나눠 보여드려요.';
 }
 
 export function buildMbtiComparisonCopy(generalMbti: GeneralMbti | undefined, title: string) {
@@ -283,6 +321,7 @@ export function buildExpectedInvestmentTypeProfile(
     sourceWindow: { from: 'survey', to: 'survey', orderCount: 0 },
     code: axes.map((axis) => axis.code).join('-'),
     title: `예상 ${baseTitle}`,
+    typeDetail: buildTypeDetail(axes, 'expected'),
     axes,
     generalMbti: input.generalMbti,
     comparisonCopy:
@@ -317,6 +356,7 @@ export function buildSampleInvestmentTypeProfile(
     sourceWindow: { from: '2026-02-09', to: '2026-08-07', orderCount: 214 },
     code: axes.map((axis) => axis.code).join('-'),
     title,
+    typeDetail: buildTypeDetail(axes, 'recorded'),
     axes,
     generalMbti,
     comparisonCopy: buildMbtiComparisonCopy(generalMbti, title),

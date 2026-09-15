@@ -191,7 +191,7 @@ test('AI reflection request validation rejects sensitive values even when keys a
   assert.equal(result.error, 'forbidden_sensitive_value');
 });
 
-test('AI reflection prompt is short, behavior-only, and excludes investment advice instructions', () => {
+test('AI reflection prompt is beginner-friendly, psychology-based, behavior-only, and excludes investment advice instructions', () => {
   const payload = buildAiBehaviorCoachingSafePayload({
     generalMbti: 'ENFP',
     metrics: baseMetrics,
@@ -200,6 +200,9 @@ test('AI reflection prompt is short, behavior-only, and excludes investment advi
   const prompt = buildAiReflectionPrompt(payload);
 
   assert.match(prompt.system, /행동 회고/);
+  assert.match(prompt.system, /초보자/);
+  assert.match(prompt.system, /손실회피|확증편향|즉시 보상|감정 조절|과잉확신/);
+  assert.match(prompt.system, /진단처럼 단정하지 않습니다/);
   assert.match(prompt.system, /JSON/);
   assert.match(prompt.system, /매수·매도 추천/);
   assert.match(prompt.user, /coinmirror.aiReflection.v1/);

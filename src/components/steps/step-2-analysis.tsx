@@ -260,7 +260,7 @@ export function Step2Analysis() {
             </Text>
             <Text className="text-base font-extrabold text-foreground">AI 행동코칭</Text>
             <Text className="text-sm leading-6 text-muted-foreground">
-              버튼을 누르면 핵심 지표와 자기인식 답변을 바탕으로 다음 달 확인할 행동 질문을 정리해요.
+              버튼을 누르면 핵심 지표를 초보자도 이해하기 쉬운 심리 패턴으로 풀어보고, 다음 달 확인할 행동 질문을 정리해요. 투자 조언이 아니라 과거 기록을 돌아보는 회고예요.
             </Text>
           </View>
           {showAiBehaviorCoaching ? (
@@ -398,6 +398,12 @@ export function Step2Analysis() {
                   : '선택 안 함'}
               </Text>
             </View>
+          </View>
+          <View className="gap-1 rounded-2xl bg-muted p-3">
+            <Text className="text-xs font-extrabold text-foreground">이 타입은 어떤 성향인가요</Text>
+            <Text className="text-[13px] leading-5 text-foreground">
+              {analysis.investmentType.typeDetail}
+            </Text>
           </View>
           <View className="flex-row flex-wrap gap-2">
             {analysis.investmentType.axes.map((axis) => (

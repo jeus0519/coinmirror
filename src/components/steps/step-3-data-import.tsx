@@ -439,6 +439,12 @@ export function Step3DataImport() {
               공유 카드 후보
             </Text>
           </View>
+          <View className="gap-1 rounded-2xl bg-muted p-3">
+            <Text className="text-xs font-extrabold text-foreground">이 예상 타입은 어떤 성향인가요</Text>
+            <Text className="text-[13px] leading-5 text-foreground">
+              {expectedType.typeDetail}
+            </Text>
+          </View>
           <View className="flex-row flex-wrap gap-2">
             {expectedType.axes.map((axis) => (
               <Text

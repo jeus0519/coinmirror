@@ -1,4 +1,4 @@
-import { View } from 'react-native';
+import { Image, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useEffect } from 'react';
 import { useLocalSearchParams } from 'expo-router';
@@ -13,6 +13,8 @@ import { StepNav } from '@/components/steps/step-nav';
 import { Text } from '@/components/ui/text';
 import { trackCoinmirrorEvent } from '@/lib/analytics';
 import { useFlowStore } from '@/stores/use-flow-store';
+
+const coinmirrorLogo = require('../../assets/brand/coinmirror-logo-rounded-square-padded.png');
 
 export default function AppScreen() {
   const currentStep = useFlowStore((s) => s.currentStep);
@@ -40,9 +42,12 @@ export default function AppScreen() {
     <SafeAreaView className="flex-1 bg-background" edges={['top']} style={{ flex: 1 }}>
       <View className="shrink-0 border-b border-border bg-background">
         <View className="mx-auto w-full max-w-5xl flex-row items-center gap-2.5 px-4 pb-2 pt-1">
-          <View className="h-9 w-9 items-center justify-center rounded-2xl bg-primary">
-            <Text className="text-lg font-extrabold text-primary-foreground">미</Text>
-          </View>
+          <Image
+            source={coinmirrorLogo}
+            accessibilityLabel="코인미러 로고"
+            style={{ width: 36, height: 36, borderRadius: 16 }}
+            resizeMode="contain"
+          />
           <View>
             <Text className="text-base font-extrabold text-foreground">코인미러</Text>
             <Text className="text-[11px] text-muted-foreground">내 거래 습관을 비춰봐요</Text>

@@ -34,6 +34,23 @@ test('AI 행동코칭은 투자 조언·가격 예측·매수매도 지시 문�
 });
 
 
+
+
+test('AI 행동코칭은 초보자가 이해할 수 있도록 심리학 표현과 쉬운 해설을 포함한다', () => {
+  const coaching = buildAiBehaviorCoaching({
+    generalMbti: 'ENFP',
+    metrics: baseMetrics,
+    comparisonCopy: '자기인식과 실제 행동을 나란히 볼 수 있습니다.',
+  });
+  const text = JSON.stringify(coaching);
+
+  assert.match(text, /초보자|처음 보는 사람|쉽게 말하면|쉽게 풀어보면/);
+  assert.match(text, /손실회피|확증편향|즉시 보상|감정 조절|인지/);
+  assert.match(coaching.intro, /심리/);
+  assert.ok(coaching.reduceActions[0].length >= 80);
+  assert.ok(coaching.reinforceActions[0].length >= 60);
+});
+
 test('AI 행동코칭은 가장 낮은 핵심 지표를 기준으로 코칭 유형을 판정한다', () => {
   const coaching = buildAiBehaviorCoaching({
     generalMbti: 'INTJ',

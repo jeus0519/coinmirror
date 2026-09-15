@@ -51,3 +51,13 @@ test('첫 화면 지표 카드는 방어감을 주는 부정 라벨을 직접 �
   assert.match(start, /displayMetricName\(m\)/);
   assert.doesNotMatch(start, /\{m\.name\}/);
 });
+
+
+test('앱 헤더는 텍스트 미 대신 코인미러 로고 이미지를 사용한다', async () => {
+  const app = await readFile('src/app/index.tsx', 'utf8');
+
+  assert.match(app, /coinmirror-logo-rounded-square-padded\.png/);
+  assert.match(app, /accessibilityLabel="코인미러 로고"/);
+  assert.match(app, /style=\{\{ width: 36, height: 36, borderRadius: 16 \}\}/);
+  assert.doesNotMatch(app, />미<\/Text>/);
+});

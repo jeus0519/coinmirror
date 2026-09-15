@@ -27,6 +27,14 @@ test('거래내역 업로드 화면은 CSV 전용 문구가 아니라 PDF/CSV를
   assert.doesNotMatch(source, />내 CSV 업로드</);
 });
 
+test('예상 투자거울 타입 카드는 타입 성향을 1~2줄로 설명한다', async () => {
+  const source = await readStepSource();
+
+  assert.match(source, /typeDetail/);
+  assert.match(source, /이 예상 타입은 어떤 성향인가요/);
+  assert.match(source, /expectedType\.typeDetail/);
+});
+
 test('거래내역 업로드 화면은 PDF와 CSV를 옵션으로 선택하게 하고 원본 업로드를 안내한다', async () => {
   const source = await readStepSource();
 

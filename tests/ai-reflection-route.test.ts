@@ -50,6 +50,30 @@ test('/api/ai-reflection returns AI JSON when payload and model output are valid
   assert.match(json.output.reduceAction, /대기 시간/);
 });
 
+
+
+test('/api/ai-reflection prompt asks for beginner-friendly psychology-based coaching without investment advice', async () => {
+  const payload = buildAiBehaviorCoachingSafePayload({ generalMbti: 'INTJ', metrics: baseMetrics });
+  let captured: unknown = null;
+  const response = await POST(request(payload), {
+    generate: async (safePayload) => {
+      captured = safePayload;
+      return {
+        observedPattern: '쉽게 풀어보면 손실 뒤 바로 다시 들어가려는 즉시 보상 반응이 보였어요.',
+        reduceAction: '다음 달에는 손실 직후 10분 쉬며 감정 조절 질문을 적어보세요.',
+        reinforceAction: '새벽 거래를 줄인 흐름은 충동을 낮추는 데 도움이 되었어요.',
+        nextQuestion: '다음 달에는 같은 상황에서 멈춘 시간이 늘었을까요?',
+      };
+    },
+  });
+  const json = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(json.ok, true);
+  assert.equal(json.source, 'ai');
+  assert.deepEqual(captured, payload);
+});
+
 test('/api/ai-reflection falls back to deterministic rule output when no model is configured', async () => {
   const payload = buildAiBehaviorCoachingSafePayload({ generalMbti: 'INTJ', metrics: baseMetrics });
   const response = await POST(request(payload));
