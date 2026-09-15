@@ -36,7 +36,9 @@ export async function requestAiReflection(
     let body: unknown;
     try {
       body = await response.json();
-    } catch {
+    } catch (error) {
+      const errorName = error instanceof Error ? error.name : '';
+      if (errorName === 'AbortError' || controller.signal.aborted) throw error;
       return { success: false, errorType: 'malformed', message: 'Failed to parse JSON response' };
     }
 

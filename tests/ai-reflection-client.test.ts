@@ -147,6 +147,28 @@ test('requestAiReflection should fail with timeout when it times out', async () 
   }
 });
 
+test('requestAiReflection should report timeout when abort happens while reading JSON', async () => {
+  const mockFetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+    return {
+      ok: true,
+      status: 200,
+      json: async () =>
+        new Promise((resolve, reject) => {
+          const signal = init?.signal;
+          signal?.addEventListener('abort', () => {
+            reject(new DOMException('The operation was aborted.', 'AbortError'));
+          });
+        }),
+    } as Response;
+  };
+
+  const result = await requestAiReflection(dummyPayload, { fetchFn: mockFetch, timeoutMs: 10 });
+  assert.equal(result.success, false);
+  if (!result.success) {
+    assert.equal(result.errorType, 'timeout');
+  }
+});
+
 test('requestAiReflection should fail with network when fetch throws generic error', async () => {
   const mockFetch = async (input: RequestInfo | URL, init?: RequestInit) => {
     throw new Error('TypeError: Failed to fetch');

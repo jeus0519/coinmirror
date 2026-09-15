@@ -156,6 +156,45 @@ test('새 파일을 고르면 기존 분석 미리보기를 먼저 지워 실패
   assert.match(handlerStart, /clearTradeAnalysis\(\)/);
 });
 
+test('화면을 떠나거나 새 파일을 고르면 이전 비동기 결과를 전역 분석에 적용하지 않는다', async () => {
+  const code = await readStepCode();
+
+  assert.match(code, /const operationGuard = operationGuardRef\.current/);
+  assert.match(code, /operationGuard\.revive\(\)/);
+  assert.match(code, /operationGuard\.destroy\(\)/);
+  assert.match(code, /const operation = operationGuardRef\.current\.beginLatest\(\)/);
+  assert.match(code, /if \(!operation\) return/);
+  assert.match(code, /if \(!operationGuardRef\.current\.isCurrent\(operation\)\) return/);
+});
+
+test('화면 종료 후 늦게 돌아온 파일 선택 실패도 안내 상태를 변경하지 않는다', async () => {
+  const code = await readStepCode();
+
+  assert.match(code, /function handlePickerFailure/);
+  assert.match(code, /if \(!operationGuardRef\.current\.isAlive\(\)\) return/);
+  assert.match(code, /onFailed=\{handlePickerFailure\}/);
+});
+
+test('PDF 비밀번호 Enter 재제출은 처리 중이면 두 번째 추출을 시작하지 않는다', async () => {
+  const code = await readStepCode();
+  const handler = code.match(/async function analyzePendingPdfWithPassword[\s\S]*?async function handlePickedAsset/)?.[0];
+
+  assert.ok(handler);
+  assert.match(handler, /beginIfIdle\(\)/);
+  assert.match(handler, /if \(!operation\) return/);
+  assert.match(handler, /operationGuardRef\.current\.finish\(operation\)/);
+  assert.match(code, /onSubmitEditing=\{isBusy \? undefined : analyzePendingPdfWithPassword\}/);
+});
+
+test('PDF 처리 중 취소하면 실행을 무효화하고 진행 상태도 즉시 지운다', async () => {
+  const code = await readStepCode();
+  const handler = code.match(/function handleRetryUpload[\s\S]*?function handleContinueTradeAnalysis/)?.[0];
+
+  assert.ok(handler);
+  assert.match(handler, /operationGuardRef\.current\.invalidate\(\)/);
+  assert.match(handler, /setProgress\(null\)/);
+});
+
 test('파싱에 성공하면 그 데이터로 분석을 이어갈 수 있다', async () => {
   const source = await readStepSource();
 

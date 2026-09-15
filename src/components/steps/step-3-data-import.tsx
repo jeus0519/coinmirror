@@ -1,7 +1,7 @@
 import * as DocumentPicker from 'expo-document-picker';
 import { router } from 'expo-router';
 import { Upload } from 'lucide-react-native';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, ScrollView, View } from 'react-native';
 
 import { ShareCard } from '@/components/share-card';
@@ -19,6 +19,7 @@ import {
   isPdfPasswordRequiredError,
 } from '@/lib/pdf/extract-pdf-text';
 import { buildExpectedInvestmentTypeProfile } from '@/lib/investment-type';
+import { createLatestOperationGuard } from '@/lib/latest-operation';
 import { summarizeDiagnosis } from '@/lib/onboarding-diagnosis';
 import { buildInvestmentTypeShareCard } from '@/lib/share-card';
 import { useFlowStore } from '@/stores/use-flow-store';
@@ -227,6 +228,13 @@ export function Step3DataImport() {
   const [notice, setNotice] = useState<Notice | null>(null);
   const [pendingPdfBytes, setPendingPdfBytes] = useState<ArrayBuffer | null>(null);
   const [pdfPassword, setPdfPassword] = useState('');
+  const operationGuardRef = useRef(createLatestOperationGuard());
+
+  useEffect(() => {
+    const operationGuard = operationGuardRef.current;
+    operationGuard.revive();
+    return () => operationGuard.destroy();
+  }, []);
 
   const isBusy = progress !== null;
 
@@ -241,6 +249,7 @@ export function Step3DataImport() {
   }
 
   async function analyzePendingPdfWithPassword() {
+    if (!operationGuardRef.current.isAlive()) return;
     const password = pdfPassword;
     if (!pendingPdfBytes) return;
     if (password.length === 0) {
@@ -251,17 +260,23 @@ export function Step3DataImport() {
       });
       return;
     }
+    const operation = operationGuardRef.current.beginIfIdle();
+    if (!operation) return;
     setNotice(null);
     setProgress('입력한 비밀번호로 PDF를 여는 중이에요.');
     await nextFrame();
+    if (!operationGuardRef.current.isCurrent(operation)) return;
     try {
       const text = await extractPdfText(pendingPdfBytes.slice(0), { password });
+      if (!operationGuardRef.current.isCurrent(operation)) return;
       setProgress('거래내역을 읽었어요. 분석 미리보기를 만드는 중이에요.');
       await nextFrame();
+      if (!operationGuardRef.current.isCurrent(operation)) return;
       applyPreview(analyzeUpbitPdfText(text, diagnosisAnswers));
       setPendingPdfBytes(null);
       setPdfPassword('');
     } catch (error) {
+      if (!operationGuardRef.current.isCurrent(operation)) return;
       if (isPdfNoTextLayerError(error)) {
         trackCoinmirrorEvent('parse_failed', {
           screen: 'upload',
@@ -285,11 +300,16 @@ export function Step3DataImport() {
       });
       setPdfPassword('');
     } finally {
-      setProgress(null);
+      if (operationGuardRef.current.isCurrent(operation)) {
+        setProgress(null);
+        operationGuardRef.current.finish(operation);
+      }
     }
   }
 
   async function handlePickedAsset(asset: PickedAsset, format: UploadFormat) {
+    const operation = operationGuardRef.current.beginLatest();
+    if (!operation) return;
     setNotice(null);
     clearTradeAnalysis();
     setPendingPdfBytes(null);
@@ -308,6 +328,8 @@ export function Step3DataImport() {
         title: 'PDF 파일이 아니에요',
         body: '업비트 PDF 거래내역을 골라 주세요.',
       });
+      setProgress(null);
+      operationGuardRef.current.finish(operation);
       return;
     }
     if (format === 'csv' && !isCsvAsset(asset)) {
@@ -321,20 +343,27 @@ export function Step3DataImport() {
         title: 'CSV 파일이 아니에요',
         body: '업비트 CSV 거래내역을 골라 주세요.',
       });
+      setProgress(null);
+      operationGuardRef.current.finish(operation);
       return;
     }
 
     setProgress(`${asset.name} 파일을 읽는 중이에요.`);
     await nextFrame();
+    if (!operationGuardRef.current.isCurrent(operation)) return;
     try {
       const bytes = await readPickedAsset(asset);
+      if (!operationGuardRef.current.isCurrent(operation)) return;
       if (isPdfAsset(asset)) {
         setProgress('PDF에서 거래 내역을 찾는 중이에요. 몇 초 걸릴 수 있어요.');
         await nextFrame();
+        if (!operationGuardRef.current.isCurrent(operation)) return;
         let text: string;
         try {
           text = await extractPdfText(bytes);
+          if (!operationGuardRef.current.isCurrent(operation)) return;
         } catch (error) {
+          if (!operationGuardRef.current.isCurrent(operation)) return;
           if (isPdfPasswordRequiredError(error)) {
             trackCoinmirrorEvent('parse_failed', {
               screen: 'upload',
@@ -362,11 +391,13 @@ export function Step3DataImport() {
         }
         setProgress('거래내역을 읽었어요. 분석 미리보기를 만드는 중이에요.');
         await nextFrame();
+        if (!operationGuardRef.current.isCurrent(operation)) return;
         applyPreview(analyzeUpbitPdfText(text, diagnosisAnswers));
         return;
       }
       applyPreview(analyzeCsvInput(bytes, diagnosisAnswers));
     } catch (error) {
+      if (!operationGuardRef.current.isCurrent(operation)) return;
       trackCoinmirrorEvent('parse_failed', {
         screen: 'upload',
         source_format: format,
@@ -378,16 +409,26 @@ export function Step3DataImport() {
         body: `파일을 다시 골라 주세요. 원본과 PDF 비밀번호는 저장하지 않아요.\n사유: ${describeFailure(error)}`,
       });
     } finally {
-      setProgress(null);
+      if (operationGuardRef.current.isCurrent(operation)) {
+        setProgress(null);
+        operationGuardRef.current.finish(operation);
+      }
     }
   }
 
   function handleRetryUpload() {
+    operationGuardRef.current.invalidate();
+    setProgress(null);
     clearTradeAnalysis();
     setSelectedFileLabel(null);
     setNotice(null);
     setPendingPdfBytes(null);
     setPdfPassword('');
+  }
+
+  function handlePickerFailure(nextNotice: Notice) {
+    if (!operationGuardRef.current.isAlive()) return;
+    setNotice(nextNotice);
   }
 
   function handleContinueTradeAnalysis() {
@@ -512,14 +553,14 @@ export function Step3DataImport() {
             label="PDF 거래내역 올리기"
             disabled={isBusy}
             onPicked={handlePickedAsset}
-            onFailed={setNotice}
+            onFailed={handlePickerFailure}
           />
           <FilePickerButton
             format="csv"
             label="CSV 거래내역 올리기"
             disabled={isBusy}
             onPicked={handlePickedAsset}
-            onFailed={setNotice}
+            onFailed={handlePickerFailure}
           />
         </View>
 
@@ -580,7 +621,7 @@ export function Step3DataImport() {
               autoCorrect={false}
               autoComplete="off"
               textContentType="none"
-              onSubmitEditing={analyzePendingPdfWithPassword}
+              onSubmitEditing={isBusy ? undefined : analyzePendingPdfWithPassword}
             />
             <View className="flex-row gap-2">
               <Button className="flex-1" onPress={analyzePendingPdfWithPassword} disabled={isBusy}>
