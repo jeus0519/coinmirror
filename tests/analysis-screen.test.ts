@@ -282,3 +282,14 @@ test('AI 행동코칭 받기 버튼은 safe payload로 api를 호출하고 실�
   assert.match(source, /setAiReflectionNotice/);
   assert.match(source, /기본 행동코칭을 먼저 보여드릴게요/);
 });
+
+
+test('AI 행동코칭 받기는 한 분석 결과에서 한 번만 요청하도록 잠근다', async () => {
+  const source = await readFile(STEP_2, 'utf8');
+
+  assert.match(source, /aiReflectionRequestFingerprint/);
+  assert.match(source, /const aiReflectionRequestLocked = aiReflectionRequestFingerprint === currentAnalysisFingerprint/);
+  assert.match(source, /setAiReflectionRequestFingerprint\(currentAnalysisFingerprint\)/);
+  assert.match(source, /이미 이번 분석에서 AI 행동코칭을 정리했어요/);
+  assert.match(source, /disabled=\{isAiReflectionLoading \|\| aiReflectionRequestLocked\}/);
+});

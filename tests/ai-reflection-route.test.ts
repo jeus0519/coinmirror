@@ -202,3 +202,45 @@ test('/api/ai-reflection rejects malformed JSON with 400 invalid_request and no 
   assert.equal(called, false);
   assert.equal(json.error, 'invalid_request');
 });
+
+
+test('/api/ai-reflection returns 429 before model call when Vercel WAF rate limit is hit', async () => {
+  const payload = buildAiBehaviorCoachingSafePayload({ generalMbti: 'INTJ', metrics: baseMetrics });
+  let called = false;
+  const response = await POST(request(payload), {
+    checkRateLimit: async () => ({ rateLimited: true }),
+    generate: async () => {
+      called = true;
+      return {};
+    },
+  });
+  const json = await response.json();
+
+  assert.equal(response.status, 429);
+  assert.equal(called, false);
+  assert.equal(json.ok, false);
+  assert.equal(json.error, 'rate_limited');
+});
+
+test('/api/ai-reflection continues when Vercel WAF rate limit is not hit', async () => {
+  const payload = buildAiBehaviorCoachingSafePayload({ generalMbti: 'INTJ', metrics: baseMetrics });
+  let rateLimitChecked = false;
+  const response = await POST(request(payload), {
+    checkRateLimit: async () => {
+      rateLimitChecked = true;
+      return { rateLimited: false };
+    },
+    generate: async () => ({
+      observedPattern: '이번 기록에서는 손실 직후 반응이 먼저 보였어요.',
+      reduceAction: '다음 달에는 같은 상황에서 잠깐 멈추는 시간을 정해보세요.',
+      reinforceAction: '기록을 다시 확인한 행동은 유지해볼 만해요.',
+      nextQuestion: '다음 달에는 같은 상황에서 멈춘 시간이 늘었을까요?',
+    }),
+  });
+  const json = await response.json();
+
+  assert.equal(rateLimitChecked, true);
+  assert.equal(response.status, 200);
+  assert.equal(json.ok, true);
+  assert.equal(json.source, 'ai');
+});

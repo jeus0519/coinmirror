@@ -1,10 +1,17 @@
+import { checkRateLimit as checkVercelRateLimit } from '@vercel/firewall';
+
 import { validateAiReflectionRequest } from '../src/lib/ai-reflection-api';
 import { createOpenAiReflectionGenerator } from '../src/lib/ai-reflection-openai';
 import { buildAiReflectionResult, type AiReflectionGenerator } from '../src/lib/ai-reflection-runtime';
 import { type AiBehaviorCoaching, type AiBehaviorCoachingSafePayload } from '../src/lib/ai-coaching';
 
+export type AiReflectionRateLimitCheck = (
+  request: Request,
+) => Promise<{ rateLimited?: boolean }> | { rateLimited?: boolean };
+
 export type AiReflectionRouteDependencies = {
   generate?: AiReflectionGenerator;
+  checkRateLimit?: AiReflectionRateLimitCheck;
 };
 
 type JsonValue = Record<string, unknown>;
@@ -19,6 +26,25 @@ function jsonResponse(body: JsonValue, status = 200) {
       'cache-control': 'no-store',
     },
   });
+}
+
+
+async function checkAiReflectionRateLimit(request: Request, dependencies: AiReflectionRouteDependencies) {
+  if (dependencies.checkRateLimit) {
+    return dependencies.checkRateLimit(request);
+  }
+
+  const rateLimitId = process.env.COINMIRROR_AI_REFLECTION_RATE_LIMIT_ID?.trim();
+  if (!rateLimitId) {
+    return { rateLimited: false };
+  }
+
+  try {
+    return await checkVercelRateLimit(rateLimitId, { request });
+  } catch {
+    // WAF SDK/environment issues should not break local analysis; Vercel dashboard rules remain the primary guard.
+    return { rateLimited: false };
+  }
 }
 
 function fallbackFromPayload(payload: AiBehaviorCoachingSafePayload): AiBehaviorCoaching {
@@ -42,6 +68,11 @@ function fallbackFromPayload(payload: AiBehaviorCoachingSafePayload): AiBehavior
 }
 
 export async function POST(request: Request, dependencies: AiReflectionRouteDependencies = {}) {
+  const rateLimit = await checkAiReflectionRateLimit(request, dependencies);
+  if (rateLimit.rateLimited) {
+    return jsonResponse({ ok: false, error: 'rate_limited' }, 429);
+  }
+
   // 1. Inspect Content-Length early when valid
   const contentLength = request.headers.get('content-length');
   if (contentLength !== null) {
