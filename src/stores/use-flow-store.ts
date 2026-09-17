@@ -128,7 +128,7 @@ export const useFlowStore = create<FlowState>((set) => ({
       return {
         currentStep: 4 as FlowStep,
         hasAnalyzed: true,
-        dataSource: 'csv' as DataSource,
+        dataSource: 'sample' as DataSource,
         tradeAnalysis: secondAnalysis,
         demoSnapshotComparison: comparison,
       };
@@ -147,6 +147,7 @@ export const useFlowStore = create<FlowState>((set) => ({
   saveCurrentAnalysisSnapshot: (storage) =>
     set((state) => {
       if (!state.tradeAnalysis) return state;
+      if (state.dataSource === 'sample' && state.demoSnapshotComparison) return state;
       const previous = state.subscriptionSnapshots.at(-1) ?? null;
       const snapshot = previous
         ? buildIncrementalSnapshotFromAnalysis(
@@ -176,10 +177,14 @@ export const useFlowStore = create<FlowState>((set) => ({
           evaluateSavedGoal(goal, comparison)
         ),
       };
-      persistSubscriptionState(resolveStorage(storage), {
-        snapshots: nextState.subscriptionSnapshots,
-        goals: nextState.savedSubscriptionGoals,
-      });
+      const resolvedStorage = resolveStorage(storage);
+      if (resolvedStorage) {
+        const persisted = persistSubscriptionState(resolvedStorage, {
+          snapshots: nextState.subscriptionSnapshots,
+          goals: nextState.savedSubscriptionGoals,
+        });
+        if (!persisted) return state;
+      }
       return nextState;
     }),
   saveSuggestedSubscriptionGoal: (storage) =>

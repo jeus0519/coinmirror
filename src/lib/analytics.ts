@@ -140,13 +140,14 @@ export function installGoogleTag(config: AnalyticsConfig, doc?: unknown, gtag?: 
   script.async = true;
   script.src = getGoogleTagScriptSrc(config.measurementId);
   documentLike.head.appendChild(script);
-  gtag('js', new Date());
-  gtag('config', config.measurementId, { send_page_view: false });
-  gtag('event', 'page_view', {
+  const safePageParams = {
     page_path: sanitizePagePath(),
     page_location: sanitizePageLocation(),
     page_referrer: sanitizePageReferrer(),
-  });
+  };
+  gtag('js', new Date());
+  gtag('config', config.measurementId, { send_page_view: false, ...safePageParams });
+  gtag('event', 'page_view', safePageParams);
 }
 
 export function trackAnalyticsEvent(

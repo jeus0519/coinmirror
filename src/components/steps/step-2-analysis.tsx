@@ -12,7 +12,7 @@ import { MetricCard } from '@/components/ui/metric-card';
 import { Text } from '@/components/ui/text';
 import { buildAiBehaviorCoaching, buildAiBehaviorCoachingSafePayload } from '@/lib/ai-coaching';
 import { requestAiReflection } from '@/lib/ai-reflection-client';
-import { buildAnalysisViewData } from '@/lib/analysis-view-data';
+import { buildAnalysisViewData, buildSampleAnalysisViewData } from '@/lib/analysis-view-data';
 import { trackCoinmirrorEvent } from '@/lib/analytics';
 import { buildExpectationComparisons } from '@/lib/onboarding-diagnosis';
 import { buildInvestmentTypeShareCard } from '@/lib/share-card';
@@ -78,10 +78,13 @@ export function Step2Analysis() {
   } | null>(null);
   const [aiReflectionNotice, setAiReflectionNotice] = useState<string | null>(null);
   const feedbackFormUrl = process.env.EXPO_PUBLIC_FEEDBACK_FORM_URL?.trim();
-  const analysis = useMemo(
+  const analysisOrNull = useMemo(
     () => buildAnalysisViewData({ dataSource, tradeAnalysis, diagnosis: diagnosisAnswers }),
     [tradeAnalysis, dataSource, diagnosisAnswers]
   );
+  // 복원 요약 전용 화면에서는 상세 분석 UI를 렌더하지 않지만,
+  // React hook 순서를 안정적으로 유지하기 위해 내부 계산용 fallback만 사용한다.
+  const analysis = analysisOrNull ?? buildSampleAnalysisViewData(diagnosisAnswers);
   const derivedSeries = analysis.derivedSeries;
   const hasAiReflectionSignal = analysis.metrics.some((metric) => metric.measured && metric.score !== null);
   const aiBehaviorCoaching = useMemo(
