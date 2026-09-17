@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFile } from 'node:fs/promises';
 
-import { buildAnalysisViewData, buildTradeAnalysisViewData } from '../src/lib/analysis-view-data.ts';
+import { buildTradeAnalysisViewData } from '../src/lib/analysis-view-data.ts';
 import { analyzeCsvInput } from '../src/lib/csv/analyze-csv.ts';
 
 const STEP_2 = 'src/components/steps/step-2-analysis.tsx';
@@ -289,11 +289,4 @@ test('복원된 요약만 있는 상태는 샘플 분석 대신 전용 안내 �
   assert.match(source, /저장된 요약을 복원했어요/);
   assert.match(source, /원본 거래내역은 저장하지 않아요/);
   assert.match(source, /상세 점수와 차트는 PDF\/CSV를 다시 올리면 볼 수 있어요/);
-});
-
-
-test('데이터 레이어는 복원 요약만 있는 상태에서 샘플 지표를 만들지 않는다', () => {
-  const view = buildAnalysisViewData({ dataSource: 'restored-summary', tradeAnalysis: null, diagnosis: {} });
-
-  assert.equal(view, null);
 });

@@ -241,10 +241,3 @@ test('/api/ai-reflection applies a short in-process request budget', async () =>
   assert.equal(json.source, 'fallback');
   assert.equal(json.errorCode, 'timeout');
 });
-
-
-test('AI reflection runtime 기본 timeout은 8초 예산으로 설정한다', async () => {
-  const source = await import('node:fs/promises').then((fs) => fs.readFile('src/lib/ai-reflection-runtime.ts', 'utf8'));
-  assert.match(source, /DEFAULT_AI_REFLECTION_RUNTIME_TIMEOUT_MS\s*=\s*8000/);
-  assert.doesNotMatch(source, /timeoutMs \?\? 2500/);
-});

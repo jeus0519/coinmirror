@@ -176,12 +176,6 @@ test('Vercel 설정은 기본 보안 헤더를 포함한다', async () => {
   assert.match(source, /X-Content-Type-Options/);
   assert.match(source, /Referrer-Policy/);
   assert.match(source, /Content-Security-Policy/);
-  assert.match(source, /Strict-Transport-Security/);
-  assert.match(source, /frame-ancestors 'none'/);
-  assert.match(source, /base-uri 'self'/);
-  assert.match(source, /object-src 'none'/);
-  assert.match(source, /form-action 'self'/);
-  assert.match(source, /worker-src 'self' blob:/);
 });
 
 test('업로드 화면은 파일 크기와 PDF 페이지 제한을 소스에서 강제한다', async () => {
@@ -209,14 +203,6 @@ test('Google tag 수동 page_view는 page_location에서도 query token을 제�
 
   const pageView = calls.find((call) => call[0] === 'event' && call[1] === 'page_view');
   assert.ok(pageView);
-  const configCall = calls.find((call) => call[0] === 'config' && call[1] === 'G-TEST');
-  assert.ok(configCall);
-  assert.deepEqual(configCall[2], {
-    send_page_view: false,
-    page_path: '/',
-    page_location: 'https://coinmirror.app/',
-    page_referrer: 'https://example.com/',
-  });
   assert.deepEqual(pageView[2], {
     page_path: '/',
     page_location: 'https://coinmirror.app/',

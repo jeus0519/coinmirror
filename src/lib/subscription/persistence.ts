@@ -128,12 +128,8 @@ export function clearPersistedSubscriptionState(
 
 export function getBrowserSubscriptionStorage(): SubscriptionPersistenceStorage | null {
   if (typeof globalThis === 'undefined') return null;
-  try {
-    const maybeWindow = globalThis as typeof globalThis & {
-      localStorage?: unknown;
-    };
-    return isSubscriptionPersistenceStorage(maybeWindow.localStorage) ? maybeWindow.localStorage : null;
-  } catch {
-    return null;
-  }
+  const maybeWindow = globalThis as typeof globalThis & {
+    localStorage?: unknown;
+  };
+  return isSubscriptionPersistenceStorage(maybeWindow.localStorage) ? maybeWindow.localStorage : null;
 }

@@ -250,8 +250,7 @@ export function buildAnalysisViewData(input: {
   dataSource: 'sample' | 'csv' | 'pdf' | 'restored-summary' | null;
   tradeAnalysis: TradeHistoryAnalysisResult | null;
   diagnosis: DiagnosisProfile;
-}): AnalysisViewData | null {
-  if (input.dataSource === 'restored-summary' && !input.tradeAnalysis) return null;
+}): AnalysisViewData {
   if ((input.dataSource === 'csv' || input.dataSource === 'pdf') && input.tradeAnalysis)
     return buildTradeAnalysisViewData(input.tradeAnalysis, input.diagnosis);
   return buildSampleAnalysisViewData(input.diagnosis);
