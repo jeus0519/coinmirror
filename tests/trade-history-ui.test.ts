@@ -244,6 +244,25 @@ test('현재 앱 루트에서 query로 업로드 단계에 직접 진입할 수 
   assert.match(source, /setStep\(3\)/);
 });
 
+
+test('업로드 화면은 업비트 앱 고객센터 거래내역서 발급 경로를 자세히 안내한다', async () => {
+  const source = await readStepSource();
+
+  assert.match(source, /업비트 앱에서 거래내역서 PDF\/CSV를 받을 수 있어요/);
+  assert.match(source, /앱 > 더보기 > 고객센터 > 증명서 발급 > 거래내역서 발급/);
+  assert.match(source, /메뉴 이름은 앱 버전이나 웹\/앱 환경에 따라 조금 다를 수 있어요/);
+});
+
+test('중복 업로드 체험은 첫 업로드 흐름을 방해하지 않는 보조 영역으로 분리한다', async () => {
+  const source = await readStepSource();
+
+  assert.match(source, /고급 기능 보기/);
+  assert.match(source, /처음 올리는 분은 건너뛰어도 괜찮아요/);
+  assert.match(source, /중복 업로드 처리 체험하기/);
+  assert.match(source, /variant="ghost" onPress=\{\(\) => router\.replace\('\/\?demo=duplicate-upload'\)\}/);
+  assert.doesNotMatch(source, /<Text className="text-xs font-extrabold text-primary">2회차 업로드 데모<\/Text>/);
+});
+
 test('업로드 화면은 중복 업로드와 교차 기간 청산을 체험하는 데모 진입점을 제공한다', async () => {
   const source = await readStepSource();
 

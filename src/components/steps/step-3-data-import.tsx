@@ -228,6 +228,7 @@ export function Step3DataImport() {
   const [notice, setNotice] = useState<Notice | null>(null);
   const [pendingPdfBytes, setPendingPdfBytes] = useState<ArrayBuffer | null>(null);
   const [pdfPassword, setPdfPassword] = useState('');
+  const [showAdvancedUploadOptions, setShowAdvancedUploadOptions] = useState(false);
   const operationGuardRef = useRef(createLatestOperationGuard());
 
   useEffect(() => {
@@ -510,7 +511,13 @@ export function Step3DataImport() {
         <View className="gap-1">
           <Text className="text-sm font-extrabold text-foreground">자료 형식을 골라 주세요</Text>
           <Text className="text-xs leading-5 text-muted-foreground">
-            업비트 고객센터 PDF가 가장 흔해요. CSV가 있다면 CSV도 괜찮습니다.
+            업비트 앱에서 거래내역서 PDF/CSV를 받을 수 있어요.
+          </Text>
+          <Text className="text-xs leading-5 text-foreground">
+            {'경로: 앱 > 더보기 > 고객센터 > 증명서 발급 > 거래내역서 발급'}
+          </Text>
+          <Text className="text-[11px] leading-4 text-muted-foreground">
+            메뉴 이름은 앱 버전이나 웹/앱 환경에 따라 조금 다를 수 있어요.
           </Text>
         </View>
         <View className="gap-2 rounded-2xl border border-primary/20 bg-primary/5 p-3">
@@ -536,16 +543,27 @@ export function Step3DataImport() {
             </Text>
           </View>
         )}
-        <View className="gap-2 rounded-2xl border border-primary/20 bg-primary/5 p-3">
-          <View className="gap-1">
-            <Text className="text-xs font-extrabold text-primary">2회차 업로드 데모</Text>
-            <Text className="text-xs leading-5 text-muted-foreground">
-              1회차 기준선과 2회차 중복 내역을 자동으로 넣어, 중복 체결 제외와 기간 밖 매수분의 원가 연결용 보정을 바로 확인해요.
-            </Text>
-          </View>
-          <Button variant="outline" onPress={() => router.replace('/?demo=duplicate-upload')}>
-            <Text>중복 업로드 처리 체험하기</Text>
+        <View className="gap-2">
+          <Button
+            variant="ghost"
+            onPress={() => setShowAdvancedUploadOptions((value) => !value)}
+          >
+            <Text className="text-xs text-muted-foreground">고급 기능 보기</Text>
           </Button>
+          {showAdvancedUploadOptions && (
+            <View className="gap-2 rounded-2xl border border-border bg-background p-3">
+              <View className="gap-1">
+                <Text className="text-xs font-extrabold text-foreground">중복 업로드 처리 체험</Text>
+                <Text className="text-xs leading-5 text-muted-foreground">
+                  처음 올리는 분은 건너뛰어도 괜찮아요. 1회차 기준선과 2회차 중복 내역을 자동으로 넣어,
+                  중복 체결 제외와 기간 밖 매수분의 원가 연결용 보정을 확인해요.
+                </Text>
+              </View>
+              <Button variant="ghost" onPress={() => router.replace('/?demo=duplicate-upload')}>
+                <Text>중복 업로드 처리 체험하기</Text>
+              </Button>
+            </View>
+          )}
         </View>
         <View className="flex-row gap-2">
           <FilePickerButton

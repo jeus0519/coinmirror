@@ -144,33 +144,34 @@ function titleFromAxes(axes: InvestmentTypeAxis[]) {
 function buildTypeDetail(axes: InvestmentTypeAxis[], context: 'expected' | 'recorded') {
   const labels = new Set(axes.filter((axis) => axis.confidence !== 'insufficient').map((axis) => axis.label));
   const prefix = context === 'expected' ? '스스로 예상한 기준으로는' : '최근 거래 기록상';
+  const selfReading = ' 이런 생각이 자주 들 수 있어요: “조금만 더 보면 더 좋은 판단을 할 수 있지 않을까?”라는 마음속 기준이 먼저 움직이는 타입입니다.';
 
   if (labels.has('추격형 (직전 대비)') && labels.has('단기반응형')) {
-    return `${prefix} 가격 움직임에 빠르게 반응하고, 직전 체결가보다 높은 구간에서도 진입을 서두르는 성향이 보여요. 좋은 기회를 놓치지 않는 장점이 있지만, 매수 전 한 번 더 멈추는 기준이 중요해요.`;
+    return `${prefix} 가격 움직임에 빠르게 반응하고, 직전 체결가보다 높은 구간에서도 진입을 서두르는 성향이 보여요. 좋은 기회를 놓치지 않는 장점이 있지만, 매수 전 한 번 더 멈추는 기준이 중요해요.${selfReading}`;
   }
   if (labels.has('집중형') && labels.has('손실보류형')) {
-    return `${prefix} 확신이 생긴 종목에 비중이 모이고, 손실 포지션을 바로 정리하기보다 더 지켜보는 쪽에 가까워요. 회복을 기다리는 힘은 있지만, 원칙 없는 물타기와 방치는 구분할 필요가 있어요.`;
+    return `${prefix} 확신이 생긴 종목에 비중이 모이고, 손실 포지션을 바로 정리하기보다 더 지켜보는 쪽에 가까워요. 회복을 기다리는 힘은 있지만, 원칙 없는 물타기와 방치는 구분할 필요가 있어요.${selfReading}`;
   }
   if (labels.has('손실보류형')) {
-    return `${prefix} 손실이 난 거래를 바로 끊기보다 판단을 미루며 관찰하는 성향이 있어요. 시간을 두고 회복을 볼 수 있지만, 손실 한도와 재점검 시점을 먼저 정해두는 편이 안전해요.`;
+    return `${prefix} 손실이 난 거래를 바로 끊기보다 판단을 미루며 관찰하는 성향이 있어요. 시간을 두고 회복을 볼 수 있지만, 손실 한도와 재점검 시점을 먼저 정해두는 편이 안전해요.${selfReading}`;
   }
   if (labels.has('추격형 (직전 대비)') && labels.has('집중형')) {
-    return `${prefix} 눈에 띄는 가격 흐름을 발견하면 특정 종목에 빠르게 비중을 싣는 성향이 보여요. 추진력은 강하지만, 진입 가격과 종목 비중을 동시에 점검하는 장치가 필요해요.`;
+    return `${prefix} 눈에 띄는 가격 흐름을 발견하면 특정 종목에 빠르게 비중을 싣는 성향이 보여요. 추진력은 강하지만, 진입 가격과 종목 비중을 동시에 점검하는 장치가 필요해요.${selfReading}`;
   }
   if (labels.has('단기반응형') && labels.has('손실정리형')) {
-    return `${prefix} 짧은 호흡으로 결과를 확인하고, 손실 거래도 비교적 빨리 정리하려는 성향이에요. 민첩한 점검은 장점이지만, 잦은 매매가 수수료와 감정 반응으로 이어지지 않는지 봐야 해요.`;
+    return `${prefix} 짧은 호흡으로 결과를 확인하고, 손실 거래도 비교적 빨리 정리하려는 성향이에요. 민첩한 점검은 장점이지만, 잦은 매매가 수수료와 감정 반응으로 이어지지 않는지 봐야 해요.${selfReading}`;
   }
   if (labels.has('대기형') && labels.has('장기보유형')) {
-    return `${prefix} 무리하게 따라붙기보다 기다렸다가 들어가고, 보유 기간도 비교적 길게 가져가는 성향이에요. 안정적이지만, 손실 포지션을 오래 들고 가는 신호와는 구분해 점검해야 해요.`;
+    return `${prefix} 무리하게 따라붙기보다 기다렸다가 들어가고, 보유 기간도 비교적 길게 가져가는 성향이에요. 안정적이지만, 손실 포지션을 오래 들고 가는 신호와는 구분해 점검해야 해요.${selfReading}`;
   }
   if (labels.has('대기형')) {
-    return `${prefix} 즉시 따라붙기보다 한 번 관찰한 뒤 진입하려는 성향이 보여요. 신중함은 장점이지만, 기준이 모호하면 좋은 기회와 회피를 구분하기 어려울 수 있어요.`;
+    return `${prefix} 즉시 따라붙기보다 한 번 관찰한 뒤 진입하려는 성향이 보여요. 신중함은 장점이지만, 기준이 모호하면 좋은 기회와 회피를 구분하기 어려울 수 있어요.${selfReading}`;
   }
   if (labels.has('단기반응형')) {
-    return `${prefix} 시장 변화에 민감하게 반응하고 짧은 주기로 판단을 갱신하는 성향이에요. 빠른 대응은 장점이지만, 반복 매매가 습관화되는지는 함께 확인해야 해요.`;
+    return `${prefix} 시장 변화에 민감하게 반응하고 짧은 주기로 판단을 갱신하는 성향이에요. 빠른 대응은 장점이지만, 반복 매매가 습관화되는지는 함께 확인해야 해요.${selfReading}`;
   }
   if (labels.has('집중형')) {
-    return `${prefix} 여러 종목에 넓게 나누기보다 확신이 있는 쪽에 비중을 두는 성향이에요. 판단이 맞을 때는 효율적이지만, 한 종목 리스크가 커지지 않도록 상한선을 정해두는 게 좋아요.`;
+    return `${prefix} 여러 종목에 넓게 나누기보다 확신이 있는 쪽에 비중을 두는 성향이에요. 판단이 맞을 때는 효율적이지만, 한 종목 리스크가 커지지 않도록 상한선을 정해두는 게 좋아요.${selfReading}`;
   }
   return context === 'expected'
     ? '아직 답변이 적어 타입 성향을 단정하기는 어려워요. 업로드 전에는 가설로만 보고, 실제 거래내역을 올린 뒤 기록 기반 타입과 비교해 보세요.'
@@ -229,7 +230,7 @@ function buildBiasSuggestions(metrics: Metric[]) {
       metricId: 'F5',
       title: '손실회피·만회 심리',
       suggestion:
-        '손실을 확정한 뒤 2시간은 같은 종목 재진입을 쉬는 원칙을 다음 분석에서 확인해 보세요.',
+        '다음 달 실험: 손실을 확정한 뒤에는 같은 종목을 바로 보지 말고, “지금 만회하고 싶은가?”를 한 줄 메모로 남긴 뒤 다음 분석에서 확인해 보세요.',
     });
   }
   const chase = metricById(metrics, 'F3');
@@ -237,7 +238,7 @@ function buildBiasSuggestions(metrics: Metric[]) {
     suggestions.push({
       metricId: 'F3',
       title: '직전 대비 높은 가격 매수 패턴',
-      suggestion: '직전 본인 체결가보다 높은 가격에 매수할 때에는 30분 대기 시간을 둔 뒤 다시 확인해 보세요.',
+      suggestion: '다음 달 실험: 직전 본인 체결가보다 높은 가격에 들어가고 싶을 때 거래 전후 이유를 한 줄 메모로 남겨, 기록상 반복되는 감정인지 확인해 보세요.',
     });
   }
   return suggestions.slice(0, 2);
@@ -365,6 +366,6 @@ export function buildSampleInvestmentTypeProfile(
     biasSuggestions: buildBiasSuggestions(metrics),
     similarMbtiCodes,
     similarMbtiCopy: `유사 MBTI 비유는 재미용 비유입니다. 최근 거래 리듬만 놓고 보면 ${similarMbtiCodes.join('·')}의 신중한 관찰 이미지와 가깝게 설명할 수 있어요.`,
-    disclaimer: '이 타입은 성격검사가 아니라, 최근 거래 기록에 나타난 행동 패턴 요약입니다.',
+    disclaimer: '이 타입은 성격검사가 아니라, 최근 거래 기록에 나타난 행동 패턴 요약입니다. 성향을 단정하지 않고 미래 수익이나 투자 조언을 제공하지 않습니다.',
   };
 }

@@ -129,6 +129,23 @@ test('v5.1 투자 성향 타입은 F점수 기반 요약 레이어로 산출된�
   assert.match(profile.similarMbtiCopy, /재미용 비유/);
 });
 
+
+test('투자거울 타입 콘텐츠는 아하 싶은 자기인식 문장과 안전한 다음 달 실험을 제공한다', () => {
+  const profile = buildSampleInvestmentTypeProfile(baseMetrics, 'INTP');
+  const text = [
+    profile.typeDetail,
+    ...profile.strengths,
+    ...profile.watchouts,
+    ...profile.biasSuggestions.map((item) => `${item.title} ${item.suggestion}`),
+    profile.disclaimer,
+  ].join(' ');
+
+  assert.match(text, /이런 생각|자주 들 수 있어요|아하|나도 모르게|마음속/);
+  assert.match(text, /다음 달 실험|한 줄 메모|확인 질문|거래 전후/);
+  assert.match(text, /기록상|성향을 단정하지 않|미래 수익|투자 조언/);
+  assert.doesNotMatch(text, /매수하세요|매도하세요|사세요|파세요|목표가|수익 보장/);
+});
+
 test('일반 MBTI는 선택 입력이며 투자 타입 계산에는 쓰지 않는다', () => {
   assert.equal(GENERAL_MBTI_OPTIONS.filter((option) => option.length === 4).length, 16);
   const withoutMbti = buildSampleInvestmentTypeProfile(baseMetrics);

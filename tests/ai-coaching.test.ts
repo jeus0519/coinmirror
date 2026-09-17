@@ -51,6 +51,21 @@ test('AI 행동코칭은 초보자가 이해할 수 있도록 심리학 표현�
   assert.ok(coaching.reinforceActions[0].length >= 60);
 });
 
+
+test('AI 행동코칭은 사주풀이처럼 아하 싶은 심리 해설을 주되 투자 조언은 피한다', () => {
+  const coaching = buildAiBehaviorCoaching({
+    generalMbti: 'ENFP',
+    metrics: baseMetrics,
+    comparisonCopy: '자기인식과 실제 행동을 나란히 볼 수 있습니다.',
+  });
+  const text = JSON.stringify(coaching);
+
+  assert.match(text, /이번 기록에서 보이는 핵심|아하|나도 모르게|마음속|불안을 관리/);
+  assert.match(text, /비난|게으르다는 뜻|판단이 늦다|희망 쪽에 무게/);
+  assert.match(text, /다음 달 실험|한 줄 메모|확인 질문/);
+  assert.doesNotMatch(text, /매수하세요|매도하세요|사세요|파세요|목표가|가격 예측|수익 보장/);
+});
+
 test('AI 행동코칭은 가장 낮은 핵심 지표를 기준으로 코칭 유형을 판정한다', () => {
   const coaching = buildAiBehaviorCoaching({
     generalMbti: 'INTJ',
