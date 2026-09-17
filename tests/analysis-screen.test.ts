@@ -217,21 +217,23 @@ test('분석 화면은 로컬 스냅샷 기반 비교 한계를 재분석 알림
 });
 
 
-test('분석 화면은 거래 개요 직후 AI 행동코칭을 먼저 보여주고 그 뒤에 예상 비교와 행동 점수를 이어간다', async () => {
+test('분석 화면은 거래 개요 직후 투자거울 타입을 먼저 보여주고 AI 행동코칭은 그 다음에 둔다', async () => {
   const source = await readFile(STEP_2, 'utf8');
 
   assert.match(source, /buildAiBehaviorCoaching/);
   assert.match(source, /거래 개요/);
+  assert.match(source, /투자거울 타입/);
   assert.match(source, /AI 행동코칭/);
   assert.match(source, /내 예상 vs 기록/);
   assert.match(source, /행동 점수/);
   assert.doesNotMatch(source, /무료 행동 점수/);
+  const investmentTypeIndex = source.indexOf('투자거울 타입');
   const aiHeadingIndex = source.indexOf('>AI 행동코칭</Text>');
-  assert.ok(source.indexOf('거래 개요') < aiHeadingIndex);
-  assert.ok(aiHeadingIndex < source.indexOf('내 예상 vs 기록'));
+  assert.ok(source.indexOf('거래 개요') < investmentTypeIndex);
+  assert.ok(investmentTypeIndex < aiHeadingIndex);
   assert.ok(source.indexOf('내 예상 vs 기록') < source.indexOf('행동 점수'));
-  assert.ok(source.indexOf('행동 점수') < source.indexOf('투자거울 타입'));
-  assert.ok(source.indexOf('투자거울 타입') < source.indexOf('이번 분석에서 눈에 띄는 패턴'));
+  assert.ok(source.indexOf('행동 점수') < aiHeadingIndex);
+  assert.ok(aiHeadingIndex < source.indexOf('이번 분석에서 눈에 띄는 패턴'));
   assert.match(source, /이번 기록을 바탕으로 정리한 AI 회고/);
   assert.match(source, /줄여볼 행동/);
   assert.match(source, /유지할 행동/);

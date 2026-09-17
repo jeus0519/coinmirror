@@ -252,131 +252,6 @@ export function Step2Analysis() {
         </View>
       </View>
 
-      <Card className="border-primary/30 bg-primary/5">
-        <CardContent className="gap-3 pt-2">
-          <View className="gap-1">
-            <Text className="text-[11px] font-extrabold text-primary">
-              이번 기록을 바탕으로 정리한 AI 회고
-            </Text>
-            <Text className="text-base font-extrabold text-foreground">AI 행동코칭</Text>
-            <Text className="text-sm leading-6 text-muted-foreground">
-              버튼을 누르면 핵심 지표를 초보자도 이해하기 쉬운 심리 패턴으로 풀어보고, 다음 달 확인할 행동 질문을 정리해요. 투자 조언이 아니라 과거 기록을 돌아보는 회고예요.
-            </Text>
-          </View>
-          {showAiBehaviorCoaching ? (
-            <>
-              {isAiReflectionLoading && (
-                <Text className="text-xs leading-5 text-primary">AI 행동코칭 문장을 정리하고 있어요...</Text>
-              )}
-              {aiReflectionNotice && (
-                <Text className="text-xs leading-5 text-muted-foreground">{aiReflectionNotice}</Text>
-              )}
-              <Text className="text-sm leading-6 text-muted-foreground">
-                {aiReflectionOutput?.observedPattern ?? aiBehaviorCoaching.intro}
-              </Text>
-              <View className="gap-2 rounded-2xl bg-background/80 p-3">
-                <Text className="text-xs font-extrabold text-foreground">핵심 지표에서 눈에 띈 점</Text>
-                {aiBehaviorCoaching.keySignals.map((signal) => (
-                  <Text key={signal} className="text-[11px] leading-4 text-muted-foreground">
-                    • {signal}
-                  </Text>
-                ))}
-              </View>
-              <View className="gap-2 rounded-2xl bg-background/80 p-3">
-                <Text className="text-xs font-extrabold text-foreground">줄여볼 행동</Text>
-                {(aiReflectionOutput ? [aiReflectionOutput.reduceAction] : aiBehaviorCoaching.reduceActions).map((action) => (
-                  <Text key={action} className="text-[11px] leading-4 text-muted-foreground">
-                    • {action}
-                  </Text>
-                ))}
-              </View>
-              <View className="gap-2 rounded-2xl bg-background/80 p-3">
-                <Text className="text-xs font-extrabold text-foreground">유지할 행동</Text>
-                {(aiReflectionOutput ? [aiReflectionOutput.reinforceAction] : aiBehaviorCoaching.reinforceActions).map((action) => (
-                  <Text key={action} className="text-[11px] leading-4 text-muted-foreground">
-                    • {action}
-                  </Text>
-                ))}
-              </View>
-              <View className="gap-1.5 rounded-2xl border border-primary/20 bg-background/80 p-3">
-                <Text className="text-xs font-extrabold text-primary">다음 달 확인 질문</Text>
-                <Text className="text-xs leading-5 text-foreground">
-                  {aiReflectionOutput?.nextQuestion ?? aiBehaviorCoaching.nextQuestion}
-                </Text>
-              </View>
-            </>
-          ) : (
-            <Button disabled={isAiReflectionLoading} onPress={handleAiBehaviorCoachingClick}>
-              <Text>{isAiReflectionLoading ? 'AI 행동코칭 준비 중' : 'AI 행동코칭 받기'}</Text>
-            </Button>
-          )}
-          <Text className="text-[11px] leading-4 text-muted-foreground">
-            원본 거래내역과 PDF 비밀번호는 AI로 보내지 않아요. {aiBehaviorCoaching.safetyCopy}
-          </Text>
-        </CardContent>
-      </Card>
-
-      <View className="gap-3">
-        <View className="gap-1">
-          <Text className="text-base font-extrabold text-foreground">내 예상 vs 기록</Text>
-          <Text className="text-xs text-muted-foreground">
-            맞고 틀림을 판단하지 않고, 답한 항목의 차이만 보여드려요.
-          </Text>
-        </View>
-        {expectationComparisons.length ? (
-          <View className="gap-2.5">
-            {expectationComparisons.map((item) => (
-              <Card key={item.questionId}>
-                <CardContent className="gap-2 pt-2">
-                  <View className="flex-row items-center justify-between gap-2">
-                    <Text className="text-sm font-bold text-foreground">{item.label}</Text>
-                    {item.source === 'sample' && (
-                      <Badge variant="outline">
-                        <Text>샘플</Text>
-                      </Badge>
-                    )}
-                  </View>
-                  <View className="flex-row gap-2">
-                    <View className="flex-1 rounded-xl bg-muted p-3">
-                      <Text className="text-[11px] text-muted-foreground">내 예상</Text>
-                      <Text className="text-[13px] font-bold text-foreground">{item.expected}</Text>
-                    </View>
-                    <View className="flex-1 rounded-xl bg-primary/10 p-3">
-                      <Text className="text-[11px] text-primary">기록된 실제</Text>
-                      <Text className="text-[13px] font-bold text-foreground">{item.actual}</Text>
-                    </View>
-                  </View>
-                  <Text className="text-xs text-muted-foreground">{item.observation}</Text>
-                </CardContent>
-              </Card>
-            ))}
-          </View>
-        ) : (
-          <Card>
-            <CardContent className="pt-2">
-              <Text className="text-xs text-muted-foreground">
-                예상 문항은 건너뛰었어요. 거래 점수는 그대로 볼 수 있어요.
-              </Text>
-            </CardContent>
-          </Card>
-        )}
-      </View>
-
-      <View className="gap-3">
-        <View className="gap-1">
-          <Text className="text-base font-extrabold text-foreground">행동 점수</Text>
-          <Text className="text-xs text-muted-foreground">
-            모든 점수는 0~100점이며 높을수록 절제·규율 상태가 안정적이에요. 거래 성과나 투자 실력을
-            평가하는 점수는 아닙니다.
-          </Text>
-        </View>
-        <View className="gap-3">
-          {analysis.metrics.map((m) => (
-            <MetricCard key={m.id} metric={m} />
-          ))}
-        </View>
-      </View>
-
       <Card>
         <CardContent className="gap-3 pt-2">
           <View className="flex-row items-center justify-between gap-3">
@@ -449,6 +324,131 @@ export function Step2Analysis() {
             아닙니다.
           </Text>
           <ShareCard card={recordedShareCard} />
+        </CardContent>
+      </Card>
+
+      <View className="gap-3">
+        <View className="gap-1">
+          <Text className="text-base font-extrabold text-foreground">내 예상 vs 기록</Text>
+          <Text className="text-xs text-muted-foreground">
+            맞고 틀림을 판단하지 않고, 답한 항목의 차이만 보여드려요.
+          </Text>
+        </View>
+        {expectationComparisons.length ? (
+          <View className="gap-2.5">
+            {expectationComparisons.map((item) => (
+              <Card key={item.questionId}>
+                <CardContent className="gap-2 pt-2">
+                  <View className="flex-row items-center justify-between gap-2">
+                    <Text className="text-sm font-bold text-foreground">{item.label}</Text>
+                    {item.source === 'sample' && (
+                      <Badge variant="outline">
+                        <Text>샘플</Text>
+                      </Badge>
+                    )}
+                  </View>
+                  <View className="flex-row gap-2">
+                    <View className="flex-1 rounded-xl bg-muted p-3">
+                      <Text className="text-[11px] text-muted-foreground">내 예상</Text>
+                      <Text className="text-[13px] font-bold text-foreground">{item.expected}</Text>
+                    </View>
+                    <View className="flex-1 rounded-xl bg-primary/10 p-3">
+                      <Text className="text-[11px] text-primary">기록된 실제</Text>
+                      <Text className="text-[13px] font-bold text-foreground">{item.actual}</Text>
+                    </View>
+                  </View>
+                  <Text className="text-xs text-muted-foreground">{item.observation}</Text>
+                </CardContent>
+              </Card>
+            ))}
+          </View>
+        ) : (
+          <Card>
+            <CardContent className="pt-2">
+              <Text className="text-xs text-muted-foreground">
+                예상 문항은 건너뛰었어요. 거래 점수는 그대로 볼 수 있어요.
+              </Text>
+            </CardContent>
+          </Card>
+        )}
+      </View>
+
+      <View className="gap-3">
+        <View className="gap-1">
+          <Text className="text-base font-extrabold text-foreground">행동 점수</Text>
+          <Text className="text-xs text-muted-foreground">
+            모든 점수는 0~100점이며 높을수록 절제·규율 상태가 안정적이에요. 거래 성과나 투자 실력을
+            평가하는 점수는 아닙니다.
+          </Text>
+        </View>
+        <View className="gap-3">
+          {analysis.metrics.map((m) => (
+            <MetricCard key={m.id} metric={m} />
+          ))}
+        </View>
+      </View>
+
+      <Card className="border-primary/30 bg-primary/5">
+        <CardContent className="gap-3 pt-2">
+          <View className="gap-1">
+            <Text className="text-[11px] font-extrabold text-primary">
+              이번 기록을 바탕으로 정리한 AI 회고
+            </Text>
+            <Text className="text-base font-extrabold text-foreground">AI 행동코칭</Text>
+            <Text className="text-sm leading-6 text-muted-foreground">
+              버튼을 누르면 핵심 지표를 초보자도 이해하기 쉬운 심리 패턴으로 풀어보고, 다음 달 확인할 행동 질문을 정리해요. 투자 조언이 아니라 과거 기록을 돌아보는 회고예요.
+            </Text>
+          </View>
+          {showAiBehaviorCoaching ? (
+            <>
+              {isAiReflectionLoading && (
+                <Text className="text-xs leading-5 text-primary">AI 행동코칭 문장을 정리하고 있어요...</Text>
+              )}
+              {aiReflectionNotice && (
+                <Text className="text-xs leading-5 text-muted-foreground">{aiReflectionNotice}</Text>
+              )}
+              <Text className="text-sm leading-6 text-muted-foreground">
+                {aiReflectionOutput?.observedPattern ?? aiBehaviorCoaching.intro}
+              </Text>
+              <View className="gap-2 rounded-2xl bg-background/80 p-3">
+                <Text className="text-xs font-extrabold text-foreground">핵심 지표에서 눈에 띈 점</Text>
+                {aiBehaviorCoaching.keySignals.map((signal) => (
+                  <Text key={signal} className="text-[11px] leading-4 text-muted-foreground">
+                    • {signal}
+                  </Text>
+                ))}
+              </View>
+              <View className="gap-2 rounded-2xl bg-background/80 p-3">
+                <Text className="text-xs font-extrabold text-foreground">줄여볼 행동</Text>
+                {(aiReflectionOutput ? [aiReflectionOutput.reduceAction] : aiBehaviorCoaching.reduceActions).map((action) => (
+                  <Text key={action} className="text-[11px] leading-4 text-muted-foreground">
+                    • {action}
+                  </Text>
+                ))}
+              </View>
+              <View className="gap-2 rounded-2xl bg-background/80 p-3">
+                <Text className="text-xs font-extrabold text-foreground">유지할 행동</Text>
+                {(aiReflectionOutput ? [aiReflectionOutput.reinforceAction] : aiBehaviorCoaching.reinforceActions).map((action) => (
+                  <Text key={action} className="text-[11px] leading-4 text-muted-foreground">
+                    • {action}
+                  </Text>
+                ))}
+              </View>
+              <View className="gap-1.5 rounded-2xl border border-primary/20 bg-background/80 p-3">
+                <Text className="text-xs font-extrabold text-primary">다음 달 확인 질문</Text>
+                <Text className="text-xs leading-5 text-foreground">
+                  {aiReflectionOutput?.nextQuestion ?? aiBehaviorCoaching.nextQuestion}
+                </Text>
+              </View>
+            </>
+          ) : (
+            <Button disabled={isAiReflectionLoading} onPress={handleAiBehaviorCoachingClick}>
+              <Text>{isAiReflectionLoading ? 'AI 행동코칭 준비 중' : 'AI 행동코칭 받기'}</Text>
+            </Button>
+          )}
+          <Text className="text-[11px] leading-4 text-muted-foreground">
+            원본 거래내역과 PDF 비밀번호는 AI로 보내지 않아요. {aiBehaviorCoaching.safetyCopy}
+          </Text>
         </CardContent>
       </Card>
 
