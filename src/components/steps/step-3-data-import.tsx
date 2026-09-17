@@ -528,7 +528,7 @@ export function Step3DataImport() {
         <View className="gap-1">
           <Text className="text-sm font-extrabold text-foreground">자료 형식을 골라 주세요</Text>
           <Text className="text-xs leading-5 text-muted-foreground">
-            업비트 고객센터에서 거래내역 PDF/CSV를 받을 수 있어요. 메뉴 이름은 앱·웹에서 조금 다를 수 있어요.
+            업비트 고객센터 PDF가 가장 흔해요. CSV가 있다면 CSV도 괜찮습니다.
           </Text>
         </View>
         <View className="gap-2 rounded-2xl border border-primary/20 bg-primary/5 p-3">

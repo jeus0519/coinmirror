@@ -67,16 +67,6 @@ test('거래내역 업로드 화면은 현재 지원 범위와 이후 확장 계
 });
 
 
-test('첫 파일 업로드 전 업비트 고객센터에서 거래내역을 받을 수 있음을 안내한다', async () => {
-  const source = await readStepSource();
-
-  assert.match(source, /업비트 고객센터/);
-  assert.match(source, /거래내역/);
-  assert.match(source, /PDF\/CSV/);
-  assert.match(source, /메뉴 이름은 앱·웹에서 조금 다를 수 있어요/);
-});
-
-
 
 test('업로드 화면은 저장된 분석이 있을 때만 재업로드 중복 허들을 낮추는 안내를 보여준다', async () => {
   const source = await readStepSource();
