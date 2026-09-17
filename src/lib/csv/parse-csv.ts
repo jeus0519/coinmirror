@@ -28,17 +28,9 @@ function parseCsvRows(text: string) {
       if (inQuotes && next === '"') {
         cell += '"';
         i += 1;
-        continue;
+      } else {
+        inQuotes = !inQuotes;
       }
-      if (!inQuotes && cell.length === 0) {
-        inQuotes = true;
-        continue;
-      }
-      if (inQuotes && (next === ',' || next === '\n' || next === '\r' || next === undefined)) {
-        inQuotes = false;
-        continue;
-      }
-      cell += char;
       continue;
     }
     if (char === ',' && !inQuotes) {

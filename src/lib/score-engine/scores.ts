@@ -83,11 +83,9 @@ function formatHoldingDays(hours: number) {
   return days >= 1 ? `${days.toFixed(1)}일` : `${Math.round(hours)}시간`;
 }
 
-const BREAKEVEN_PNL_PCT = 0.1;
-
 function scoreF1(roundTrips: RoundTrip[]) {
-  const lossRTs = roundTrips.filter((rt) => rt.pnlPct < -BREAKEVEN_PNL_PCT);
-  const profitRTs = roundTrips.filter((rt) => rt.pnlPct > BREAKEVEN_PNL_PCT);
+  const lossRTs = roundTrips.filter((rt) => rt.pnl < 0);
+  const profitRTs = roundTrips.filter((rt) => rt.pnl > 0);
   if (
     lossRTs.length < SCORE_CONSTANTS.f1.minLossExits ||
     profitRTs.length < SCORE_CONSTANTS.f1.minProfitExits
@@ -101,7 +99,7 @@ function scoreF1(roundTrips: RoundTrip[]) {
   }
   const asymmetry =
     median(lossRTs.map((rt) => rt.holdingHours)) /
-    Math.max(1 / 60, median(profitRTs.map((rt) => rt.holdingHours)));
+    Math.max(1, median(profitRTs.map((rt) => rt.holdingHours)));
   const deepLossShare =
     lossRTs.filter((rt) => rt.pnlPct <= SCORE_CONSTANTS.f1.deepLossThresholdPct).length /
     lossRTs.length;

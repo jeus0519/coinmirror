@@ -24,13 +24,7 @@ function kstHour(value: string) {
 }
 
 function mondayZeroWeekday(value: string) {
-  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (!match) {
-    const jsDay = kstDate(value).getUTCDay();
-    return (jsDay + 6) % 7;
-  }
-  const [, year, month, day] = match;
-  const jsDay = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day))).getUTCDay();
+  const jsDay = kstDate(value).getDay();
   return (jsDay + 6) % 7;
 }
 

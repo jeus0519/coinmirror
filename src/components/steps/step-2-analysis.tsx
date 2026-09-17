@@ -57,7 +57,6 @@ export function Step2Analysis() {
   const toggleSubscription = useFlowStore((s) => s.toggleSubscription);
   const subscriptionSnapshots = useFlowStore((s) => s.subscriptionSnapshots);
   const snapshotComparison = useFlowStore((s) => s.snapshotComparison);
-  const demoSnapshotComparison = useFlowStore((s) => s.demoSnapshotComparison);
   const suggestedSubscriptionGoal = useFlowStore((s) => s.suggestedSubscriptionGoal);
   const savedSubscriptionGoals = useFlowStore((s) => s.savedSubscriptionGoals);
   const saveCurrentAnalysisSnapshot = useFlowStore((s) => s.saveCurrentAnalysisSnapshot);
@@ -117,18 +116,14 @@ export function Step2Analysis() {
   const currentAnalysisSaved = Boolean(
     currentAnalysisFingerprint && lastSavedSnapshot?.sourceFingerprint === currentAnalysisFingerprint
   );
-  // 실제 저장 비교(snapshotComparison.rows.map / snapshotComparison.dedupe)와
-  // 저장소를 건드리지 않는 데모 비교를 같은 UI 계약으로 렌더한다.
-  const effectiveSnapshotComparison = demoSnapshotComparison ?? snapshotComparison;
-  const hasEffectiveSnapshotComparison = effectiveSnapshotComparison !== null;
-  const snapshotStatusTitle = effectiveSnapshotComparison
+  const snapshotStatusTitle = snapshotComparison
     ? '직전 분석과 비교 중'
     : currentAnalysisSaved
       ? '이번 결과 저장됨'
       : subscriptionSnapshots.length > 0
         ? '이번 결과는 아직 저장하지 않았어요'
         : '첫 비교 준비가 아직 없어요';
-  const snapshotStatusDescription = hasEffectiveSnapshotComparison
+  const snapshotStatusDescription = snapshotComparison
     ? '직전 분석과 이번 분석의 차이를 바로 아래에서 확인할 수 있어요.'
     : currentAnalysisSaved
       ? '다음 거래내역을 올릴 때 변화량을 비교해요. 같은 결과를 다시 저장하면 중복 기준선이 생길 수 있어요.'
@@ -140,15 +135,15 @@ export function Step2Analysis() {
 
   useEffect(() => {
     trackCoinmirrorEvent('result_view', { screen: 'analysis', source_format: analysis.source });
-    if (effectiveSnapshotComparison) {
+    if (snapshotComparison) {
       trackCoinmirrorEvent('comparison_result_view', {
         screen: 'analysis',
         has_local_snapshot: subscriptionSnapshots.length > 0,
-        has_duplicate_executions: effectiveSnapshotComparison.dedupe.duplicateExecutionCount > 0,
-        has_unique_executions: effectiveSnapshotComparison.dedupe.uniqueExecutionCount > 0,
+        has_duplicate_executions: snapshotComparison.dedupe.duplicateExecutionCount > 0,
+        has_unique_executions: snapshotComparison.dedupe.uniqueExecutionCount > 0,
       });
     }
-  }, [analysis.source, effectiveSnapshotComparison, subscriptionSnapshots.length]);
+  }, [analysis.source, snapshotComparison, subscriptionSnapshots.length]);
 
   function handleSubscriptionPreviewClick(cta: 'pattern_tracking' | 'monthly_report' | 'benefits') {
     trackCoinmirrorEvent('subscription_preview_click', { screen: 'analysis', cta });
@@ -555,23 +550,23 @@ export function Step2Analysis() {
               </Button>
             </View>
           </View>
-          {effectiveSnapshotComparison && (
+          {snapshotComparison && (
             <View className="gap-2 rounded-2xl border border-primary/20 bg-primary/5 p-3">
               <Text className="text-sm font-extrabold text-foreground">직전 분석과 비교</Text>
               <Text className="text-xs leading-5 text-muted-foreground">
-                {effectiveSnapshotComparison.summary} 목표 달성 여부는 저장한 목표 카드에서 판단해요.
+                {snapshotComparison.summary} 목표 달성 여부는 저장한 목표 카드에서 판단해요.
               </Text>
-              {effectiveSnapshotComparison.dedupe.duplicateExecutionCount > 0 && (
+              {snapshotComparison.dedupe.duplicateExecutionCount > 0 && (
                 <View className="gap-1 rounded-xl bg-background/80 p-2.5">
                   <Text className="text-[11px] font-extrabold text-primary">
                     겹치는 거래 처리
                   </Text>
                   <Text className="text-[11px] leading-4 text-muted-foreground">
-                    {effectiveSnapshotComparison.dedupe.copy} 새 거래만 비교 결과에 반영했어요. 이전에 산 기록은 새 거래로 세지 않고 이번 매도 계산에만 참고해요.
+                    {snapshotComparison.dedupe.copy} 새 거래만 비교 결과에 반영했어요. 이전에 산 기록은 새 거래로 세지 않고 이번 매도 계산에만 참고해요.
                   </Text>
                 </View>
               )}
-              {effectiveSnapshotComparison.rows.map((row) => (
+              {snapshotComparison.rows.map((row) => (
                 <View key={row.metricKey} className="gap-1 rounded-xl bg-background/80 p-2.5">
                   <Text className="text-xs font-bold text-foreground">{row.label}</Text>
                   <Text className="text-[11px] leading-4 text-muted-foreground">{row.copy}</Text>

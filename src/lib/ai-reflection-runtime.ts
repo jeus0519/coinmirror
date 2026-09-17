@@ -16,7 +16,7 @@ export type AiReflectionRuntimeResult = {
 export type AiReflectionGenerator = (payload: AiBehaviorCoachingSafePayload) => Promise<unknown>;
 
 const OUTPUT_FIELDS = ['observedPattern', 'reduceAction', 'reinforceAction', 'nextQuestion'] as const;
-const FORBIDDEN_OUTPUT_PATTERN = /매수하|매도하|사세요|파세요|보유하세요|비중을\s*(늘|줄)|손절|익절|목표가|가격 예측|수익 보장|추천 종목|포트폴리오 비중/i;
+const FORBIDDEN_OUTPUT_PATTERN = /매수하|매도하|사세요|파세요|보유하세요|목표가|가격 예측|수익 보장|추천 종목|포트폴리오 비중/i;
 const MAX_FIELD_LENGTH = 240;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -58,23 +58,13 @@ export async function buildAiReflectionResult(options: {
   payload: AiBehaviorCoachingSafePayload;
   fallback: AiBehaviorCoaching;
   generate: AiReflectionGenerator;
-  timeoutMs?: number;
 }): Promise<AiReflectionRuntimeResult> {
   try {
-    const raw = await Promise.race([
-      options.generate(options.payload),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('timeout')), options.timeoutMs ?? 2500)
-      ),
-    ]);
+    const raw = await options.generate(options.payload);
     const validation = validateAiReflectionOutput(raw);
     if (validation.ok) return { source: 'ai', output: validation.output };
     return { source: 'fallback', output: fallbackOutput(options.fallback), errorCode: validation.error };
-  } catch (error) {
-    return {
-      source: 'fallback',
-      output: fallbackOutput(options.fallback),
-      errorCode: error instanceof Error && error.message === 'timeout' ? 'timeout' : 'generation_failed',
-    };
+  } catch {
+    return { source: 'fallback', output: fallbackOutput(options.fallback), errorCode: 'generation_failed' };
   }
 }

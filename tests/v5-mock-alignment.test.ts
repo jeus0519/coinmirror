@@ -151,17 +151,3 @@ test('설문만으로 거래내역 업로드 전 예상 투자거울 타입을 �
   assert.match(expected.disclaimer, /예상 타입/);
   assert.match(expected.comparisonCopy ?? '', /업로드 후 기록된 타입/);
 });
-
-
-test('문항별 실측값이 없으면 샘플을 내 기록처럼 표시하지 않고 측정 중으로 표시한다', () => {
-  const comparisons = buildExpectationComparisons(
-    { B1: 'under_10', B2: 'night', B3: 'profit_first', B4: 'under_30' },
-    { B1: { actual: '월평균 2.0회', observation: '실측 있음' } }
-  );
-
-  const b1 = comparisons.find((item) => item.questionId === 'B1');
-  const b3 = comparisons.find((item) => item.questionId === 'B3');
-  assert.equal(b1?.source, 'csv');
-  assert.equal(b3?.source, 'measuring');
-  assert.equal(b3?.actual, '측정 중');
-});

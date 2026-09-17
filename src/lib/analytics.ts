@@ -107,29 +107,6 @@ export function getGoogleTagScriptSrc(measurementId: string) {
   return `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(measurementId)}`;
 }
 
-function sanitizePagePath() {
-  if (typeof window === 'undefined') return '/';
-  return window.location.pathname || '/';
-}
-
-function sanitizePageLocation() {
-  if (typeof window === 'undefined') return '/';
-  const path = sanitizePagePath();
-  return `${window.location.origin}${path}`;
-}
-
-function sanitizePageReferrer() {
-  if (typeof window === 'undefined') return '';
-  const referrer = window.document?.referrer;
-  if (!referrer) return '';
-  try {
-    const url = new URL(referrer);
-    return `${url.origin}${url.pathname || '/'}`;
-  } catch {
-    return '';
-  }
-}
-
 export function installGoogleTag(config: AnalyticsConfig, doc?: unknown, gtag?: Gtag) {
   if (!config.enabled || !doc || !gtag) return;
 
@@ -141,12 +118,7 @@ export function installGoogleTag(config: AnalyticsConfig, doc?: unknown, gtag?: 
   script.src = getGoogleTagScriptSrc(config.measurementId);
   documentLike.head.appendChild(script);
   gtag('js', new Date());
-  gtag('config', config.measurementId, { send_page_view: false });
-  gtag('event', 'page_view', {
-    page_path: sanitizePagePath(),
-    page_location: sanitizePageLocation(),
-    page_referrer: sanitizePageReferrer(),
-  });
+  gtag('config', config.measurementId, { send_page_view: true });
 }
 
 export function trackAnalyticsEvent(

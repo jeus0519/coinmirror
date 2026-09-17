@@ -35,7 +35,7 @@ import {
  * hasAnalyzed가 true여야 분석 이후 단계로 진입한다.
  */
 export type FlowStep = 1 | 2 | 3 | 4 | 5 | 6;
-export type DataSource = 'sample' | 'csv' | 'pdf' | 'restored-summary' | null;
+export type DataSource = 'sample' | 'csv' | 'pdf' | null;
 export type SubscriptionTier = 'free' | 'pro';
 
 interface FlowState {
@@ -46,7 +46,6 @@ interface FlowState {
   subscriptionTier: SubscriptionTier;
   subscriptionSnapshots: SubscriptionSnapshot[];
   snapshotComparison: SnapshotComparison | null;
-  demoSnapshotComparison: SnapshotComparison | null;
   suggestedSubscriptionGoal: SubscriptionGoalCandidate | null;
   savedSubscriptionGoals: SavedSubscriptionGoal[];
   diagnosisAnswers: DiagnosisProfile;
@@ -82,7 +81,6 @@ export const useFlowStore = create<FlowState>((set) => ({
   subscriptionTier: 'free',
   subscriptionSnapshots: [],
   snapshotComparison: null,
-  demoSnapshotComparison: null,
   suggestedSubscriptionGoal: null,
   savedSubscriptionGoals: [],
   diagnosisAnswers: {},
@@ -125,17 +123,27 @@ export const useFlowStore = create<FlowState>((set) => ({
         }
       );
       const comparison = compareSnapshots(baseline, current);
-      return {
+      const nextState = {
         currentStep: 4 as FlowStep,
         hasAnalyzed: true,
         dataSource: 'csv' as DataSource,
         tradeAnalysis: secondAnalysis,
-        demoSnapshotComparison: comparison,
+        subscriptionSnapshots: [baseline, current],
+        snapshotComparison: comparison,
+        suggestedSubscriptionGoal: buildGoalCandidateFromComparison(comparison),
+        savedSubscriptionGoals: state.savedSubscriptionGoals.map((goal) =>
+          evaluateSavedGoal(goal, comparison)
+        ),
       };
+      persistSubscriptionState(resolveStorage(storage), {
+        snapshots: nextState.subscriptionSnapshots,
+        goals: nextState.savedSubscriptionGoals,
+      });
+      return nextState;
     }),
   setTradeAnalysisPreview: (analysis) =>
-    set({ hasAnalyzed: false, dataSource: null, tradeAnalysis: analysis, currentStep: 3, snapshotComparison: null, suggestedSubscriptionGoal: null, demoSnapshotComparison: null }),
-  clearTradeAnalysis: () => set({ tradeAnalysis: null, dataSource: null, hasAnalyzed: false, snapshotComparison: null, suggestedSubscriptionGoal: null, demoSnapshotComparison: null }),
+    set({ hasAnalyzed: false, dataSource: null, tradeAnalysis: analysis, currentStep: 3 }),
+  clearTradeAnalysis: () => set({ tradeAnalysis: null, dataSource: null, hasAnalyzed: false }),
   confirmTradeAnalysis: () =>
     set((state) => ({
       hasAnalyzed: true,
@@ -171,7 +179,6 @@ export const useFlowStore = create<FlowState>((set) => ({
         subscriptionSnapshots: [...state.subscriptionSnapshots, snapshot],
         snapshotComparison: comparison,
         suggestedSubscriptionGoal: buildGoalCandidateFromComparison(comparison),
-        demoSnapshotComparison: null,
         savedSubscriptionGoals: state.savedSubscriptionGoals.map((goal) =>
           evaluateSavedGoal(goal, comparison)
         ),
@@ -210,11 +217,9 @@ export const useFlowStore = create<FlowState>((set) => ({
         ...state,
         currentStep: hasRestoredSnapshots && !state.tradeAnalysis ? 4 : state.currentStep,
         hasAnalyzed: hasRestoredSnapshots || state.hasAnalyzed,
-        dataSource: hasRestoredSnapshots && !state.tradeAnalysis ? 'restored-summary' : state.dataSource,
         subscriptionSnapshots: persisted.snapshots,
         snapshotComparison: comparison,
         suggestedSubscriptionGoal: buildGoalCandidateFromComparison(comparison),
-        demoSnapshotComparison: null,
         savedSubscriptionGoals: persisted.goals.map((goal) => evaluateSavedGoal(goal, comparison)),
       };
     }),
@@ -224,7 +229,6 @@ export const useFlowStore = create<FlowState>((set) => ({
       subscriptionSnapshots: [],
       snapshotComparison: null,
       suggestedSubscriptionGoal: null,
-      demoSnapshotComparison: null,
       savedSubscriptionGoals: [],
     });
   },

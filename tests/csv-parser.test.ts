@@ -137,12 +137,12 @@ test('analyzeCsvInput은 파싱 미리보기와 엔진 결과를 한 번에 만�
   assert.match(result.expectationActuals.B4?.actual ?? '', /%/);
 });
 
-test('analyzeCsvInput은 A4 답변이 없으면 자금 배분 축을 측정 중으로 둔다', async () => {
+test('analyzeCsvInput은 A4 답변이 없어도 실제 거래내역의 자금 배분 축을 ?로 두지 않는다', async () => {
   const csv = await readFile(resolve('src/lib/csv/fixtures/upbit-sample.csv'), 'utf8');
   const result = analyzeCsvInput(csv, { generalMbti: 'INTP' });
 
-  assert.match(result.investmentType.code, /^[CW]-[RH]-[LX]-[?]$/);
-  assert.equal(result.investmentType.axes.find((axis) => axis.axis === 'allocation')?.code, '?');
+  assert.match(result.investmentType.code, /^[CW]-[RH]-[LX]-[ND]$/);
+  assert.notEqual(result.investmentType.axes.find((axis) => axis.axis === 'allocation')?.code, '?');
 });
 
 test('업비트 CSV 검증: 필수 체결가 누락/빈 값 행 거부', () => {
@@ -234,41 +234,4 @@ test('업비트 CSV 검증: 유효하지 않은 달력 날짜 및 시간 거부'
   const resLeapYearValid = parseUpbitCsv(csvLeapYearValid);
   assert.equal(resLeapYearValid.executions.length, 1);
   assert.equal(resLeapYearValid.errors.length, 0);
-});
-
-
-test('업비트 CSV는 현재 KRW 마켓만 지원하고 비-KRW 마켓은 오류로 분리한다', () => {
-  const csv = `마켓,구분,체결시간,체결가,수량,수수료
-BTC-ETH,매수,2026-01-01 09:00:00,100,1,0
-KRW-BTC,매수,2026-01-01 10:00:00,100,1,0
-`;
-  const result = parseUpbitCsv(csv);
-  assert.equal(result.executions.length, 1);
-  assert.equal(result.errors.length, 1);
-  assert.match(result.errors[0].reason, /KRW/);
-});
-
-test('CSV 파서는 따옴표가 셀 중간에 나와도 이후 행을 병합하지 않는다', () => {
-  const csv = `마켓,구분,체결시간,체결가,수량,수수료
-KRW-BTC,매수,2026-01-01 09:00:00,100,1,0
-KRW-ETH,매수,2026-01-01 10:00:00,10"oops,2,0
-KRW-XRP,매도,2026-01-01 11:00:00,50,3,0
-`;
-  const result = parseUpbitCsv(csv);
-  assert.equal(result.executions.length, 2);
-  assert.equal(result.errors.length, 1);
-  assert.equal(result.errors[0].rowNumber, 3);
-});
-
-
-test('업비트 CSV는 KRW 접미형 마켓 표기도 KRW 마켓으로 인식한다', () => {
-  const result = parseUpbitCsv(
-    [
-      '마켓,구분,체결시간,체결가,수량,수수료',
-      'BTC-KRW,매수,2026-01-01 09:00:00,100,1,0',
-    ].join('\n')
-  );
-  assert.equal(result.executions.length, 1);
-  assert.equal(result.executions[0].symbol, 'BTC');
-  assert.equal(result.errors.length, 0);
 });

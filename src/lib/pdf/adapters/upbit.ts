@@ -73,32 +73,17 @@ export function parseUpbitPdfText(text: string): ParseResult {
 
   for (let index = 0; index < lines.length - 1; index += 1) {
     const maybeNumber = lines[index];
+    const dateLine = lines[index + 1];
+    const timeLine = lines[index + 2] ?? '';
     const rowNumber = /^\d+$/.test(maybeNumber) ? Number(maybeNumber) : index + 1;
 
     if (!/^\d+$/.test(maybeNumber)) continue;
-
-    const window = lines.slice(index + 1, index + 7);
-    const dateOffset = window.findIndex((line) =>
-      /^\d{4}[.\-/]\s*\d{1,2}[.\-/]\s*\d{1,2}\.?\s+/.test(line)
-    );
-    if (dateOffset < 0) {
-      skippedRowCount += 1;
-      continue;
-    }
-    const dateLine = window[dateOffset];
-    const timeOffset = window.findIndex(
-      (line, offset) => offset > dateOffset && /^\d{2}:\d{2}:\d{2}\s+/.test(line)
-    );
-    if (timeOffset < 0) {
-      errors.push({ rowNumber, reason: 'PDF 거래 시간 행을 찾지 못했습니다', raw: window });
-      index += dateOffset;
-      continue;
-    }
-    const timeLine = window[timeOffset];
+    if (!/^\d{4}[.\-/]\s*\d{1,2}[.\-/]\s*\d{1,2}\.?\s+/.test(dateLine)) continue;
+    if (!/^\d{2}:\d{2}:\d{2}\s+/.test(timeLine)) continue;
 
     if (!/\s(매수|매도)\s+KRW-/.test(dateLine)) {
       skippedRowCount += 1;
-      index += timeOffset;
+      index += 2;
       continue;
     }
 
@@ -111,7 +96,7 @@ export function parseUpbitPdfText(text: string): ParseResult {
         raw: [dateLine, timeLine],
       });
     }
-    index += timeOffset;
+    index += 2;
   }
 
   // 텍스트는 읽혔지만 거래 행을 하나도 인식하지 못한 경우.
