@@ -14,7 +14,7 @@ import { type TradeHistoryAnalysisResult } from './trade-history/build-analysis'
 import { formatKrw } from './format';
 
 export type AnalysisViewData = {
-  source: 'sample' | 'csv' | 'pdf';
+  source: 'sample' | 'csv' | 'pdf' | 'restored-summary';
   metrics: Metric[];
   lockedMetrics: LockedMetricPreview[];
   investmentType: ReturnType<typeof buildSampleInvestmentTypeProfile>;
@@ -130,7 +130,7 @@ function buildSubscriptionInsights(derivedSeries: Phase1DerivedSeries): Subscrip
 }
 
 function buildViewData(input: {
-  source: 'sample' | 'csv' | 'pdf';
+  source: 'sample' | 'csv' | 'pdf' | 'restored-summary';
   metrics: Metric[];
   investmentType: ReturnType<typeof buildSampleInvestmentTypeProfile>;
   derivedSeries: Phase1DerivedSeries;
@@ -247,7 +247,7 @@ export function buildTradeAnalysisViewData(
 }
 
 export function buildAnalysisViewData(input: {
-  dataSource: 'sample' | 'csv' | 'pdf' | null;
+  dataSource: 'sample' | 'csv' | 'pdf' | 'restored-summary' | null;
   tradeAnalysis: TradeHistoryAnalysisResult | null;
   diagnosis: DiagnosisProfile;
 }): AnalysisViewData {

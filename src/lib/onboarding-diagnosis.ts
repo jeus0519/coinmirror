@@ -32,7 +32,7 @@ export type ExpectationComparison = {
   expected: string;
   actual: string;
   observation: string;
-  source: 'sample' | 'csv';
+  source: 'sample' | 'csv' | 'measuring';
 };
 
 export type ExpectationActual = Omit<
@@ -210,7 +210,12 @@ export function buildExpectationComparisons(
 ): ExpectationComparison[] {
   return (['B1', 'B2', 'B3', 'B4'] as const).flatMap((questionId) => {
     const answer = profile[questionId];
-    const actual = actuals?.[questionId] ?? SAMPLE_ACTUALS[questionId];
+    const measuredActual = actuals?.[questionId];
+    const actual = measuredActual ?? (actuals ? {
+      label: SAMPLE_ACTUALS[questionId].label,
+      actual: '측정 중',
+      observation: '이번 업로드만으로는 이 항목을 충분히 측정하지 못했어요.',
+    } : SAMPLE_ACTUALS[questionId]);
     if (typeof answer !== 'string') return [];
     return [
       {
@@ -218,7 +223,7 @@ export function buildExpectationComparisons(
         expected: optionLabel(questionId, answer),
         ...actual,
         label: actual.label ?? SAMPLE_ACTUALS[questionId].label ?? '실측 비교',
-        source: actuals ? 'csv' : 'sample',
+        source: measuredActual ? 'csv' : actuals ? 'measuring' : 'sample',
       },
     ];
   });

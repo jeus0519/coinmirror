@@ -5,7 +5,14 @@ import { type AiBehaviorCoaching, type AiBehaviorCoachingSafePayload } from '../
 
 export type AiReflectionRouteDependencies = {
   generate?: AiReflectionGenerator;
+  timeoutMs?: number;
 };
+
+function isAllowedOrigin(origin: string | null, requestUrl: string) {
+  if (!origin) return true;
+  const requestOrigin = new URL(requestUrl).origin;
+  return origin === requestOrigin || /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+}
 
 type JsonValue = Record<string, unknown>;
 
@@ -42,6 +49,14 @@ function fallbackFromPayload(payload: AiBehaviorCoachingSafePayload): AiBehavior
 }
 
 export async function POST(request: Request, dependencies: AiReflectionRouteDependencies = {}) {
+  const contentType = request.headers.get('content-type') ?? '';
+  if (!contentType.toLowerCase().includes('application/json')) {
+    return jsonResponse({ ok: false, error: 'unsupported_media_type' }, 415);
+  }
+  if (!isAllowedOrigin(request.headers.get('origin'), request.url)) {
+    return jsonResponse({ ok: false, error: 'forbidden_origin' }, 403);
+  }
+
   // 1. Inspect Content-Length early when valid
   const contentLength = request.headers.get('content-length');
   if (contentLength !== null) {
@@ -82,13 +97,14 @@ export async function POST(request: Request, dependencies: AiReflectionRouteDepe
   const generator =
     dependencies.generate ??
     createOpenAiReflectionGenerator({
-      apiKey: process.env.COINMIRROR_AI_REFLECTION_API_KEY,
+      apiKey: process.env.COINMIRROR_AI_REFLECTION_OPENAI_API_KEY,
       model: process.env.COINMIRROR_AI_REFLECTION_MODEL,
     });
   const result = await buildAiReflectionResult({
     payload: validation.payload,
     fallback,
     generate: generator,
+    timeoutMs: dependencies.timeoutMs,
   });
 
   return jsonResponse({

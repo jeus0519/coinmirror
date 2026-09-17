@@ -97,3 +97,47 @@ test('업비트 서식이 아니면 원본 PDF를 확인하라고 알린다', ()
   assert.equal(result.errors.length, 1);
   assert.match(result.errors[0].reason, /업비트 거래내역서 형식이 아닙니다/);
 });
+
+
+test('PDF 레코드 중간에 페이지 푸터와 반복 헤더가 끼어도 거래를 누락하지 않는다', () => {
+  const text = [
+    '거래내역서',
+    '1',
+    '2026.08.18 매수 KRW-USDT 7,000 USDT 0 KRW',
+    '22:52:10 1,374 KRW 9,618,000 KRW 9,618,000 KRW',
+    '2',
+    '1 / 25',
+    '거래일자 거래유형 자산명 거래수량 수수료',
+    '2026.08.15 매도 KRW-ONDO 129,754 ONDO 33,762.19 KRW',
+    '23:29:37 520.4 KRW 67,524,881.6 KRW 67,491,119.41 KRW',
+    '3',
+    '2026.08.14 매수 KRW-BTC 1 BTC 0 KRW',
+    '09:00:00 100 KRW 100 KRW 100 KRW',
+  ].join('\n');
+
+  const result = parseUpbitPdfText(text);
+
+  assert.equal(result.executions.length, 3);
+  assert.equal(result.errors.length, 0);
+  assert.equal(result.skippedRowCount, 0);
+  assert.equal(result.executions[1].symbol, 'ONDO');
+});
+
+
+test('PDF 파서는 페이지 번호 같은 단독 숫자 라인을 거래 오류로 세지 않는다', () => {
+  const result = parseUpbitPdfText(
+    [
+      '거래내역서',
+      '1',
+      '2026.08.18 매수 KRW-BTC 1 BTC 0 KRW',
+      '09:00:00 100 KRW 100 KRW 100 KRW',
+      '2',
+      '페이지',
+      '3',
+      '반복 헤더',
+    ].join('\n')
+  );
+  assert.equal(result.executions.length, 1);
+  assert.equal(result.errors.length, 0);
+  assert.equal(result.skippedRowCount > 0, true);
+});

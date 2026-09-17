@@ -25,6 +25,12 @@ export function parseSide(value: string) {
 export function normalizeSymbol(value: string) {
   const raw = value.trim().toUpperCase();
   if (!raw) throw new Error('마켓/종목 값을 인식하지 못했습니다');
+  const hasMarketSeparator = /[-_/]/.test(raw);
+  const isKrwPrefix = raw.startsWith('KRW-') || raw.startsWith('KRW_') || raw.startsWith('KRW/');
+  const isKrwSuffix = raw.endsWith('-KRW') || raw.endsWith('_KRW') || raw.endsWith('/KRW');
+  if (hasMarketSeparator && !isKrwPrefix && !isKrwSuffix) {
+    throw new Error('현재는 업비트 KRW 마켓 CSV만 지원합니다');
+  }
   return raw.replace(/^KRW[-_/]/, '').replace(/[-_/]KRW$/, '');
 }
 

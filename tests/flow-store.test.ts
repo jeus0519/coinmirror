@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import test, { beforeEach } from 'node:test';
 
 import { analyzeCsvInput } from '../src/lib/csv/analyze-csv.ts';
 import {
@@ -21,6 +21,23 @@ test('시작 화면의 자료부터 올리기는 진단 전에도 거래내역 �
   useFlowStore.getState().setStep(3);
 
   assert.equal(useFlowStore.getState().currentStep, 3);
+});
+
+beforeEach(() => {
+  useFlowStore.setState({
+    currentStep: 1,
+    hasDiagnosis: false,
+    hasAnalyzed: false,
+    dataSource: null,
+    subscriptionTier: 'free',
+    subscriptionSnapshots: [],
+    snapshotComparison: null,
+    demoSnapshotComparison: null,
+    suggestedSubscriptionGoal: null,
+    savedSubscriptionGoals: [],
+    diagnosisAnswers: {},
+    tradeAnalysis: null,
+  });
 });
 
 function sampleAnalysis(price: number) {
@@ -269,8 +286,69 @@ test('중복 업로드 데모는 1회차 기준선과 2회차 중복+교차청�
   assert.equal(state.currentStep, 4);
   assert.equal(state.hasAnalyzed, true);
   assert.equal(state.dataSource, 'csv');
-  assert.equal(state.subscriptionSnapshots.length, 2);
-  assert.equal(state.snapshotComparison?.dedupe.duplicateExecutionCount, 1);
-  assert.equal(state.snapshotComparison?.dedupe.contextExecutionCount, 1);
-  assert.match(state.snapshotComparison?.dedupe.copy ?? '', /원가 연결용/);
+  assert.equal(state.subscriptionSnapshots.length, 0);
+  assert.equal(state.demoSnapshotComparison?.dedupe.duplicateExecutionCount, 1);
+  assert.equal(state.demoSnapshotComparison?.dedupe.contextExecutionCount, 1);
+  assert.match(state.demoSnapshotComparison?.dedupe.copy ?? '', /원가 연결용/);
+});
+
+
+test('중복 업로드 데모는 실제 저장 스냅샷을 덮어쓰거나 localStorage에 쓰지 않는다', () => {
+  const storage = memoryStorage();
+  useFlowStore.setState({
+    currentStep: 4,
+    hasDiagnosis: false,
+    hasAnalyzed: true,
+    dataSource: 'csv',
+    diagnosisAnswers: {},
+    tradeAnalysis: sampleAnalysis(120),
+    subscriptionSnapshots: [],
+    snapshotComparison: null,
+    suggestedSubscriptionGoal: null,
+    savedSubscriptionGoals: [],
+  });
+  useFlowStore.getState().saveCurrentAnalysisSnapshot(storage);
+  const persistedBefore = storage.getItem(SUBSCRIPTION_PERSISTENCE_KEY);
+  const realSnapshotsBefore = useFlowStore.getState().subscriptionSnapshots;
+
+  useFlowStore.getState().runDuplicateUploadDemo(storage);
+
+  const state = useFlowStore.getState();
+  assert.equal(storage.getItem(SUBSCRIPTION_PERSISTENCE_KEY), persistedBefore);
+  assert.deepEqual(state.subscriptionSnapshots, realSnapshotsBefore);
+  assert.equal(state.demoSnapshotComparison?.previousId, 'demo-baseline');
+  assert.equal(state.demoSnapshotComparison?.currentId, 'demo-second-upload');
+});
+
+test('저장소 쓰기 실패는 스냅샷 저장 UI 흐름을 예외로 깨뜨리지 않는다', () => {
+  const brokenStorage = {
+    getItem: () => null,
+    setItem: () => {
+      throw new Error('quota exceeded');
+    },
+    removeItem: () => undefined,
+  };
+  useFlowStore.setState({
+    currentStep: 4,
+    hasDiagnosis: false,
+    hasAnalyzed: true,
+    dataSource: 'csv',
+    diagnosisAnswers: {},
+    tradeAnalysis: sampleAnalysis(120),
+    subscriptionSnapshots: [],
+    snapshotComparison: null,
+    suggestedSubscriptionGoal: null,
+    savedSubscriptionGoals: [],
+  });
+
+  assert.doesNotThrow(() => useFlowStore.getState().saveCurrentAnalysisSnapshot(brokenStorage));
+  assert.equal(useFlowStore.getState().subscriptionSnapshots.length, 1);
+});
+
+
+test('앱 부팅 복원은 쿼리 변경으로 반복 실행되어 데모 비교를 지우지 않는다', async () => {
+  const source = await import('node:fs/promises').then((fs) => fs.readFile('src/app/index.tsx', 'utf8'));
+  assert.match(source, /hasBootstrappedRef/);
+  assert.match(source, /if \(params\.demo === 'duplicate-upload'\)[\s\S]*runDuplicateUploadDemo\(\)[\s\S]*router\.replace\('\/'\)[\s\S]*return/);
+  assert.match(source, /restoreSubscriptionState\(\)/);
 });

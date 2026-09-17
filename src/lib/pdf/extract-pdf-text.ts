@@ -26,6 +26,8 @@ export class PdfNoTextLayerError extends Error {
   }
 }
 
+const MAX_PDF_PAGE_COUNT = 30;
+
 type PdfJsItem = { str?: string; hasEOL?: boolean };
 
 type PdfJsModule = {
@@ -117,6 +119,11 @@ export async function extractPdfText(
     });
     try {
       const document = await loadingTask.promise;
+      if (document.numPages > MAX_PDF_PAGE_COUNT) {
+        throw new PdfTextExtractionError(
+          `PDF 페이지가 너무 많아요. ${MAX_PDF_PAGE_COUNT}쪽 이하 파일만 먼저 지원해요.`
+        );
+      }
       const pages: string[] = [];
       for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
         const page = await document.getPage(pageNumber);

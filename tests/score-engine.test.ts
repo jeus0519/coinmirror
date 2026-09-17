@@ -266,14 +266,13 @@ test('표본 미달은 0점이 아니라 측정 중과 ? 축으로 처리한다'
   assert.equal(type.axes.find((axis) => axis.axis === 'loss')?.code, '?');
 });
 
-test('실제 거래내역 분석은 A4 답변이 없어도 자금 배분 축을 기본 50 기준으로 판정한다', () => {
-  const metrics = buildPhase1ScoreMetrics(syntheticFixtures.concentrated, {
-    maxSingleAssetWeightPct: 50,
-  });
+test('A4 답변이 없으면 자금 배분 축은 기본 50으로 가정하지 않고 측정 중으로 둔다', () => {
+  const metrics = buildPhase1ScoreMetrics(syntheticFixtures.concentrated, {});
   const type = buildSampleInvestmentTypeProfile(metrics);
+  const f8 = metrics.find((metric) => metric.id === 'F8');
 
-  assert.equal(type.axes.find((axis) => axis.axis === 'allocation')?.code, 'N');
-  assert.equal(type.code.endsWith('-N'), true);
+  assert.equal(f8?.score, null);
+  assert.equal(type.axes.find((axis) => axis.axis === 'allocation')?.code, '?');
 });
 
 test('F3은 90일(SCORE_CONSTANTS.chaseLookbackDays) 이내의 직전 거래만 추격으로 인정하고, 90일을 초과한 거래는 인정하지 않는다', () => {
@@ -385,4 +384,23 @@ test('FIFO RoundTrip은 partial close 시 매수 수수료를 비례 분배하�
   assert.equal(openLots[0].quantity, 1.5);
   assert.equal(openLots[0].amount, 150);
   assert.equal(openLots[0].fee, 3);       // 4 - 1 = 3
+});
+
+
+test('F1은 이익 보유시간이 1시간 미만이어도 1시간으로 부풀리지 않는다', () => {
+  const executions: any[] = [];
+  for (let i = 0; i < 3; i += 1) {
+    executions.push(
+      { id: `pb${i}`, symbol: `P${i}`, side: 'buy', price: 100, quantity: 1, fee: 0, executedAt: `2026-01-0${i + 1}T09:00:00+09:00` },
+      { id: `ps${i}`, symbol: `P${i}`, side: 'sell', price: 110, quantity: 1, fee: 0, executedAt: `2026-01-0${i + 1}T09:30:00+09:00` },
+    );
+  }
+  for (let i = 0; i < 5; i += 1) {
+    executions.push(
+      { id: `lb${i}`, symbol: `L${i}`, side: 'buy', price: 100, quantity: 1, fee: 0, executedAt: `2026-02-0${i + 1}T09:00:00+09:00` },
+      { id: `ls${i}`, symbol: `L${i}`, side: 'sell', price: 90, quantity: 1, fee: 0, executedAt: `2026-02-0${i + 2}T09:00:00+09:00` },
+    );
+  }
+  const f1 = buildPhase1ScoreMetrics(executions).find((metric) => metric.id === 'F1');
+  assert.equal(f1?.stats['손실/이익 보유시간'], '48.0배');
 });

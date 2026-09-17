@@ -43,6 +43,8 @@ type Notice = {
   offerSample?: boolean;
 };
 
+const MAX_UPLOAD_FILE_BYTES = 10 * 1024 * 1024;
+
 const ACCEPT: Record<UploadFormat, string> = {
   pdf: '.pdf,application/pdf',
   csv: '.csv,text/csv,text/plain,application/vnd.ms-excel',
@@ -316,6 +318,22 @@ export function Step3DataImport() {
     setPdfPassword('');
     setSelectedFileLabel(`${asset.name}${formatBytes(asset.size)}`);
     trackCoinmirrorEvent('upload_attempt', { screen: 'upload', source_format: format });
+
+    if (asset.size && asset.size > MAX_UPLOAD_FILE_BYTES) {
+      trackCoinmirrorEvent('parse_failed', {
+        screen: 'upload',
+        source_format: format,
+        failure_code: 'FILE_TOO_LARGE',
+      });
+      setNotice({
+        tone: 'error',
+        title: '파일이 너무 커요',
+        body: '브라우저에서 안전하게 처리할 수 있도록 10MB 이하의 업비트 PDF/CSV 파일을 올려 주세요.',
+      });
+      setProgress(null);
+      operationGuardRef.current.finish(operation);
+      return;
+    }
 
     if (format === 'pdf' && !isPdfAsset(asset)) {
       trackCoinmirrorEvent('parse_failed', {

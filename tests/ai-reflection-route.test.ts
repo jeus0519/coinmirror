@@ -202,3 +202,42 @@ test('/api/ai-reflection rejects malformed JSON with 400 invalid_request and no 
   assert.equal(called, false);
   assert.equal(json.error, 'invalid_request');
 });
+
+
+test('/api/ai-reflection rejects non-JSON content type and disallowed origins before model call', async () => {
+  const payload = buildAiBehaviorCoachingSafePayload({ generalMbti: 'INTJ', metrics: baseMetrics });
+  let calls = 0;
+  const nonJson = await POST(new Request('https://coinmirror.test/api/ai-reflection', {
+    method: 'POST',
+    headers: { 'content-type': 'text/plain' },
+    body: JSON.stringify(payload),
+  }), { generate: async () => { calls += 1; return {}; } });
+  assert.equal(nonJson.status, 415);
+
+  const badOrigin = await POST(new Request('https://coinmirror.test/api/ai-reflection', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', origin: 'https://evil.example' },
+    body: JSON.stringify(payload),
+  }), { generate: async () => { calls += 1; return {}; } });
+  assert.equal(badOrigin.status, 403);
+  assert.equal(calls, 0);
+});
+
+test('/api/ai-reflection applies a short in-process request budget', async () => {
+  const payload = buildAiBehaviorCoachingSafePayload({ generalMbti: 'INTJ', metrics: baseMetrics });
+  const response = await POST(request(payload), {
+    generate: async () => new Promise((resolve) => {
+      setTimeout(() => resolve({
+        observedPattern: '늦은 응답',
+        reduceAction: '늦은 응답',
+        reinforceAction: '늦은 응답',
+        nextQuestion: '늦은 응답',
+      }), 30);
+    }),
+    timeoutMs: 1,
+  });
+  const json = await response.json();
+  assert.equal(response.status, 200);
+  assert.equal(json.source, 'fallback');
+  assert.equal(json.errorCode, 'timeout');
+});

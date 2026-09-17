@@ -10,6 +10,16 @@ export type SubscriptionPersistenceStorage = {
   removeItem: (key: string) => void;
 };
 
+function isSubscriptionPersistenceStorage(value: unknown): value is SubscriptionPersistenceStorage {
+  if (!value || typeof value !== 'object') return false;
+  const candidate = value as Partial<Record<keyof SubscriptionPersistenceStorage, unknown>>;
+  return (
+    typeof candidate.getItem === 'function' &&
+    typeof candidate.setItem === 'function' &&
+    typeof candidate.removeItem === 'function'
+  );
+}
+
 export type PersistedSubscriptionState = {
   snapshots: SubscriptionSnapshot[];
   goals: SavedSubscriptionGoal[];
@@ -72,14 +82,19 @@ function isPayload(value: unknown): value is PersistedPayload {
 export function persistSubscriptionState(
   storage: SubscriptionPersistenceStorage | null | undefined,
   state: PersistedSubscriptionState
-) {
-  if (!storage) return;
+): boolean {
+  if (!storage) return false;
   const payload: PersistedPayload = {
     version: SUBSCRIPTION_PERSISTENCE_VERSION,
     snapshots: state.snapshots.map(sanitizeSnapshot),
     goals: state.goals.map(sanitizeGoal),
   };
-  storage.setItem(SUBSCRIPTION_PERSISTENCE_KEY, JSON.stringify(payload));
+  try {
+    storage.setItem(SUBSCRIPTION_PERSISTENCE_KEY, JSON.stringify(payload));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function loadPersistedSubscriptionState(
@@ -104,13 +119,17 @@ export function clearPersistedSubscriptionState(
   storage: SubscriptionPersistenceStorage | null | undefined
 ) {
   if (!storage) return;
-  storage.removeItem(SUBSCRIPTION_PERSISTENCE_KEY);
+  try {
+    storage.removeItem(SUBSCRIPTION_PERSISTENCE_KEY);
+  } catch {
+    // 저장소 접근이 차단된 환경에서는 앱 흐름을 유지한다.
+  }
 }
 
 export function getBrowserSubscriptionStorage(): SubscriptionPersistenceStorage | null {
   if (typeof globalThis === 'undefined') return null;
   const maybeWindow = globalThis as typeof globalThis & {
-    localStorage?: SubscriptionPersistenceStorage;
+    localStorage?: unknown;
   };
-  return maybeWindow.localStorage ?? null;
+  return isSubscriptionPersistenceStorage(maybeWindow.localStorage) ? maybeWindow.localStorage : null;
 }

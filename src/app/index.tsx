@@ -1,7 +1,7 @@
 import { Image, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useEffect } from 'react';
-import { useLocalSearchParams } from 'expo-router';
+import { useEffect, useRef } from 'react';
+import { router, useLocalSearchParams } from 'expo-router';
 
 import { Step1Start } from '@/components/steps/step-1-start';
 import { Step2Diagnosis } from '@/components/steps/step-2-diagnosis';
@@ -20,9 +20,22 @@ export default function AppScreen() {
   const currentStep = useFlowStore((s) => s.currentStep);
   const setStep = useFlowStore((s) => s.setStep);
   const runDuplicateUploadDemo = useFlowStore((s) => s.runDuplicateUploadDemo);
+  const restoreSubscriptionState = useFlowStore((s) => s.restoreSubscriptionState);
   const params = useLocalSearchParams<{ step?: string; demo?: string; source?: string; r?: string }>();
+  const hasBootstrappedRef = useRef(false);
 
   useEffect(() => {
+    if (hasBootstrappedRef.current) return;
+    hasBootstrappedRef.current = true;
+
+    if (params.demo === 'duplicate-upload') {
+      runDuplicateUploadDemo();
+      router.replace('/');
+      return;
+    }
+
+    restoreSubscriptionState();
+
     if (params.source === 'reanalysis-email') {
       trackCoinmirrorEvent('reanalysis_return', {
         screen: 'landing',
@@ -31,12 +44,8 @@ export default function AppScreen() {
       });
     }
 
-    if (params.demo === 'duplicate-upload') {
-      runDuplicateUploadDemo();
-      return;
-    }
     if (params.step === 'upload') setStep(3);
-  }, [params.demo, params.r, params.source, params.step, runDuplicateUploadDemo, setStep]);
+  }, [params.demo, params.r, params.source, params.step, restoreSubscriptionState, runDuplicateUploadDemo, setStep]);
 
   return (
     <SafeAreaView className="flex-1 bg-background" edges={['top']} style={{ flex: 1 }}>
