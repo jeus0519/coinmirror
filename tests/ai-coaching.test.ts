@@ -30,7 +30,8 @@ test('AI 행동코칭은 투자 조언·가격 예측·매수매도 지시 문�
 
   assert.doesNotMatch(text, /매수하|매도하|사세요|파세요|목표가|가격 예측|수익 보장|포트폴리오 비중/);
   assert.match(coaching.safetyCopy, /매수·매도 추천이 아니라/);
-  assert.match(coaching.safetyCopy, /원본 거래내역과 PDF 비밀번호는 AI로 보내지 않아요/);
+  assert.match(coaching.patternCard.safetyCopy, /매수·매도 추천이 아닌 과거 기록 회고/);
+  assert.doesNotMatch(coaching.patternCard.safetyCopy, /원본 거래내역과 PDF 비밀번호/);
 });
 
 
@@ -96,4 +97,31 @@ test('Phase 2.5 실제 AI 호출용 payload는 비식별 요약만 포함한다'
 
   assert.doesNotMatch(text, /symbol|evidence|stats|fact|when|fileName|pdfPassword|email|orderId|amount|quantity|price|raw/i);
   assert.doesNotMatch(text, /ARB|SOL|XRP|120,633|07-15|08-09/);
+});
+
+
+test('AI 행동코칭은 패턴 하나를 깊게 보는 5블록 카드 view model을 만든다', () => {
+  const coaching = buildAiBehaviorCoaching({ generalMbti: 'INFJ', metrics: baseMetrics, comparisonCopy: '손실이면 빨리 정리한다 | 손실 거래를 더 오래 보유' });
+
+  assert.equal(coaching.title, 'AI 행동코칭');
+  assert.equal(coaching.patternCard.title, '이번 기록에서 가장 선명했던 패턴');
+  assert.match(coaching.patternCard.headline.title, /이익|손실|기록/);
+  assert.match(coaching.patternCard.selfGap?.title ?? '', /내가 답한 나 vs 기록된 나/);
+  assert.match(coaching.patternCard.patternName.label, /이 패턴의 이름/);
+  assert.match(coaching.patternCard.patternName.name, /처분효과|FOMO|만회 심리|확증편향|즉시 보상|감정 피로/);
+  assert.match(coaching.patternCard.strength.title, /반전/);
+  assert.match(coaching.patternCard.experiment.title, /다음 달 실험 1개/);
+  assert.match(coaching.patternCard.mbtiAnalogy?.title ?? '', /재미로 보는 비유/);
+  assert.match(coaching.patternCard.mbtiAnalogy?.body ?? '', /INFJ/);
+  assert.match(coaching.patternCard.safetyCopy, /매수·매도 추천이 아닌 과거 기록 회고/);
+});
+
+test('AI 행동코칭 5블록 카드는 내부 지표명과 반복 안전 문구 대신 사용자 언어를 우선한다', () => {
+  const coaching = buildAiBehaviorCoaching({ generalMbti: 'INFJ', metrics: baseMetrics });
+  const serialized = JSON.stringify(coaching.patternCard);
+
+  assert.doesNotMatch(serialized, /직전 거래가 대비 높은 매수 지표/);
+  assert.doesNotMatch(serialized, /AI 문장 생성이 잠시 어려워/);
+  assert.doesNotMatch(serialized, /원본 거래내역과 PDF 비밀번호/);
+  assert.doesNotMatch(serialized, /한 줄 메모.*한 줄 메모.*한 줄 메모/s);
 });

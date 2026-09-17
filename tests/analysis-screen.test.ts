@@ -235,10 +235,9 @@ test('분석 화면은 거래 개요 직후 투자거울 타입을 먼저 보여
   assert.ok(source.indexOf('행동 점수') < aiHeadingIndex);
   assert.ok(aiHeadingIndex < source.indexOf('이번 분석에서 눈에 띄는 패턴'));
   assert.match(source, /이번 기록을 바탕으로 정리한 AI 회고/);
-  assert.match(source, /줄여볼 행동/);
-  assert.match(source, /유지할 행동/);
-  assert.match(source, /다음 달 확인 질문/);
-  assert.match(source, /원본 거래내역과 PDF 비밀번호는 AI로 보내지 않아요/);
+  assert.match(source, /patternCard/);
+  assert.match(source, /다음 달 실험 1개/);
+  assert.match(source, /patternCard\.safetyCopy/);
 });
 
 
@@ -280,7 +279,7 @@ test('AI 행동코칭 받기 버튼은 safe payload로 api를 호출하고 실�
   assert.doesNotMatch(source, /fetch\('\/api\/ai-reflection'/);
   assert.match(source, /aiReflectionOutput/);
   assert.match(source, /setAiReflectionNotice/);
-  assert.match(source, /기본 행동코칭을 먼저 보여드릴게요/);
+  assert.match(source, /기본 회고 카드로 먼저 보여드릴게요/);
 });
 
 
@@ -292,4 +291,19 @@ test('AI 행동코칭 받기는 한 분석 결과에서 한 번만 요청하도�
   assert.match(source, /setAiReflectionRequestFingerprint\(currentAnalysisFingerprint\)/);
   assert.match(source, /이미 이번 분석에서 AI 행동코칭을 정리했어요/);
   assert.match(source, /disabled=\{isAiReflectionLoading \|\| aiReflectionRequestLocked\}/);
+});
+
+
+test('분석 화면 AI 행동코칭은 나열형 지표 대신 5블록 패턴 카드 구조를 렌더링한다', async () => {
+  const source = await readFile(STEP_2, 'utf8');
+
+  assert.match(source, /patternCard/);
+  assert.match(source, /patternCard\.title/);
+  assert.match(source, /patternCard\.selfGap/);
+  assert.match(source, /patternCard\.patternName/);
+  assert.match(source, /patternCard\.strength/);
+  assert.match(source, /다음 달 실험 1개/);
+  assert.match(source, /patternCard\.mbtiAnalogy/);
+  assert.match(source, /patternCard\.safetyCopy/);
+  assert.doesNotMatch(source, />핵심 지표에서 눈에 띈 점<|>줄여볼 행동<|>유지할 행동</);
 });

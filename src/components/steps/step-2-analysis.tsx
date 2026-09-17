@@ -87,14 +87,20 @@ export function Step2Analysis() {
   );
   const derivedSeries = analysis.derivedSeries;
   const hasAiReflectionSignal = analysis.metrics.some((metric) => metric.measured && metric.score !== null);
+  const expectationComparisons = useMemo(
+    () => buildExpectationComparisons(diagnosisAnswers, analysis.expectationActuals),
+    [analysis.expectationActuals, diagnosisAnswers]
+  );
   const aiBehaviorCoaching = useMemo(
     () =>
       buildAiBehaviorCoaching({
         generalMbti: analysis.investmentType.generalMbti,
         metrics: analysis.metrics,
         comparisonCopy: analysis.investmentType.comparisonCopy,
+        derivedSeries,
+        expectationComparisons,
       }),
-    [analysis.investmentType.comparisonCopy, analysis.investmentType.generalMbti, analysis.metrics]
+    [analysis.investmentType.comparisonCopy, analysis.investmentType.generalMbti, analysis.metrics, derivedSeries, expectationComparisons]
   );
   const aiBehaviorCoachingPayload = useMemo(
     () =>
@@ -104,10 +110,6 @@ export function Step2Analysis() {
         comparisonCopy: analysis.investmentType.comparisonCopy,
       }),
     [analysis.investmentType.comparisonCopy, analysis.investmentType.generalMbti, analysis.metrics]
-  );
-  const expectationComparisons = useMemo(
-    () => buildExpectationComparisons(diagnosisAnswers, analysis.expectationActuals),
-    [analysis.expectationActuals, diagnosisAnswers]
   );
   const recordedShareCard = buildInvestmentTypeShareCard(analysis.investmentType, 'recorded');
   const monthlyHabitReport = useMemo(
@@ -196,10 +198,10 @@ export function Step2Analysis() {
       if (result.success) {
         setAiReflectionOutputState({ fingerprint: currentAnalysisFingerprint, output: result.output });
       } else {
-        setAiReflectionNotice('AI 문장 생성이 잠시 어려워 기본 행동코칭을 먼저 보여드릴게요.');
+        setAiReflectionNotice('이번에는 기본 회고 카드로 먼저 보여드릴게요.');
       }
     } catch {
-      setAiReflectionNotice('AI 문장 생성이 잠시 어려워 기본 행동코칭을 먼저 보여드릴게요.');
+      setAiReflectionNotice('이번에는 기본 회고 카드로 먼저 보여드릴게요.');
     } finally {
       setIsAiReflectionLoading(false);
     }
@@ -419,38 +421,76 @@ export function Step2Analysis() {
               {aiReflectionNotice && (
                 <Text className="text-xs leading-5 text-muted-foreground">{aiReflectionNotice}</Text>
               )}
-              <Text className="text-sm leading-6 text-muted-foreground">
-                {aiReflectionOutput?.observedPattern ?? aiBehaviorCoaching.intro}
-              </Text>
-              <View className="gap-2 rounded-2xl bg-background/80 p-3">
-                <Text className="text-xs font-extrabold text-foreground">핵심 지표에서 눈에 띈 점</Text>
-                {aiBehaviorCoaching.keySignals.map((signal) => (
-                  <Text key={signal} className="text-[11px] leading-4 text-muted-foreground">
-                    • {signal}
+              <Text className="text-sm leading-6 text-muted-foreground">{aiBehaviorCoaching.intro}</Text>
+              <View className="gap-3 rounded-3xl border border-primary/20 bg-background/80 p-3.5">
+                <View className="gap-2">
+                  <Text className="text-sm font-extrabold text-foreground">
+                    {aiBehaviorCoaching.patternCard.title}
                   </Text>
-                ))}
-              </View>
-              <View className="gap-2 rounded-2xl bg-background/80 p-3">
-                <Text className="text-xs font-extrabold text-foreground">줄여볼 행동</Text>
-                {(aiReflectionOutput ? [aiReflectionOutput.reduceAction] : aiBehaviorCoaching.reduceActions).map((action) => (
-                  <Text key={action} className="text-[11px] leading-4 text-muted-foreground">
-                    • {action}
+                  <View className="gap-1.5 rounded-2xl bg-primary/10 p-3">
+                    <Text className="text-base font-extrabold leading-6 text-foreground">
+                      {aiBehaviorCoaching.patternCard.headline.title}
+                    </Text>
+                    <Text className="text-xs leading-5 text-muted-foreground">
+                      ▇▇ {aiBehaviorCoaching.patternCard.headline.primaryLabel}
+                    </Text>
+                    {aiBehaviorCoaching.patternCard.headline.secondaryLabel && (
+                      <Text className="text-xs leading-5 text-muted-foreground">
+                        ▇▇▇▇ {aiBehaviorCoaching.patternCard.headline.secondaryLabel}
+                      </Text>
+                    )}
+                    <Text className="text-xs leading-5 text-muted-foreground">
+                      {aiBehaviorCoaching.patternCard.headline.summary}
+                    </Text>
+                  </View>
+                </View>
+
+                {aiBehaviorCoaching.patternCard.selfGap && (
+                  <View className="gap-1.5 rounded-2xl bg-muted p-3">
+                    <Text className="text-xs font-extrabold text-foreground">내가 답한 나 vs 기록된 나</Text>
+                    <Text className="text-xs leading-5 text-muted-foreground">
+                      {aiBehaviorCoaching.patternCard.selfGap.expected} │ {aiBehaviorCoaching.patternCard.selfGap.actual}
+                    </Text>
+                    <Text className="text-xs leading-5 text-muted-foreground">
+                      {aiBehaviorCoaching.patternCard.selfGap.summary}
+                    </Text>
+                  </View>
+                )}
+
+                <View className="gap-1.5 rounded-2xl bg-background p-3">
+                  <Text className="text-xs font-extrabold text-primary">
+                    이 패턴의 이름: {aiBehaviorCoaching.patternCard.patternName.name}
                   </Text>
-                ))}
-              </View>
-              <View className="gap-2 rounded-2xl bg-background/80 p-3">
-                <Text className="text-xs font-extrabold text-foreground">유지할 행동</Text>
-                {(aiReflectionOutput ? [aiReflectionOutput.reinforceAction] : aiBehaviorCoaching.reinforceActions).map((action) => (
-                  <Text key={action} className="text-[11px] leading-4 text-muted-foreground">
-                    • {action}
+                  <Text className="text-xs leading-5 text-muted-foreground">
+                    {aiBehaviorCoaching.patternCard.patternName.explanation}
                   </Text>
-                ))}
-              </View>
-              <View className="gap-1.5 rounded-2xl border border-primary/20 bg-background/80 p-3">
-                <Text className="text-xs font-extrabold text-primary">다음 달 확인 질문</Text>
-                <Text className="text-xs leading-5 text-foreground">
-                  {aiReflectionOutput?.nextQuestion ?? aiBehaviorCoaching.nextQuestion}
-                </Text>
+                </View>
+
+                <View className="gap-1.5 rounded-2xl bg-background p-3">
+                  <Text className="text-xs font-extrabold text-foreground">{aiBehaviorCoaching.patternCard.strength.title}</Text>
+                  <Text className="text-xs leading-5 text-muted-foreground">
+                    {aiBehaviorCoaching.patternCard.strength.evidence}
+                  </Text>
+                </View>
+
+                <View className="gap-1.5 rounded-2xl border border-primary/20 bg-background p-3">
+                  <Text className="text-xs font-extrabold text-primary">다음 달 실험 1개</Text>
+                  <Text className="text-xs leading-5 text-foreground">
+                    {aiBehaviorCoaching.patternCard.experiment.action}
+                  </Text>
+                  <Text className="text-xs leading-5 text-muted-foreground">
+                    {aiBehaviorCoaching.patternCard.experiment.nextUploadPromise}
+                  </Text>
+                </View>
+
+                {aiBehaviorCoaching.patternCard.mbtiAnalogy && (
+                  <View className="gap-1.5 rounded-2xl bg-muted p-3">
+                    <Text className="text-xs font-extrabold text-foreground">재미로 보는 비유</Text>
+                    <Text className="text-xs leading-5 text-muted-foreground">
+                      {aiBehaviorCoaching.patternCard.mbtiAnalogy.body} {aiBehaviorCoaching.patternCard.mbtiAnalogy.disclaimer}
+                    </Text>
+                  </View>
+                )}
               </View>
             </>
           ) : (
@@ -459,7 +499,7 @@ export function Step2Analysis() {
             </Button>
           )}
           <Text className="text-[11px] leading-4 text-muted-foreground">
-            원본 거래내역과 PDF 비밀번호는 AI로 보내지 않아요. {aiBehaviorCoaching.safetyCopy}
+            {aiBehaviorCoaching.patternCard.safetyCopy}
           </Text>
         </CardContent>
       </Card>

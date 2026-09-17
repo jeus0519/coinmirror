@@ -1,5 +1,8 @@
+import { buildAiPatternCard, type AiPatternCard as CanonicalAiPatternCard } from './ai-pattern-card';
 import { type GeneralMbti } from './investment-type';
 import { type Metric, displayMetricName, scoreLevel } from './mock-metrics';
+import { type ExpectationComparison } from './onboarding-diagnosis';
+import { type Phase1DerivedSeries } from './score-engine';
 
 export type AiBehaviorCoachingType =
   | 'loss_management'
@@ -17,6 +20,8 @@ export type AiBehaviorCoachingInput = {
   generalMbti?: GeneralMbti;
   metrics: readonly Metric[];
   comparisonCopy?: string;
+  derivedSeries?: Phase1DerivedSeries;
+  expectationComparisons?: readonly ExpectationComparison[];
 };
 
 export type AiBehaviorCoachingSafePayload = {
@@ -34,6 +39,42 @@ export type AiBehaviorCoachingSafePayload = {
   requestedOutput: ['observedPattern', 'reduceAction', 'reinforceAction', 'nextQuestion'];
 };
 
+export type AiPatternCard = {
+  title: string;
+  headline: {
+    title: string;
+    primaryLabel: string;
+    secondaryLabel?: string;
+    summary: string;
+  };
+  selfGap?: {
+    title: '내가 답한 나 vs 기록된 나';
+    expected: string;
+    actual: string;
+    summary: string;
+  };
+  patternName: {
+    label: '이 패턴의 이름';
+    name: string;
+    explanation: string;
+  };
+  strength: {
+    title: string;
+    evidence: string;
+  };
+  experiment: {
+    title: '다음 달 실험 1개';
+    action: string;
+    nextUploadPromise: string;
+  };
+  mbtiAnalogy?: {
+    title: '재미로 보는 비유';
+    body: string;
+    disclaimer: string;
+  };
+  safetyCopy: string;
+};
+
 export type AiBehaviorCoaching = {
   coachingType: AiBehaviorCoachingType;
   title: string;
@@ -44,6 +85,7 @@ export type AiBehaviorCoaching = {
   reinforceActions: string[];
   nextQuestion: string;
   safetyCopy: string;
+  patternCard: AiPatternCard;
 };
 
 function measuredMetrics(metrics: readonly Metric[]) {
@@ -165,6 +207,222 @@ function reinforceActionFor(metric: Metric | undefined) {
   }
 }
 
+
+function customerMetricName(metric: Metric | undefined) {
+  if (!metric) return '이번 기록';
+  switch (metric.id) {
+    case 'F1':
+      return '손실을 오래 들고 있던 흐름';
+    case 'F2':
+      return '이익을 정리하는 리듬';
+    case 'F3':
+      return '오른 뒤 따라 산 기록';
+    case 'F4':
+      return '하락 중 추가로 담은 기록';
+    case 'F5':
+      return '손실 뒤 바로 다시 들어간 기록';
+    case 'F6':
+      return '거래가 몰린 날';
+    case 'F7':
+      return '새벽 시간대 거래';
+    case 'F8':
+      return '한쪽으로 쏠린 매수 기록';
+    case 'F9':
+      return '본전 근처에서 정리한 기록';
+    default:
+      return '기록 속 반복 습관';
+  }
+}
+
+function patternNameFor(metric: Metric | undefined) {
+  switch (metric?.id) {
+    case 'F1':
+    case 'F2':
+    case 'F9':
+      return '처분효과';
+    case 'F3':
+      return 'FOMO';
+    case 'F4':
+    case 'F8':
+      return '확증편향';
+    case 'F5':
+      return '만회 심리';
+    case 'F6':
+      return '즉시 보상';
+    case 'F7':
+      return '감정 피로 시간대 거래';
+    default:
+      return '자기인식 갭';
+  }
+}
+
+function patternExplanationFor(metric: Metric | undefined) {
+  switch (metric?.id) {
+    case 'F1':
+      return '손실을 확정하는 순간의 불편함 때문에 결정을 미루는, 사람이라면 흔히 겪는 반응이에요. 판단이 느린 것이라기보다 희망 쪽에 무게가 실린 흐름에 가까워요.';
+    case 'F3':
+      return '기회를 놓칠까 봐 몸이 먼저 반응하는 흐름이에요. 틀렸다는 뜻이 아니라, 놓친 기회를 빨리 되찾고 싶은 마음이 커진 장면으로 볼 수 있어요.';
+    case 'F5':
+      return '손실 뒤에 마음이 바로 다음 기회를 찾는 반응이에요. 손실의 불편함을 빨리 덜어내고 싶은 자연스러운 만회 심리로 볼 수 있어요.';
+    case 'F6':
+      return '거래가 몰리는 날에는 확신과 흥분이 같이 커질 수 있어요. 능력 문제가 아니라 즉시 확인하고 싶은 마음이 강해진 신호일 수 있어요.';
+    case 'F8':
+      return '한쪽 근거에 마음이 실리면 반대 근거보다 내가 맞다고 보는 정보가 더 크게 보일 수 있어요. 확신이 커진 순간을 돌아보자는 뜻이에요.';
+    default:
+      return '기록은 성격을 단정하지 않고 반복된 행동의 단서만 보여줘요. 나를 탓하기보다 다음에 같은 장면을 알아차리기 위한 이름표로 보면 좋아요.';
+  }
+}
+
+function firstStat(metric: Metric | undefined) {
+  const entry = Object.entries(metric?.stats ?? {})[0];
+  return entry ? `${entry[0]} ${entry[1]}` : undefined;
+}
+
+function headlineFor(metric: Metric | undefined) {
+  const stat = firstStat(metric);
+  const name = customerMetricName(metric);
+  return {
+    title: stat ? `기록에서 ${stat}이 가장 먼저 보였어요` : `기록에서 ${name}이 가장 먼저 보였어요`,
+    primaryLabel: stat ?? `${name} 관찰 중`,
+    secondaryLabel: metric?.score !== null && metric?.score !== undefined ? `행동 점수 ${metric.score}점` : undefined,
+    summary: metric?.headline ?? '아직 숫자로 단정하기보다 다음 기록에서 반복 여부를 보는 단계예요.',
+  };
+}
+
+function selfGapFor(comparisonCopy: string | undefined) {
+  if (!comparisonCopy) return undefined;
+  const [expectedRaw, actualRaw] = comparisonCopy.split('|').map((item) => item.trim()).filter(Boolean);
+  return {
+    title: '내가 답한 나 vs 기록된 나' as const,
+    expected: expectedRaw ?? '설문에서 답한 나',
+    actual: actualRaw ?? '기록 속 나',
+    summary: '아하 포인트는 평가가 아니라, 내가 믿던 나와 기록 속 행동이 어긋난 지점을 찾는 데 있어요.',
+  };
+}
+
+function strengthFor(metric: Metric | undefined) {
+  if (!metric) {
+    return {
+      title: '반전: 이미 잘하고 있는 것',
+      evidence: '표본이 부족한 지표를 억지로 단정하지 않은 점은 좋은 출발이에요. 기록이 더 쌓이면 강점도 더 선명해져요.',
+    };
+  }
+  if (metric.id === 'F7') {
+    return {
+      title: '반전: 이미 잘하고 있는 것',
+      evidence: `${firstStat(metric) ?? '새벽 시간대 거래 비중이 낮은 편이에요'}. 감정이 흔들리기 쉬운 시간을 피한 건 이미 잘하고 있는 것 중 하나예요.`,
+    };
+  }
+  return {
+    title: '반전: 이미 잘하고 있는 것',
+    evidence: `${customerMetricName(metric)}에서는 비교적 안정적인 흐름이 보였어요. 잘한 부분도 같이 봐야 다음 달 실험을 이어가기 쉬워요.`,
+  };
+}
+
+function experimentFor(metric: Metric | undefined) {
+  switch (metric?.id) {
+    case 'F1':
+      return {
+        title: '다음 달 실험 1개' as const,
+        action: '손실 상태에서 정리 여부를 고민할 때 “지금 새로 시작해도 같은 선택을 할까?”를 한 번 적어보세요.',
+        nextUploadPromise: '다음 업로드 때 손실 보유기간이 줄었는지 비교해 드릴게요.',
+      };
+    case 'F3':
+      return {
+        title: '다음 달 실험 1개' as const,
+        action: '오른 뒤 따라 들어가고 싶을 때 “지금 놓친 기회를 되찾고 싶은 마음인가?”를 한 번 적어보세요.',
+        nextUploadPromise: '다음 업로드 때 오른 뒤 따라 산 기록이 줄었는지 비교해 드릴게요.',
+      };
+    case 'F5':
+      return {
+        title: '다음 달 실험 1개' as const,
+        action: '손실을 확정한 직후에는 바로 다음 거래를 찾기 전에 “지금 만회하고 싶은가?”를 한 번 적어보세요.',
+        nextUploadPromise: '다음 업로드 때 손실 뒤 재진입 간격이 달라졌는지 비교해 드릴게요.',
+      };
+    default:
+      return {
+        title: '다음 달 실험 1개' as const,
+        action: '같은 상황이 다시 오면 바로 행동하기 전에 “지금 감정이 먼저 움직였나, 기준이 먼저 있었나?”를 한 번 적어보세요.',
+        nextUploadPromise: '다음 업로드 때 같은 패턴이 줄었는지 비교해 드릴게요.',
+      };
+  }
+}
+
+function mbtiAnalogyFor(mbti: GeneralMbti | undefined, metric: Metric | undefined) {
+  if (!mbti || mbti === 'unknown' || mbti === 'no_input') return undefined;
+  const mode = metric?.id === 'F1' ? '끝까지 믿어주는 보호자 모드' : metric?.id === 'F3' ? '기회를 놓치기 싫은 추적자 모드' : '기록을 다시 확인하는 관찰자 모드';
+  return {
+    title: '재미로 보는 비유' as const,
+    body: `평소 ${mbti}라고 답했다면, 이번 기록에서는 “${mode}”가 살짝 보였어요.`,
+    disclaimer: '성격 진단이 아니라 재미용 비유예요.',
+  };
+}
+
+
+function adaptCanonicalPatternCard(card: CanonicalAiPatternCard): AiPatternCard {
+  return {
+    title: card.title,
+    headline: {
+      title: card.headline.title,
+      primaryLabel: card.headline.profitLabel ?? card.headline.title,
+      secondaryLabel: card.headline.lossLabel,
+      summary: [card.headline.profitLabel, card.headline.lossLabel].filter(Boolean).join(' · ') || card.headline.title,
+    },
+    selfGap: card.selfGap
+      ? {
+          title: '내가 답한 나 vs 기록된 나',
+          expected: card.selfGap.expected,
+          actual: card.selfGap.actual,
+          summary: card.selfGap.summary,
+        }
+      : undefined,
+    patternName: {
+      label: '이 패턴의 이름',
+      name: card.pattern.name,
+      explanation: card.pattern.explanation,
+    },
+    strength: card.strength,
+    experiment: {
+      title: '다음 달 실험 1개',
+      action: card.experiment.action,
+      nextUploadPromise: card.experiment.nextUploadPromise,
+    },
+    mbtiAnalogy: card.mbtiAnalogy
+      ? {
+          title: '재미로 보는 비유',
+          body: card.mbtiAnalogy.text.replace(/^재미로 보는 비유:\s*/, ''),
+          disclaimer: card.mbtiAnalogy.disclaimer,
+        }
+      : undefined,
+    safetyCopy: card.safetyCopy,
+  };
+}
+
+function buildPatternCard(input: AiBehaviorCoachingInput, primaryWeak: Metric | undefined, primaryStrong: Metric | undefined): AiPatternCard {
+  if (input.derivedSeries && input.expectationComparisons) {
+    return adaptCanonicalPatternCard(buildAiPatternCard({
+      generalMbti: input.generalMbti,
+      metrics: input.metrics,
+      derivedSeries: input.derivedSeries,
+      expectationComparisons: input.expectationComparisons,
+    }));
+  }
+  return {
+    title: '이번 기록에서 가장 선명했던 패턴',
+    headline: headlineFor(primaryWeak),
+    selfGap: selfGapFor(input.comparisonCopy),
+    patternName: {
+      label: '이 패턴의 이름',
+      name: patternNameFor(primaryWeak),
+      explanation: patternExplanationFor(primaryWeak),
+    },
+    strength: strengthFor(primaryStrong),
+    experiment: experimentFor(primaryWeak),
+    mbtiAnalogy: mbtiAnalogyFor(input.generalMbti, primaryWeak),
+    safetyCopy: '매수·매도 추천이 아닌 과거 기록 회고입니다.',
+  };
+}
+
 export function buildAiBehaviorCoaching(input: AiBehaviorCoachingInput): AiBehaviorCoaching {
   const weakest = weakestMetrics(input.metrics);
   const strongest = strongestMetrics(input.metrics);
@@ -186,7 +444,7 @@ export function buildAiBehaviorCoaching(input: AiBehaviorCoachingInput): AiBehav
     reduceActions: [reduceActionFor(primaryWeak)],
     reinforceActions: [reinforceActionFor(primaryStrong)],
     nextQuestion: `다음 달 실험: “${displayMetricName(primaryWeak ?? primaryStrong ?? input.metrics[0])} 상황에서 내가 먼저 느낀 감정은 무엇이었고, 그때의 확인 질문을 한 줄 메모로 남겼을까요?”를 다시 확인해보세요.`,
-    safetyCopy:
-      '매수·매도 추천이 아니라 과거 거래 기록을 바탕으로 한 행동 회고입니다. 원본 거래내역과 PDF 비밀번호는 AI로 보내지 않아요.',
+    safetyCopy: '매수·매도 추천이 아니라 과거 거래 기록을 바탕으로 한 행동 회고입니다.',
+    patternCard: buildPatternCard(input, primaryWeak, primaryStrong),
   };
 }
