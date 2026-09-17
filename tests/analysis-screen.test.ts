@@ -280,13 +280,3 @@ test('AI 행동코칭 받기 버튼은 safe payload로 api를 호출하고 실�
   assert.match(source, /setAiReflectionNotice/);
   assert.match(source, /기본 행동코칭을 먼저 보여드릴게요/);
 });
-
-
-test('복원된 요약만 있는 상태는 샘플 분석 대신 전용 안내 화면을 보여준다', async () => {
-  const source = await readFile(STEP_2, 'utf8');
-
-  assert.match(source, /dataSource === 'restored-summary' && !tradeAnalysis/);
-  assert.match(source, /저장된 요약을 복원했어요/);
-  assert.match(source, /원본 거래내역은 저장하지 않아요/);
-  assert.match(source, /상세 점수와 차트는 PDF\/CSV를 다시 올리면 볼 수 있어요/);
-});

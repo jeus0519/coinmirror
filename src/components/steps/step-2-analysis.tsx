@@ -212,60 +212,6 @@ export function Step2Analysis() {
     await Linking.openURL(feedbackFormUrl);
   }
 
-  if (dataSource === 'restored-summary' && !tradeAnalysis) {
-    const restoredSnapshot = subscriptionSnapshots.at(-1) ?? null;
-    return (
-      <ScrollView className="flex-1" contentContainerClassName="gap-6 p-4 pb-12">
-        <View className="gap-2">
-          <View className="flex-row items-center justify-between gap-2">
-            <View className="flex-row items-center gap-2">
-              <Text className="text-lg font-extrabold text-foreground">기록 분석</Text>
-              <Badge variant="outline">
-                <Text>저장 요약</Text>
-              </Badge>
-            </View>
-            <Button size="sm" variant="ghost" onPress={() => setStep(3)}>
-              <Text className="text-xs text-muted-foreground">PDF/CSV 다시 올리기</Text>
-            </Button>
-          </View>
-          <Card className="border-primary/30 bg-primary/5">
-            <CardContent className="gap-3 pt-2">
-              <Text className="text-base font-extrabold text-foreground">저장된 요약을 복원했어요</Text>
-              <Text className="text-sm leading-6 text-muted-foreground">
-                코인미러는 원본 거래내역은 저장하지 않아요. 그래서 재방문 때는 브라우저에 저장된 기준선·목표·요약만 복원하고, 상세 점수와 차트는 PDF/CSV를 다시 올리면 볼 수 있어요.
-              </Text>
-              {restoredSnapshot && (
-                <View className="gap-1 rounded-2xl bg-background/80 p-3">
-                  <Text className="text-xs font-extrabold text-foreground">복원된 마지막 요약</Text>
-                  <Text className="text-[11px] leading-4 text-muted-foreground">
-                    {restoredSnapshot.periodLabel} · {restoredSnapshot.investmentTypeTitle} · {restoredSnapshot.sourceFormat.toUpperCase()} 요약
-                  </Text>
-                </View>
-              )}
-              <Button onPress={() => setStep(3)}>
-                <Text>PDF/CSV 다시 올리고 상세 분석 보기</Text>
-              </Button>
-            </CardContent>
-          </Card>
-        </View>
-
-        {subscriptionSnapshots.length > 0 && (
-          <Card>
-            <CardContent className="gap-2 pt-2">
-              <Text className="text-sm font-extrabold text-foreground">로컬에 저장된 비교 기준</Text>
-              <Text className="text-xs leading-5 text-muted-foreground">
-                저장된 요약 {subscriptionSnapshots.length}개와 목표 {savedSubscriptionGoals.length}개가 이 브라우저에 남아 있어요. 원본 파일과 PDF 비밀번호는 저장하지 않았습니다.
-              </Text>
-              <Button variant="outline" onPress={handleClearLocalSummary}>
-                <Text>브라우저 저장 요약 삭제</Text>
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-      </ScrollView>
-    );
-  }
-
   return (
     <ScrollView className="flex-1" contentContainerClassName="gap-6 p-4 pb-12">
       <View className="gap-2">
