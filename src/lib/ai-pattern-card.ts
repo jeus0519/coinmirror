@@ -59,6 +59,24 @@ function formatDays(hours: number | null) {
   return `${(hours / 24).toFixed(1)}일`;
 }
 
+function customerMetricName(metric: Metric | undefined) {
+  if (!metric) return '기록 속 반복 습관';
+  switch (metric.id) {
+    case 'F3':
+      return '오른 뒤 따라 산 기록';
+    case 'F5':
+      return '손실 뒤 바로 다시 들어간 기록';
+    case 'F8':
+      return '한쪽으로 쏠린 매수 기록';
+    case 'F7':
+      return '새벽 시간대 거래';
+    case 'F1':
+      return '손실을 오래 들고 있던 흐름';
+    default:
+      return displayMetricName(metric);
+  }
+}
+
 function holdingGap(input: AiPatternCardInput) {
   const profit = input.derivedSeries.medianHoldingHours.profit;
   const loss = input.derivedSeries.medianHoldingHours.loss;
@@ -147,6 +165,27 @@ function experimentFor(patternName: string) {
       nextUploadPromise: '다음 업로드 때 손실 보유기간이 줄었는지 비교해 드릴게요.',
     };
   }
+  if (patternName === 'FOMO') {
+    return {
+      title: '다음 달 실험 1개',
+      action: '오른 뒤 따라 들어가고 싶을 때 “지금 놓친 기회를 되찾고 싶은 마음인가?”를 한 번 적어보세요.',
+      nextUploadPromise: '다음 업로드 때 오른 뒤 따라 산 기록이 줄었는지 비교해 드릴게요.',
+    };
+  }
+  if (patternName === '만회 심리') {
+    return {
+      title: '다음 달 실험 1개',
+      action: '손실을 확정한 직후에는 바로 다음 거래를 찾기 전에 “지금 만회하고 싶은가?”를 한 번 적어보세요.',
+      nextUploadPromise: '다음 업로드 때 손실 뒤 재진입 간격이 달라졌는지 비교해 드릴게요.',
+    };
+  }
+  if (patternName === '확증편향') {
+    return {
+      title: '다음 달 실험 1개',
+      action: '한쪽으로 쏠리는 느낌이 들면 “내 근거와 반대 근거를 각각 하나씩 적었나?”를 먼저 확인해보세요.',
+      nextUploadPromise: '다음 업로드 때 한쪽으로 쏠린 기록이 줄었는지 비교해 드릴게요.',
+    };
+  }
   return {
     title: '다음 달 실험 1개',
     action: '비슷한 상황이 다시 오면, 바로 행동하기 전 이유를 한 문장으로 적어보세요.',
@@ -171,7 +210,7 @@ export function buildAiPatternCard(input: AiPatternCardInput): AiPatternCard {
     title: '이번 기록에서 가장 선명했던 패턴',
     headline: gap
       ? { title: gap.title, profitLabel: gap.profitLabel, lossLabel: gap.lossLabel }
-      : { title: `${displayMetricName(weak ?? input.metrics[0])}에서 가장 먼저 볼 패턴이 있었어요` },
+      : { title: `${customerMetricName(weak ?? input.metrics[0])}에서 가장 먼저 볼 패턴이 있었어요` },
     selfGap: buildSelfGap(input, gap),
     pattern,
     strength: strengthFor(strong),
