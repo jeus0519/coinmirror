@@ -44,7 +44,7 @@ function ExchangeEventCard({ event }: { event: ExchangeEventItem }) {
       {event.publishedAt && <Text className="text-[11.5px] text-muted-foreground">{event.publishedAt}</Text>}
       <Text className="text-[12.5px] leading-5 text-muted-foreground">{event.summary}</Text>
       <Pressable onPress={() => Linking.openURL(event.url)}>
-        <Text className="text-xs font-semibold text-secondary">원문에서 조건 확인 ↗</Text>
+        <Text className="text-xs font-semibold text-secondary">거래소에서 직접 확인 ↗</Text>
       </Pressable>
     </View>
   );
@@ -92,6 +92,7 @@ export function Step4Info() {
               <View className="flex-1">
                 <Text className="text-sm font-extrabold text-foreground">{asset.symbol}</Text>
                 <Text className="text-[11.5px] leading-4 text-muted-foreground">{asset.note}</Text>
+                <Text className="text-[11.5px] font-semibold text-foreground">{asset.volumeShareLabel}</Text>
               </View>
               <View className="rounded-full bg-muted px-2.5 py-1">
                 <Text className="text-[11px] font-bold text-muted-foreground">{asset.badge}</Text>
@@ -104,17 +105,6 @@ export function Step4Info() {
         </View>
       </View>
 
-      <View className="gap-3">
-        <Text className="text-base font-extrabold text-foreground">내 회고와 연결하기</Text>
-        <View className="gap-2.5">
-          {viewModel.reflectionPrompts.map((prompt) => (
-            <View key={prompt.title} className="gap-1 rounded-2xl border border-border bg-card p-4">
-              <Text className="text-sm font-bold text-foreground">{prompt.title}</Text>
-              <Text className="text-[12.5px] leading-5 text-muted-foreground">{prompt.question}</Text>
-            </View>
-          ))}
-        </View>
-      </View>
 
       <View className="gap-3">
         <View className="gap-1">
@@ -125,7 +115,7 @@ export function Step4Info() {
 
         <Card>
           <CardContent className="gap-3 pt-2">
-            <Text className="text-sm font-extrabold text-foreground">업비트 이벤트 탭 상단 3개</Text>
+            <Text className="text-sm font-extrabold text-foreground">업비트 이벤트 최신 3개</Text>
             {viewModel.exchangeEvents.upbit.map((event) => (
               <ExchangeEventCard key={event.title} event={event} />
             ))}
@@ -134,7 +124,7 @@ export function Step4Info() {
 
         <Card>
           <CardContent className="gap-3 pt-2">
-            <Text className="text-sm font-extrabold text-foreground">빗썸 이벤트 상단 3개</Text>
+            <Text className="text-sm font-extrabold text-foreground">빗썸 이벤트 최신 3개</Text>
             {viewModel.exchangeEvents.bithumb.map((event) => (
               <ExchangeEventCard key={event.title} event={event} />
             ))}
