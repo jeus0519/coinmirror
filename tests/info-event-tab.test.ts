@@ -19,10 +19,15 @@ test('정보 이벤트 탭 view model은 시장 분위기와 업비트 KRW 거�
   assert.match(vm.marketTemperature.metrics[1].description, /거래량이 아니라 가격 기준/);
   assert.match(vm.upbitKrwInterest.title, /업비트 KRW 시장 관심 분포/);
   assert.equal(vm.upbitKrwInterest.assets.length, 3);
-  assert.ok(vm.upbitKrwInterest.assets.some((asset) => asset.symbol === 'USDT' && /대기|환전/.test(asset.note)));
+  assert.deepEqual(
+    vm.upbitKrwInterest.assets.map((asset) => asset.symbol),
+    ['BTC', 'ETH', 'XRP']
+  );
   for (const asset of vm.upbitKrwInterest.assets) {
-    assert.match(asset.volumeShareLabel, /전체 거래대금 중 [0-9.]+%/);
+    assert.match(asset.volumeShareLabel, /확인 중/);
   }
+  assert.ok(vm.marketTemperature.metrics.every((metric) => metric.value === '확인 중'));
+  assert.doesNotMatch(JSON.stringify(vm.upbitKrwInterest), /10\.2%|9\.3%|3\.3%/);
   assert.match(vm.safetyCopy, /거래 습관을 돌아보기 위한 시장 배경/);
 });
 

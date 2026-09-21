@@ -1,7 +1,9 @@
+import { useEffect, useState } from 'react';
 import { Linking, Pressable, ScrollView, View } from 'react-native';
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Text } from '@/components/ui/text';
+import { loadInfoEventTabViewModel } from '@/lib/info-event-client';
 import { buildInfoEventTabViewModel, type ExchangeEventItem } from '@/lib/info-event-tab';
 import { cn } from '@/lib/utils';
 
@@ -51,7 +53,17 @@ function ExchangeEventCard({ event }: { event: ExchangeEventItem }) {
 }
 
 export function Step4Info() {
-  const viewModel = buildInfoEventTabViewModel();
+  const [viewModel, setViewModel] = useState(buildInfoEventTabViewModel);
+
+  useEffect(() => {
+    let active = true;
+    void loadInfoEventTabViewModel().then((nextViewModel) => {
+      if (active) setViewModel(nextViewModel);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <ScrollView className="flex-1" contentContainerClassName="gap-6 p-4 pb-12">
