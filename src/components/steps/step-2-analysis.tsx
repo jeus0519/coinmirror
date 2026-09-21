@@ -1,6 +1,6 @@
 import { Lock } from 'lucide-react-native';
 import { router } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Linking, ScrollView, View } from 'react-native';
 
 import { ShareCard } from '@/components/share-card';
@@ -12,6 +12,14 @@ import { MetricCard } from '@/components/ui/metric-card';
 import { Text } from '@/components/ui/text';
 import { buildAiBehaviorCoaching, buildAiBehaviorCoachingSafePayload } from '@/lib/ai-coaching';
 import { requestAiReflection } from '@/lib/ai-reflection-client';
+import {
+  buildAiReflectionFingerprint,
+  createAiReflectionRetryState,
+  getAiReflectionRetryStatus,
+  isAiReflectionRequestCurrent,
+  markAiReflectionFailure,
+  markAiReflectionSuccess,
+} from '@/lib/ai-reflection-retry';
 import { buildAnalysisViewData } from '@/lib/analysis-view-data';
 import { trackCoinmirrorEvent } from '@/lib/analytics';
 import { buildExpectationComparisons } from '@/lib/onboarding-diagnosis';
@@ -51,6 +59,20 @@ function StatTile({
   );
 }
 
+type AiReflectionFlowState = Pick<
+  ReturnType<typeof useFlowStore.getState>,
+  'dataSource' | 'tradeAnalysis'
+>;
+
+function resolveAiReflectionFingerprint({ dataSource, tradeAnalysis }: AiReflectionFlowState) {
+  const analysisFingerprint = tradeAnalysis ? buildAnalysisSourceFingerprint(tradeAnalysis) : null;
+  return buildAiReflectionFingerprint(analysisFingerprint, dataSource ?? '');
+}
+
+function getCurrentAiReflectionFingerprint() {
+  return resolveAiReflectionFingerprint(useFlowStore.getState());
+}
+
 export function Step2Analysis() {
   const dataSource = useFlowStore((s) => s.dataSource);
   const subscriptionTier = useFlowStore((s) => s.subscriptionTier);
@@ -67,19 +89,15 @@ export function Step2Analysis() {
   const diagnosisAnswers = useFlowStore((s) => s.diagnosisAnswers);
   const tradeAnalysis = useFlowStore((s) => s.tradeAnalysis);
   const [feedbackNotice, setFeedbackNotice] = useState<string | null>(null);
-  const [showAiBehaviorCoaching, setShowAiBehaviorCoaching] = useState(false);
-  const [isAiReflectionLoading, setIsAiReflectionLoading] = useState(false);
-  const [aiReflectionRequestFingerprint, setAiReflectionRequestFingerprint] = useState<string | null>(null);
-  const [aiReflectionOutputState, setAiReflectionOutputState] = useState<{
+  const [aiBehaviorCoachingFingerprint, setAiBehaviorCoachingFingerprint] = useState<string | null>(null);
+  const aiReflectionInFlightFingerprintsRef = useRef(new Set<string>());
+  const [aiReflectionLoadingFingerprints, setAiReflectionLoadingFingerprints] = useState<string[]>([]);
+  const [aiReflectionRetryState, setAiReflectionRetryState] = useState(createAiReflectionRetryState);
+  const [aiReflectionClock, setAiReflectionClock] = useState(() => Date.now());
+  const [aiReflectionNoticeState, setAiReflectionNoticeState] = useState<{
     fingerprint: string | null;
-    output: {
-      observedPattern: string;
-      reduceAction: string;
-      reinforceAction: string;
-      nextQuestion: string;
-    };
+    message: string;
   } | null>(null);
-  const [aiReflectionNotice, setAiReflectionNotice] = useState<string | null>(null);
   const feedbackFormUrl = process.env.EXPO_PUBLIC_FEEDBACK_FORM_URL?.trim();
   const analysis = useMemo(
     () => buildAnalysisViewData({ dataSource, tradeAnalysis, diagnosis: diagnosisAnswers }),
@@ -118,9 +136,35 @@ export function Step2Analysis() {
   );
   const hasSavedGoal = savedSubscriptionGoals.length > 0;
   const currentAnalysisFingerprint = tradeAnalysis ? buildAnalysisSourceFingerprint(tradeAnalysis) : null;
-  const aiReflectionRequestLocked = aiReflectionRequestFingerprint === currentAnalysisFingerprint;
-  const aiReflectionOutput =
-    aiReflectionOutputState?.fingerprint === currentAnalysisFingerprint ? aiReflectionOutputState.output : null;
+  const aiReflectionFingerprint = resolveAiReflectionFingerprint({ dataSource, tradeAnalysis });
+  const showAiBehaviorCoaching =
+    aiReflectionFingerprint !== null && aiBehaviorCoachingFingerprint === aiReflectionFingerprint;
+  const aiReflectionNotice =
+    aiReflectionNoticeState?.fingerprint === aiReflectionFingerprint
+      ? aiReflectionNoticeState.message
+      : null;
+  const isAiReflectionLoading = Boolean(
+    aiReflectionFingerprint && aiReflectionLoadingFingerprints.includes(aiReflectionFingerprint)
+  );
+  const aiReflectionRetryStatus = getAiReflectionRetryStatus(
+    aiReflectionRetryState,
+    aiReflectionFingerprint,
+    aiReflectionClock
+  );
+  const aiReflectionCooldownUntil = aiReflectionFingerprint
+    ? aiReflectionRetryState[aiReflectionFingerprint]?.cooldownUntil ?? null
+    : null;
+  const aiReflectionButtonLabel = isAiReflectionLoading
+    ? 'AI 행동코칭 준비 중'
+    : aiReflectionRetryStatus.kind === 'succeeded'
+      ? '이번 분석 AI 코칭 완료'
+      : aiReflectionRetryStatus.kind === 'cooldown'
+        ? `재시도까지 ${aiReflectionRetryStatus.cooldownSeconds}초`
+        : aiReflectionRetryStatus.kind === 'exhausted'
+          ? '이번 분석 재시도 종료'
+          : showAiBehaviorCoaching
+            ? 'AI 행동코칭 다시 시도'
+            : 'AI 행동코칭 받기';
   const lastSavedSnapshot = subscriptionSnapshots.at(-1) ?? null;
   const currentAnalysisSaved = Boolean(
     currentAnalysisFingerprint && lastSavedSnapshot?.sourceFingerprint === currentAnalysisFingerprint
@@ -155,6 +199,31 @@ export function Step2Analysis() {
     }
   }, [analysis.source, snapshotComparison, subscriptionSnapshots.length]);
 
+  useEffect(() => {
+    if (aiReflectionRetryStatus.kind !== 'cooldown') return;
+
+    const interval = setInterval(() => {
+      setAiReflectionClock(Date.now());
+    }, 1_000);
+
+    return () => clearInterval(interval);
+  }, [aiReflectionCooldownUntil, aiReflectionFingerprint, aiReflectionRetryStatus.kind]);
+
+  function setShowAiBehaviorCoaching(show: boolean) {
+    setAiBehaviorCoachingFingerprint(show ? aiReflectionFingerprint : null);
+  }
+
+  function setAiReflectionNotice(message: string | null) {
+    setAiReflectionNoticeState(
+      message
+        ? {
+            fingerprint: aiReflectionFingerprint,
+            message,
+          }
+        : null
+    );
+  }
+
   function handleSubscriptionPreviewClick(cta: 'pattern_tracking' | 'monthly_report' | 'benefits') {
     trackCoinmirrorEvent('subscription_preview_click', { screen: 'analysis', cta });
     router.push('/subscription');
@@ -174,6 +243,25 @@ export function Step2Analysis() {
     clearSubscriptionSnapshots();
   }
 
+  function registerAiReflectionFailure(fingerprint: string) {
+    const now = Date.now();
+    const nextState = markAiReflectionFailure(aiReflectionRetryState, fingerprint, now);
+    const nextStatus = getAiReflectionRetryStatus(nextState, fingerprint, now);
+    setAiReflectionRetryState((state) => markAiReflectionFailure(state, fingerprint, now));
+    setAiReflectionClock(now);
+
+    if (nextStatus.kind === 'exhausted') {
+      setAiReflectionNotice(
+        'AI 행동코칭을 불러오지 못했어요. 이번 분석의 재시도 3회를 모두 사용했어요. 새 파일을 올리면 다시 받을 수 있어요.'
+      );
+      return;
+    }
+
+    setAiReflectionNotice(
+      `AI 행동코칭을 불러오지 못했어요. 30초 후 다시 시도할 수 있어요. 남은 재시도 ${nextStatus.remainingRetries}회예요. 기본 회고 카드는 계속 볼 수 있어요.`
+    );
+  }
+
   async function handleAiBehaviorCoachingClick() {
     trackCoinmirrorEvent('ai_coaching_request_click', {
       screen: 'analysis',
@@ -186,24 +274,54 @@ export function Step2Analysis() {
       setAiReflectionNotice('측정 가능한 행동 지표가 아직 부족해요. 거래 기록이 더 쌓이면 AI 행동코칭을 정리할 수 있어요.');
       return;
     }
-    if (aiReflectionRequestLocked || aiReflectionOutput || isAiReflectionLoading) {
-      setAiReflectionNotice('이미 이번 분석에서 AI 행동코칭을 정리했어요. 새 파일을 올리면 다시 받을 수 있어요.');
+    if (!aiReflectionFingerprint) {
+      setAiReflectionNotice('현재 분석을 확인할 수 없어 AI 행동코칭을 요청하지 않았어요. 새 파일을 올린 뒤 다시 시도해 주세요.');
+      return;
+    }
+    const requestFingerprint = aiReflectionFingerprint;
+    if (aiReflectionInFlightFingerprintsRef.current.has(requestFingerprint)) return;
+
+    const currentRetryStatus = getAiReflectionRetryStatus(
+      aiReflectionRetryState,
+      requestFingerprint,
+      Date.now()
+    );
+    if (!currentRetryStatus.canRequest) {
+      if (currentRetryStatus.kind === 'cooldown') {
+        setAiReflectionNotice(
+          `AI 행동코칭을 다시 요청하려면 ${currentRetryStatus.cooldownSeconds}초만 기다려 주세요. 남은 재시도 ${currentRetryStatus.remainingRetries}회예요.`
+        );
+      } else if (currentRetryStatus.kind === 'exhausted') {
+        setAiReflectionNotice('이번 분석의 재시도 3회를 모두 사용했어요. 새 파일을 올리면 다시 받을 수 있어요.');
+      } else {
+        setAiReflectionNotice('이미 이번 분석에서 AI 행동코칭을 정리했어요. 새 파일을 올리면 다시 받을 수 있어요.');
+      }
       return;
     }
 
-    setAiReflectionRequestFingerprint(currentAnalysisFingerprint);
-    setIsAiReflectionLoading(true);
+    aiReflectionInFlightFingerprintsRef.current.add(requestFingerprint);
+    setAiReflectionLoadingFingerprints((fingerprints) =>
+      fingerprints.includes(requestFingerprint) ? fingerprints : [...fingerprints, requestFingerprint]
+    );
     try {
       const result = await requestAiReflection(aiBehaviorCoachingPayload);
+      if (!isAiReflectionRequestCurrent(requestFingerprint, getCurrentAiReflectionFingerprint())) return;
+
       if (result.success) {
-        setAiReflectionOutputState({ fingerprint: currentAnalysisFingerprint, output: result.output });
+        setAiReflectionRetryState((state) => markAiReflectionSuccess(state, requestFingerprint));
+        setAiReflectionNotice('AI 행동코칭을 정리했어요.');
       } else {
-        setAiReflectionNotice('이번에는 기본 회고 카드로 먼저 보여드릴게요.');
+        registerAiReflectionFailure(requestFingerprint);
       }
     } catch {
-      setAiReflectionNotice('이번에는 기본 회고 카드로 먼저 보여드릴게요.');
+      if (isAiReflectionRequestCurrent(requestFingerprint, getCurrentAiReflectionFingerprint())) {
+        registerAiReflectionFailure(requestFingerprint);
+      }
     } finally {
-      setIsAiReflectionLoading(false);
+      aiReflectionInFlightFingerprintsRef.current.delete(requestFingerprint);
+      setAiReflectionLoadingFingerprints((fingerprints) =>
+        fingerprints.filter((fingerprint) => fingerprint !== requestFingerprint)
+      );
     }
   }
 
@@ -413,7 +531,7 @@ export function Step2Analysis() {
               버튼을 누르면 핵심 지표를 초보자도 이해하기 쉬운 심리 패턴으로 풀어보고, 다음 달 확인할 행동 질문을 정리해요. 투자 조언이 아니라 과거 기록을 돌아보는 회고예요.
             </Text>
           </View>
-          {showAiBehaviorCoaching ? (
+          {showAiBehaviorCoaching && (
             <>
               {isAiReflectionLoading && (
                 <Text className="text-xs leading-5 text-primary">AI 행동코칭 문장을 정리하고 있어요...</Text>
@@ -493,11 +611,10 @@ export function Step2Analysis() {
                 )}
               </View>
             </>
-          ) : (
-            <Button disabled={isAiReflectionLoading || aiReflectionRequestLocked} onPress={handleAiBehaviorCoachingClick}>
-              <Text>{isAiReflectionLoading ? 'AI 행동코칭 준비 중' : aiReflectionRequestLocked ? '이번 분석 AI 코칭 완료' : 'AI 행동코칭 받기'}</Text>
-            </Button>
           )}
+          <Button disabled={isAiReflectionLoading || !aiReflectionRetryStatus.canRequest} onPress={handleAiBehaviorCoachingClick}>
+            <Text>{aiReflectionButtonLabel}</Text>
+          </Button>
           <Text className="text-[11px] leading-4 text-muted-foreground">
             {aiBehaviorCoaching.patternCard.safetyCopy}
           </Text>

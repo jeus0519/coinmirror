@@ -258,7 +258,7 @@ test('분석 화면은 AI 행동코칭을 자동 노출하지 않고 버튼으�
   assert.match(source, /AI 행동코칭 받기/);
   assert.match(source, /버튼을 누르면/);
   assert.match(source, /ai_coaching_request_click/);
-  assert.match(source, /showAiBehaviorCoaching \? \(/);
+  assert.match(source, /showAiBehaviorCoaching && \(/);
 });
 
 test('AI 행동코칭 받기는 측정 가능한 지표가 없으면 API를 호출하지 않고 원인을 안내한다', async () => {
@@ -270,27 +270,34 @@ test('AI 행동코칭 받기는 측정 가능한 지표가 없으면 API를 호�
   assert.match(source, /return;/);
 });
 
-test('AI 행동코칭 받기 버튼은 safe payload로 api를 호출하고 실패하면 rule 코칭을 보여준다', async () => {
+test('AI 행동코칭 받기 버튼은 safe payload로 api를 호출하고 실패하면 기본 회고 카드와 재시도 안내를 유지한다', async () => {
   const source = await readFile(STEP_2, 'utf8');
 
   assert.match(source, /buildAiBehaviorCoachingSafePayload/);
   assert.match(source, /aiBehaviorCoachingPayload/);
   assert.match(source, /requestAiReflection/);
   assert.doesNotMatch(source, /fetch\('\/api\/ai-reflection'/);
-  assert.match(source, /aiReflectionOutput/);
+  assert.match(source, /markAiReflectionSuccess/);
   assert.match(source, /setAiReflectionNotice/);
-  assert.match(source, /기본 회고 카드로 먼저 보여드릴게요/);
+  assert.match(source, /기본 회고 카드는 계속 볼 수 있어요/);
+  assert.match(source, /AI 행동코칭 다시 시도/);
 });
 
 
-test('AI 행동코칭 받기는 한 분석 결과에서 한 번만 요청하도록 잠근다', async () => {
+test('AI 행동코칭 받기는 성공 시 잠그고 실패 시 30초 후 최대 3회 재시도를 안내한다', async () => {
   const source = await readFile(STEP_2, 'utf8');
 
-  assert.match(source, /aiReflectionRequestFingerprint/);
-  assert.match(source, /const aiReflectionRequestLocked = aiReflectionRequestFingerprint === currentAnalysisFingerprint/);
-  assert.match(source, /setAiReflectionRequestFingerprint\(currentAnalysisFingerprint\)/);
-  assert.match(source, /이미 이번 분석에서 AI 행동코칭을 정리했어요/);
-  assert.match(source, /disabled=\{isAiReflectionLoading \|\| aiReflectionRequestLocked\}/);
+  assert.match(source, /getAiReflectionRetryStatus/);
+  assert.match(source, /markAiReflectionSuccess/);
+  assert.match(source, /markAiReflectionFailure/);
+  assert.match(source, /남은 재시도/);
+  assert.match(source, /30초 후 다시 시도/);
+  assert.match(source, /이번 분석의 재시도 3회를 모두 사용했어요/);
+  assert.match(source, /재시도까지.*초/);
+  assert.match(source, /aiReflectionLoadingFingerprint/);
+  assert.match(source, /getCurrentAiReflectionFingerprint/);
+  assert.match(source, /isAiReflectionRequestCurrent/);
+  assert.match(source, /disabled=\{isAiReflectionLoading \|\| !aiReflectionRetryStatus\.canRequest\}/);
 });
 
 
