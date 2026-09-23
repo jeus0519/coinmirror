@@ -48,3 +48,8 @@ example
 
 # expo web build output
 dist-web/
+
+# Vercel local project metadata and environment files
+.vercel
+.env*
+!.env.example

@@ -128,7 +128,7 @@ export async function POST(request: Request, dependencies: AiReflectionRouteDepe
   }
 
   const validation = validateAiReflectionRequest(body);
-  if (!validation.ok) {
+  if (validation.ok === false) {
     return jsonResponse({ ok: false, error: validation.error }, 400);
   }
 

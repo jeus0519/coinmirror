@@ -1,0 +1,17 @@
+# Local agent and editor workspaces
+.hermes/
+.claude/
+.vscode/
+
+# Local environment and Vercel metadata
+.env*
+.vercel/
+
+# Generated local build/cache output (rebuilt on Vercel)
+.expo/
+dist/
+dist-web/
+
+# Non-runtime project material
+docs/
+tests/

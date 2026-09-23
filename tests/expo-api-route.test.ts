@@ -12,6 +12,11 @@ test('Deployment Contract: app.json web.output must be server', () => {
   assert.equal(appJson?.expo?.web?.output, 'server', 'app.json web.output must be set to "server"');
 });
 
+test('Deployment Contract: Vercel Node.js runtime stays on the supported 24.x major', () => {
+  const packageJson = JSON.parse(fs.readFileSync(path.join(PROJECT_ROOT, 'package.json'), 'utf8'));
+  assert.equal(packageJson?.engines?.node, '24.x');
+});
+
 test('Deployment Contract: src/app/api/ai-reflection+api.ts must exist and re-export POST handler', async () => {
   const apiRoutePath = path.join(PROJECT_ROOT, 'src/app/api/ai-reflection+api.ts');
   assert.ok(fs.existsSync(apiRoutePath), 'src/app/api/ai-reflection+api.ts must exist');
@@ -31,7 +36,11 @@ test('Deployment Contract: Vercel adapter routes Expo server output without expo
   const vercelConfig = JSON.parse(fs.readFileSync(vercelConfigPath, 'utf8'));
   assert.equal(vercelConfig.buildCommand, 'npx expo export -p web');
   assert.equal(vercelConfig.outputDirectory, 'dist/client');
-  assert.equal(vercelConfig.functions?.['api/index.ts']?.runtime, '@vercel/node@5.1.8');
+  assert.equal(
+    vercelConfig.functions?.['api/index.ts']?.runtime,
+    undefined,
+    'Vercel Node builder version must not be pinned; use the project Node.js runtime',
+  );
   assert.equal(vercelConfig.functions?.['api/index.ts']?.includeFiles, 'dist/server/**');
   assert.deepEqual(vercelConfig.rewrites, [
     {
@@ -47,6 +56,14 @@ test('Deployment Contract: Vercel adapter routes Expo server output without expo
   assert.match(adapterSource, /dist\/server|dist\\server/);
   assert.doesNotMatch(adapterSource, /COINMIRROR_AI_REFLECTION_OPENAI_API_KEY/);
   assert.doesNotMatch(adapterSource, /EXPO_PUBLIC_/);
+});
+
+test('Deployment Contract: Vercel function TypeScript uses explicit boolean discriminants', () => {
+  const routeSource = fs.readFileSync(path.join(PROJECT_ROOT, 'api/ai-reflection.ts'), 'utf8');
+  const runtimeSource = fs.readFileSync(path.join(PROJECT_ROOT, 'src/lib/ai-reflection-runtime.ts'), 'utf8');
+
+  assert.match(routeSource, /validation\.ok === false/);
+  assert.match(runtimeSource, /validation\.ok === true/);
 });
 
 test('Deployment Contract: no AI key in EXPO_PUBLIC variables', () => {

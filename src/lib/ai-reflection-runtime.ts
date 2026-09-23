@@ -62,7 +62,7 @@ export async function buildAiReflectionResult(options: {
   try {
     const raw = await options.generate(options.payload);
     const validation = validateAiReflectionOutput(raw);
-    if (validation.ok) return { source: 'ai', output: validation.output };
+    if (validation.ok === true) return { source: 'ai', output: validation.output };
     return { source: 'fallback', output: fallbackOutput(options.fallback), errorCode: validation.error };
   } catch {
     return { source: 'fallback', output: fallbackOutput(options.fallback), errorCode: 'generation_failed' };
