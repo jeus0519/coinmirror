@@ -505,6 +505,28 @@ export function Step2Analysis() {
         )}
       </View>
 
+      <Card className="border-primary/30 bg-primary/5">
+        <CardContent className="gap-3 pt-2">
+          <View className="gap-1">
+            <Text className="text-sm font-extrabold text-foreground">코인미러, 어떻게 느껴졌나요?</Text>
+            <Text className="text-xs leading-5 text-muted-foreground">
+              30초 피드백으로 더 이해하기 쉬운 분석을 만드는 데 도움을 주세요.
+            </Text>
+          </View>
+          <Button variant="outline" onPress={handleFeedbackClick}>
+            <Text>30초 피드백 남기기</Text>
+          </Button>
+          <Text className="text-[11px] leading-4 text-muted-foreground">
+            자유롭게 의견을 적어주세요. 단, 거래 종목, 금액, 수량, 수익률, 원본 파일명, PDF 비밀번호, 계좌·고객정보 등 개인 거래정보는 입력하지 말아 주세요.
+          </Text>
+          {feedbackNotice && (
+            <View className="rounded-2xl border border-primary/30 bg-background/80 p-3">
+              <Text className="text-xs leading-5 text-foreground">{feedbackNotice}</Text>
+            </View>
+          )}
+        </CardContent>
+      </Card>
+
       <View className="gap-3">
         <View className="gap-1">
           <Text className="text-base font-extrabold text-foreground">행동 점수</Text>
@@ -948,25 +970,16 @@ export function Step2Analysis() {
         </CardContent>
       </Card>
 
-      <Card className="border-primary/20 bg-primary/5">
-        <CardContent className="gap-3 pt-2">
-          <View className="gap-1">
-            <Text className="text-sm font-extrabold text-foreground">결과가 이해됐나요?</Text>
-            <Text className="text-xs leading-5 text-muted-foreground">
-              무료 분석 단계에서는 실제 사용자가 어디서 막히는지 확인하는 게 중요해요. 피드백은
-              외부 폼으로만 받고, GA에는 클릭 여부만 익명으로 기록합니다.
-            </Text>
+      <View className="items-center gap-2 px-2">
+        <Button variant="ghost" onPress={handleFeedbackClick}>
+          <Text>의견을 더 남기고 싶으신가요? 피드백 보내기</Text>
+        </Button>
+        {feedbackNotice && (
+          <View className="w-full rounded-2xl border border-primary/30 bg-background/80 p-3">
+            <Text className="text-xs leading-5 text-foreground">{feedbackNotice}</Text>
           </View>
-          <Button variant="outline" onPress={handleFeedbackClick}>
-            <Text>피드백 남기기</Text>
-          </Button>
-          {feedbackNotice && (
-            <View className="rounded-2xl border border-primary/30 bg-background/80 p-3">
-              <Text className="text-xs leading-5 text-foreground">{feedbackNotice}</Text>
-            </View>
-          )}
-        </CardContent>
-      </Card>
+        )}
+      </View>
     </ScrollView>
   );
 }

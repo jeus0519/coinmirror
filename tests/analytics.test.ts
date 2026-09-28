@@ -119,7 +119,22 @@ test('분석 결과 화면은 외부 피드백 폼 URL 환경변수로 피드백
   assert.match(source, /EXPO_PUBLIC_FEEDBACK_FORM_URL/);
   assert.match(source, /feedback_click/);
   assert.match(source, /Linking\.openURL/);
-  assert.match(source, /피드백 남기기/);
+  assert.match(source, /30초 피드백 남기기/);
+  assert.match(source, /자유롭게 의견을 적어주세요/);
+  assert.match(source, /종목, 금액, 수량, 수익률, 원본 파일명, PDF 비밀번호/);
+});
+
+test('주 피드백 CTA는 핵심 결과 직후이자 상세 행동 점수 전에 노출하고 최하단에는 보조 링크만 둔다', async () => {
+  const source = await readFile('src/components/steps/step-2-analysis.tsx', 'utf8');
+  const comparisonIndex = source.indexOf('내 예상 vs 기록');
+  const primaryFeedbackIndex = source.indexOf('코인미러, 어떻게 느껴졌나요?');
+  const scoreIndex = source.indexOf('행동 점수');
+  const footerFeedbackIndex = source.indexOf('의견을 더 남기고 싶으신가요?');
+  const symbolChartIndex = source.indexOf('종목별 매수 비중 상위');
+
+  assert.ok(comparisonIndex < primaryFeedbackIndex);
+  assert.ok(primaryFeedbackIndex < scoreIndex);
+  assert.ok(symbolChartIndex < footerFeedbackIndex);
 });
 
 
