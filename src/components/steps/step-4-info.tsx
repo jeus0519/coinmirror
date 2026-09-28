@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Linking, Pressable, ScrollView, View } from 'react-native';
 
+import { FeedbackCta } from '@/components/feedback-cta';
 import { Card, CardContent } from '@/components/ui/card';
 import { Text } from '@/components/ui/text';
 import { loadInfoEventTabViewModel } from '@/lib/info-event-client';
@@ -43,7 +44,9 @@ function ExchangeEventCard({ event }: { event: ExchangeEventItem }) {
           <Text className="text-[11px] font-extrabold text-primary">{event.exchange}</Text>
         </View>
       </View>
-      {event.publishedAt && <Text className="text-[11.5px] text-muted-foreground">{event.publishedAt}</Text>}
+      {event.publishedAt && (
+        <Text className="text-[11.5px] text-muted-foreground">{event.publishedAt}</Text>
+      )}
       <Text className="text-[12.5px] leading-5 text-muted-foreground">{event.summary}</Text>
       <Pressable onPress={() => Linking.openURL(event.url)}>
         <Text className="text-xs font-semibold text-secondary">거래소에서 직접 확인 ↗</Text>
@@ -75,10 +78,21 @@ export function Step4Info() {
         </View>
       </View>
 
+      <FeedbackCta
+        screen="info"
+        title="시장 배경과 이벤트 화면은 어땠나요?"
+        description="시장 배경과 거래소 이벤트를 보기 전에 짧은 의견을 남길 수 있어요."
+        tone="card"
+      />
+
       <View className="gap-3">
         <View className="gap-1">
-          <Text className="text-base font-extrabold text-foreground">{viewModel.marketTemperature.title}</Text>
-          <Text className="text-xs leading-5 text-muted-foreground">{viewModel.marketTemperature.description}</Text>
+          <Text className="text-base font-extrabold text-foreground">
+            {viewModel.marketTemperature.title}
+          </Text>
+          <Text className="text-xs leading-5 text-muted-foreground">
+            {viewModel.marketTemperature.description}
+          </Text>
         </View>
         <View className="flex-row flex-wrap gap-2.5">
           {viewModel.marketTemperature.metrics.map((metric) => (
@@ -86,25 +100,36 @@ export function Step4Info() {
           ))}
         </View>
         <View className="rounded-2xl bg-primary/10 px-4 py-3">
-          <Text className="text-[12.5px] leading-5 text-primary">{viewModel.marketTemperature.reading}</Text>
+          <Text className="text-[12.5px] leading-5 text-primary">
+            {viewModel.marketTemperature.reading}
+          </Text>
         </View>
       </View>
 
       <View className="gap-3">
         <View className="gap-1">
-          <Text className="text-base font-extrabold text-foreground">{viewModel.upbitKrwInterest.title}</Text>
-          <Text className="text-xs leading-5 text-muted-foreground">{viewModel.upbitKrwInterest.description}</Text>
+          <Text className="text-base font-extrabold text-foreground">
+            {viewModel.upbitKrwInterest.title}
+          </Text>
+          <Text className="text-xs leading-5 text-muted-foreground">
+            {viewModel.upbitKrwInterest.description}
+          </Text>
         </View>
         <View className="gap-2.5">
           {viewModel.upbitKrwInterest.assets.map((asset) => (
-            <View key={asset.symbol} className="flex-row items-center gap-3 rounded-2xl border border-border bg-card p-3.5">
+            <View
+              key={asset.symbol}
+              className="flex-row items-center gap-3 rounded-2xl border border-border bg-card p-3.5"
+            >
               <View className="rounded-xl bg-primary/10 px-2.5 py-2">
                 <Text className="text-[11px] font-extrabold text-primary">{asset.rankLabel}</Text>
               </View>
               <View className="flex-1">
                 <Text className="text-sm font-extrabold text-foreground">{asset.symbol}</Text>
                 <Text className="text-[11.5px] leading-4 text-muted-foreground">{asset.note}</Text>
-                <Text className="text-[11.5px] font-semibold text-foreground">{asset.volumeShareLabel}</Text>
+                <Text className="text-[11.5px] font-semibold text-foreground">
+                  {asset.volumeShareLabel}
+                </Text>
               </View>
               <View className="rounded-full bg-muted px-2.5 py-1">
                 <Text className="text-[11px] font-bold text-muted-foreground">{asset.badge}</Text>
@@ -113,16 +138,23 @@ export function Step4Info() {
           ))}
         </View>
         <View className="rounded-2xl bg-card px-4 py-3">
-          <Text className="text-[12.5px] leading-5 text-muted-foreground">{viewModel.upbitKrwInterest.note}</Text>
+          <Text className="text-[12.5px] leading-5 text-muted-foreground">
+            {viewModel.upbitKrwInterest.note}
+          </Text>
         </View>
       </View>
 
-
       <View className="gap-3">
         <View className="gap-1">
-          <Text className="text-base font-extrabold text-foreground">{viewModel.exchangeEvents.title}</Text>
-          <Text className="text-xs leading-5 text-muted-foreground">{viewModel.exchangeEvents.description}</Text>
-          <Text className="text-[11.5px] text-muted-foreground">{viewModel.exchangeEvents.updatedAtLabel}</Text>
+          <Text className="text-base font-extrabold text-foreground">
+            {viewModel.exchangeEvents.title}
+          </Text>
+          <Text className="text-xs leading-5 text-muted-foreground">
+            {viewModel.exchangeEvents.description}
+          </Text>
+          <Text className="text-[11.5px] text-muted-foreground">
+            {viewModel.exchangeEvents.updatedAtLabel}
+          </Text>
         </View>
 
         <Card>
@@ -144,7 +176,9 @@ export function Step4Info() {
         </Card>
 
         <View className="rounded-xl bg-warning/10 px-3.5 py-2.5">
-          <Text className="text-[12.5px] leading-5 text-warning">{viewModel.exchangeEvents.safetyCopy}</Text>
+          <Text className="text-[12.5px] leading-5 text-warning">
+            {viewModel.exchangeEvents.safetyCopy}
+          </Text>
         </View>
       </View>
 

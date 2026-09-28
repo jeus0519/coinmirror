@@ -7,7 +7,11 @@ import { useEffect } from 'react';
 import { Platform } from 'react-native';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { buildAnalyticsConfig, installGoogleTag } from '@/lib/analytics';
+import {
+  buildAnalyticsConfig,
+  installGoogleTag,
+  resolveAnalyticsMeasurementId,
+} from '@/lib/analytics';
 import { NAV_THEME } from '@/lib/theme';
 
 SplashScreen.preventAutoHideAsync();
@@ -21,7 +25,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     const config = buildAnalyticsConfig({
-      measurementId: process.env.EXPO_PUBLIC_GA_MEASUREMENT_ID,
+      measurementId: resolveAnalyticsMeasurementId(process.env.EXPO_PUBLIC_GA_MEASUREMENT_ID),
       isProduction: process.env.NODE_ENV === 'production',
       platform: Platform.OS,
     });
@@ -33,7 +37,8 @@ export default function RootLayout() {
       gtag?: (...args: unknown[]) => void;
     };
     analyticsWindow.dataLayer = analyticsWindow.dataLayer ?? [];
-    analyticsWindow.gtag = analyticsWindow.gtag ?? ((...args: unknown[]) => analyticsWindow.dataLayer?.push(args));
+    analyticsWindow.gtag =
+      analyticsWindow.gtag ?? ((...args: unknown[]) => analyticsWindow.dataLayer?.push(args));
 
     installGoogleTag(config, document, analyticsWindow.gtag);
   }, []);

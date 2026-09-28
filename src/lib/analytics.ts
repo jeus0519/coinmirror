@@ -1,8 +1,7 @@
 export type AnalyticsPlatform = 'web' | 'ios' | 'android' | 'windows' | 'macos' | 'native' | string;
 
 export type AnalyticsConfig =
-  | { enabled: true; measurementId: string }
-  | { enabled: false; measurementId: string | null };
+  { enabled: true; measurementId: string } | { enabled: false; measurementId: string | null };
 
 export type AnalyticsEventName =
   | 'page_view'
@@ -25,6 +24,8 @@ export type AnalyticsEventName =
 
 export type AnalyticsPayload = Record<string, string | number | boolean | null | undefined>;
 
+export const COINMIRROR_GA_MEASUREMENT_ID = 'G-RW7FRXJVER';
+
 export type Gtag = (
   command: 'js' | 'config' | 'event',
   target: string | Date,
@@ -34,6 +35,8 @@ export type Gtag = (
 type GoogleTagDocument = {
   createElement: (tagName: 'script') => { async?: boolean; src?: string };
   head?: { appendChild: (script: { async?: boolean; src?: string }) => unknown };
+  location?: Pick<Location, 'origin' | 'pathname' | 'href'>;
+  referrer?: string;
 };
 
 const SENSITIVE_KEY_PATTERNS = [
@@ -82,6 +85,10 @@ export function buildAnalyticsConfig({
   return { enabled: true, measurementId: normalizedMeasurementId };
 }
 
+export function resolveAnalyticsMeasurementId(measurementId?: string | null) {
+  return measurementId?.trim() || COINMIRROR_GA_MEASUREMENT_ID;
+}
+
 function isSensitiveAnalyticsKey(key: string) {
   return SENSITIVE_KEY_PATTERNS.some((pattern) => pattern.test(key));
 }
@@ -107,6 +114,32 @@ export function getGoogleTagScriptSrc(measurementId: string) {
   return `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(measurementId)}`;
 }
 
+function stripSearchAndHash(url: string) {
+  try {
+    const parsed = new URL(url);
+    parsed.search = '';
+    parsed.hash = '';
+    return parsed.toString();
+  } catch {
+    return '';
+  }
+}
+
+function getSanitizedGoogleTagPageParams(doc: GoogleTagDocument) {
+  const origin = doc.location?.origin ?? '';
+  const href = doc.location?.href ?? '';
+  const locationSource = origin ? `${origin}${doc.location?.pathname || '/'}` : href;
+  const sanitizedLocation = stripSearchAndHash(locationSource);
+  const parsedPath = sanitizedLocation ? new URL(sanitizedLocation).pathname : '/';
+  const sanitizedReferrer = doc.referrer ? stripSearchAndHash(doc.referrer) : '';
+
+  return {
+    page_path: parsedPath || '/',
+    page_location: sanitizedLocation,
+    page_referrer: sanitizedReferrer,
+  };
+}
+
 export function installGoogleTag(config: AnalyticsConfig, doc?: unknown, gtag?: Gtag) {
   if (!config.enabled || !doc || !gtag) return;
 
@@ -118,7 +151,10 @@ export function installGoogleTag(config: AnalyticsConfig, doc?: unknown, gtag?: 
   script.src = getGoogleTagScriptSrc(config.measurementId);
   documentLike.head.appendChild(script);
   gtag('js', new Date());
-  gtag('config', config.measurementId, { send_page_view: true });
+  gtag('config', config.measurementId, {
+    send_page_view: true,
+    ...getSanitizedGoogleTagPageParams(documentLike),
+  });
 }
 
 export function trackAnalyticsEvent(
@@ -137,7 +173,7 @@ export function trackCoinmirrorEvent(name: AnalyticsEventName, payload: Analytic
   const gtag = (globalThis as { gtag?: Gtag }).gtag;
   trackAnalyticsEvent(
     buildAnalyticsConfig({
-      measurementId: process.env.EXPO_PUBLIC_GA_MEASUREMENT_ID,
+      measurementId: resolveAnalyticsMeasurementId(process.env.EXPO_PUBLIC_GA_MEASUREMENT_ID),
       isProduction: process.env.NODE_ENV === 'production',
       platform: typeof window === 'undefined' ? 'native' : 'web',
     }),

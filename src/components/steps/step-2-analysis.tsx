@@ -1,9 +1,9 @@
-import Constants from 'expo-constants';
 import { Lock } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Linking, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 
+import { FeedbackCta } from '@/components/feedback-cta';
 import { ShareCard } from '@/components/share-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import { MetricCard } from '@/components/ui/metric-card';
 import { Text } from '@/components/ui/text';
 import { buildAiBehaviorCoaching, buildAiBehaviorCoachingSafePayload } from '@/lib/ai-coaching';
 import { requestAiReflection } from '@/lib/ai-reflection-client';
+import { type AiReflectionOutput } from '@/lib/ai-reflection-runtime';
 import {
   buildAiReflectionFingerprint,
   createAiReflectionRetryState,
@@ -60,14 +61,6 @@ function StatTile({
   );
 }
 
-function getFeedbackFormUrl() {
-  const extra = Constants.expoConfig?.extra as { feedbackFormUrl?: unknown } | undefined;
-  const extraUrl = typeof extra?.feedbackFormUrl === 'string' ? extra.feedbackFormUrl.trim() : '';
-  const envUrl = process.env.EXPO_PUBLIC_FEEDBACK_FORM_URL?.trim() ?? '';
-
-  return extraUrl || envUrl;
-}
-
 type AiReflectionFlowState = Pick<
   ReturnType<typeof useFlowStore.getState>,
   'dataSource' | 'tradeAnalysis'
@@ -97,23 +90,33 @@ export function Step2Analysis() {
   const setStep = useFlowStore((s) => s.setStep);
   const diagnosisAnswers = useFlowStore((s) => s.diagnosisAnswers);
   const tradeAnalysis = useFlowStore((s) => s.tradeAnalysis);
-  const [feedbackNotice, setFeedbackNotice] = useState<string | null>(null);
-  const [aiBehaviorCoachingFingerprint, setAiBehaviorCoachingFingerprint] = useState<string | null>(null);
+  const [aiBehaviorCoachingFingerprint, setAiBehaviorCoachingFingerprint] = useState<string | null>(
+    null
+  );
   const aiReflectionInFlightFingerprintsRef = useRef(new Set<string>());
-  const [aiReflectionLoadingFingerprints, setAiReflectionLoadingFingerprints] = useState<string[]>([]);
-  const [aiReflectionRetryState, setAiReflectionRetryState] = useState(createAiReflectionRetryState);
+  const [aiReflectionLoadingFingerprints, setAiReflectionLoadingFingerprints] = useState<string[]>(
+    []
+  );
+  const [aiReflectionRetryState, setAiReflectionRetryState] = useState(
+    createAiReflectionRetryState
+  );
   const [aiReflectionClock, setAiReflectionClock] = useState(() => Date.now());
   const [aiReflectionNoticeState, setAiReflectionNoticeState] = useState<{
     fingerprint: string | null;
     message: string;
   } | null>(null);
-  const feedbackFormUrl = getFeedbackFormUrl();
+  const [aiReflectionOutputState, setAiReflectionOutputState] = useState<{
+    fingerprint: string;
+    output: AiReflectionOutput;
+  } | null>(null);
   const analysis = useMemo(
     () => buildAnalysisViewData({ dataSource, tradeAnalysis, diagnosis: diagnosisAnswers }),
     [tradeAnalysis, dataSource, diagnosisAnswers]
   );
   const derivedSeries = analysis.derivedSeries;
-  const hasAiReflectionSignal = analysis.metrics.some((metric) => metric.measured && metric.score !== null);
+  const hasAiReflectionSignal = analysis.metrics.some(
+    (metric) => metric.measured && metric.score !== null
+  );
   const expectationComparisons = useMemo(
     () => buildExpectationComparisons(diagnosisAnswers, analysis.expectationActuals),
     [analysis.expectationActuals, diagnosisAnswers]
@@ -127,7 +130,13 @@ export function Step2Analysis() {
         derivedSeries,
         expectationComparisons,
       }),
-    [analysis.investmentType.comparisonCopy, analysis.investmentType.generalMbti, analysis.metrics, derivedSeries, expectationComparisons]
+    [
+      analysis.investmentType.comparisonCopy,
+      analysis.investmentType.generalMbti,
+      analysis.metrics,
+      derivedSeries,
+      expectationComparisons,
+    ]
   );
   const aiBehaviorCoachingPayload = useMemo(
     () =>
@@ -144,13 +153,19 @@ export function Step2Analysis() {
     [subscriptionSnapshots, savedSubscriptionGoals]
   );
   const hasSavedGoal = savedSubscriptionGoals.length > 0;
-  const currentAnalysisFingerprint = tradeAnalysis ? buildAnalysisSourceFingerprint(tradeAnalysis) : null;
+  const currentAnalysisFingerprint = tradeAnalysis
+    ? buildAnalysisSourceFingerprint(tradeAnalysis)
+    : null;
   const aiReflectionFingerprint = resolveAiReflectionFingerprint({ dataSource, tradeAnalysis });
   const showAiBehaviorCoaching =
     aiReflectionFingerprint !== null && aiBehaviorCoachingFingerprint === aiReflectionFingerprint;
   const aiReflectionNotice =
     aiReflectionNoticeState?.fingerprint === aiReflectionFingerprint
       ? aiReflectionNoticeState.message
+      : null;
+  const aiReflectionOutput =
+    aiReflectionOutputState?.fingerprint === aiReflectionFingerprint
+      ? aiReflectionOutputState.output
       : null;
   const isAiReflectionLoading = Boolean(
     aiReflectionFingerprint && aiReflectionLoadingFingerprints.includes(aiReflectionFingerprint)
@@ -161,7 +176,7 @@ export function Step2Analysis() {
     aiReflectionClock
   );
   const aiReflectionCooldownUntil = aiReflectionFingerprint
-    ? aiReflectionRetryState[aiReflectionFingerprint]?.cooldownUntil ?? null
+    ? (aiReflectionRetryState[aiReflectionFingerprint]?.cooldownUntil ?? null)
     : null;
   const aiReflectionButtonLabel = isAiReflectionLoading
     ? 'AI 행동코칭 준비 중'
@@ -176,7 +191,8 @@ export function Step2Analysis() {
             : 'AI 행동코칭 받기';
   const lastSavedSnapshot = subscriptionSnapshots.at(-1) ?? null;
   const currentAnalysisSaved = Boolean(
-    currentAnalysisFingerprint && lastSavedSnapshot?.sourceFingerprint === currentAnalysisFingerprint
+    currentAnalysisFingerprint &&
+    lastSavedSnapshot?.sourceFingerprint === currentAnalysisFingerprint
   );
   const snapshotStatusTitle = snapshotComparison
     ? '직전 분석과 비교 중'
@@ -194,7 +210,6 @@ export function Step2Analysis() {
         : '이번 결과를 저장해두면 다음 거래내역을 올릴 때 승률, 보유기간, 거래 빈도 변화를 비교할 수 있어요.';
   const snapshotSaveCta = currentAnalysisSaved ? '이번 결과 다시 저장하기' : '이번 결과 저장하기';
   const goalStatusTitle = hasSavedGoal ? '목표 저장 완료' : '목표는 비교가 생기면 저장할 수 있어요';
-
 
   useEffect(() => {
     trackCoinmirrorEvent('result_view', { screen: 'analysis', source_format: analysis.source });
@@ -280,11 +295,15 @@ export function Step2Analysis() {
     setAiReflectionNotice(null);
 
     if (!hasAiReflectionSignal) {
-      setAiReflectionNotice('측정 가능한 행동 지표가 아직 부족해요. 거래 기록이 더 쌓이면 AI 행동코칭을 정리할 수 있어요.');
+      setAiReflectionNotice(
+        '측정 가능한 행동 지표가 아직 부족해요. 거래 기록이 더 쌓이면 AI 행동코칭을 정리할 수 있어요.'
+      );
       return;
     }
     if (!aiReflectionFingerprint) {
-      setAiReflectionNotice('현재 분석을 확인할 수 없어 AI 행동코칭을 요청하지 않았어요. 새 파일을 올린 뒤 다시 시도해 주세요.');
+      setAiReflectionNotice(
+        '현재 분석을 확인할 수 없어 AI 행동코칭을 요청하지 않았어요. 새 파일을 올린 뒤 다시 시도해 주세요.'
+      );
       return;
     }
     const requestFingerprint = aiReflectionFingerprint;
@@ -301,22 +320,33 @@ export function Step2Analysis() {
           `AI 행동코칭을 다시 요청하려면 ${currentRetryStatus.cooldownSeconds}초만 기다려 주세요. 남은 재시도 ${currentRetryStatus.remainingRetries}회예요.`
         );
       } else if (currentRetryStatus.kind === 'exhausted') {
-        setAiReflectionNotice('이번 분석의 재시도 3회를 모두 사용했어요. 새 파일을 올리면 다시 받을 수 있어요.');
+        setAiReflectionNotice(
+          '이번 분석의 재시도 3회를 모두 사용했어요. 새 파일을 올리면 다시 받을 수 있어요.'
+        );
       } else {
-        setAiReflectionNotice('이미 이번 분석에서 AI 행동코칭을 정리했어요. 새 파일을 올리면 다시 받을 수 있어요.');
+        setAiReflectionNotice(
+          '이미 이번 분석에서 AI 행동코칭을 정리했어요. 새 파일을 올리면 다시 받을 수 있어요.'
+        );
       }
       return;
     }
 
     aiReflectionInFlightFingerprintsRef.current.add(requestFingerprint);
     setAiReflectionLoadingFingerprints((fingerprints) =>
-      fingerprints.includes(requestFingerprint) ? fingerprints : [...fingerprints, requestFingerprint]
+      fingerprints.includes(requestFingerprint)
+        ? fingerprints
+        : [...fingerprints, requestFingerprint]
     );
     try {
       const result = await requestAiReflection(aiBehaviorCoachingPayload);
-      if (!isAiReflectionRequestCurrent(requestFingerprint, getCurrentAiReflectionFingerprint())) return;
+      if (!isAiReflectionRequestCurrent(requestFingerprint, getCurrentAiReflectionFingerprint()))
+        return;
 
       if (result.success) {
+        setAiReflectionOutputState({
+          fingerprint: requestFingerprint,
+          output: result.output,
+        });
         setAiReflectionRetryState((state) => markAiReflectionSuccess(state, requestFingerprint));
         setAiReflectionNotice('AI 행동코칭을 정리했어요.');
       } else {
@@ -332,20 +362,6 @@ export function Step2Analysis() {
         fingerprints.filter((fingerprint) => fingerprint !== requestFingerprint)
       );
     }
-  }
-
-  async function handleFeedbackClick() {
-    trackCoinmirrorEvent('feedback_click', {
-      screen: 'analysis',
-      has_form_url: Boolean(feedbackFormUrl),
-    });
-
-    if (!feedbackFormUrl) {
-      setFeedbackNotice('피드백 폼 URL이 아직 연결되지 않았어요. 지금은 피드백 클릭만 익명으로 기록합니다.');
-      return;
-    }
-
-    await Linking.openURL(feedbackFormUrl);
   }
 
   return (
@@ -416,7 +432,9 @@ export function Step2Analysis() {
             </View>
           </View>
           <View className="gap-1 rounded-2xl bg-muted p-3">
-            <Text className="text-xs font-extrabold text-foreground">이 타입은 어떤 성향인가요</Text>
+            <Text className="text-xs font-extrabold text-foreground">
+              이 타입은 어떤 성향인가요
+            </Text>
             <Text className="text-[13px] leading-5 text-foreground">
               {analysis.investmentType.typeDetail}
             </Text>
@@ -514,27 +532,12 @@ export function Step2Analysis() {
         )}
       </View>
 
-      <Card className="border-primary/30 bg-primary/5">
-        <CardContent className="gap-3 pt-2">
-          <View className="gap-1">
-            <Text className="text-sm font-extrabold text-foreground">코인미러, 어떻게 느껴졌나요?</Text>
-            <Text className="text-xs leading-5 text-muted-foreground">
-              30초 피드백으로 더 이해하기 쉬운 분석을 만드는 데 도움을 주세요.
-            </Text>
-          </View>
-          <Button variant="outline" onPress={handleFeedbackClick}>
-            <Text>30초 피드백 남기기</Text>
-          </Button>
-          <Text className="text-[11px] leading-4 text-muted-foreground">
-            자유롭게 의견을 적어주세요. 단, 거래 종목, 금액, 수량, 수익률, 원본 파일명, PDF 비밀번호, 계좌·고객정보 등 개인 거래정보는 입력하지 말아 주세요.
-          </Text>
-          {feedbackNotice && (
-            <View className="rounded-2xl border border-primary/30 bg-background/80 p-3">
-              <Text className="text-xs leading-5 text-foreground">{feedbackNotice}</Text>
-            </View>
-          )}
-        </CardContent>
-      </Card>
+      <FeedbackCta
+        screen="analysis"
+        title="코인미러, 어떻게 느껴졌나요?"
+        description="30초 피드백으로 더 이해하기 쉬운 분석을 만드는 데 도움을 주세요."
+        tone="card"
+      />
 
       <View className="gap-3">
         <View className="gap-1">
@@ -559,18 +562,59 @@ export function Step2Analysis() {
             </Text>
             <Text className="text-base font-extrabold text-foreground">AI 행동코칭</Text>
             <Text className="text-sm leading-6 text-muted-foreground">
-              버튼을 누르면 핵심 지표를 초보자도 이해하기 쉬운 심리 패턴으로 풀어보고, 다음 달 확인할 행동 질문을 정리해요. 투자 조언이 아니라 과거 기록을 돌아보는 회고예요.
+              버튼을 누르면 핵심 지표를 초보자도 이해하기 쉬운 심리 패턴으로 풀어보고, 다음 달
+              확인할 행동 질문을 정리해요. 투자 조언이 아니라 과거 기록을 돌아보는 회고예요.
             </Text>
           </View>
           {showAiBehaviorCoaching && (
             <>
               {isAiReflectionLoading && (
-                <Text className="text-xs leading-5 text-primary">AI 행동코칭 문장을 정리하고 있어요...</Text>
+                <Text className="text-xs leading-5 text-primary">
+                  AI 행동코칭 문장을 정리하고 있어요...
+                </Text>
               )}
               {aiReflectionNotice && (
-                <Text className="text-xs leading-5 text-muted-foreground">{aiReflectionNotice}</Text>
+                <Text className="text-xs leading-5 text-muted-foreground">
+                  {aiReflectionNotice}
+                </Text>
               )}
-              <Text className="text-sm leading-6 text-muted-foreground">{aiBehaviorCoaching.intro}</Text>
+              {aiReflectionOutput && (
+                <View className="gap-3 rounded-3xl border border-primary/30 bg-primary/10 p-3.5">
+                  <View className="gap-1">
+                    <Text className="text-[11px] font-extrabold text-primary">
+                      AI가 새로 정리한 문장
+                    </Text>
+                    <Text className="text-sm font-extrabold leading-6 text-foreground">
+                      {aiReflectionOutput.observedPattern}
+                    </Text>
+                  </View>
+                  <View className="gap-1 rounded-2xl bg-background/80 p-3">
+                    <Text className="text-xs font-extrabold text-foreground">
+                      다음 달에 줄여볼 행동
+                    </Text>
+                    <Text className="text-xs leading-5 text-muted-foreground">
+                      {aiReflectionOutput.reduceAction}
+                    </Text>
+                  </View>
+                  <View className="gap-1 rounded-2xl bg-background/80 p-3">
+                    <Text className="text-xs font-extrabold text-foreground">계속 이어갈 행동</Text>
+                    <Text className="text-xs leading-5 text-muted-foreground">
+                      {aiReflectionOutput.reinforceAction}
+                    </Text>
+                  </View>
+                  <View className="gap-1 rounded-2xl border border-primary/20 bg-background p-3">
+                    <Text className="text-xs font-extrabold text-primary">
+                      다음 분석에서 확인할 질문
+                    </Text>
+                    <Text className="text-xs leading-5 text-foreground">
+                      {aiReflectionOutput.nextQuestion}
+                    </Text>
+                  </View>
+                </View>
+              )}
+              <Text className="text-sm leading-6 text-muted-foreground">
+                {aiBehaviorCoaching.intro}
+              </Text>
               <View className="gap-3 rounded-3xl border border-primary/20 bg-background/80 p-3.5">
                 <View className="gap-2">
                   <Text className="text-sm font-extrabold text-foreground">
@@ -596,9 +640,12 @@ export function Step2Analysis() {
 
                 {aiBehaviorCoaching.patternCard.selfGap && (
                   <View className="gap-1.5 rounded-2xl bg-muted p-3">
-                    <Text className="text-xs font-extrabold text-foreground">내가 답한 나 vs 기록된 나</Text>
+                    <Text className="text-xs font-extrabold text-foreground">
+                      내가 답한 나 vs 기록된 나
+                    </Text>
                     <Text className="text-xs leading-5 text-muted-foreground">
-                      {aiBehaviorCoaching.patternCard.selfGap.expected} │ {aiBehaviorCoaching.patternCard.selfGap.actual}
+                      {aiBehaviorCoaching.patternCard.selfGap.expected} │{' '}
+                      {aiBehaviorCoaching.patternCard.selfGap.actual}
                     </Text>
                     <Text className="text-xs leading-5 text-muted-foreground">
                       {aiBehaviorCoaching.patternCard.selfGap.summary}
@@ -616,7 +663,9 @@ export function Step2Analysis() {
                 </View>
 
                 <View className="gap-1.5 rounded-2xl bg-background p-3">
-                  <Text className="text-xs font-extrabold text-foreground">{aiBehaviorCoaching.patternCard.strength.title}</Text>
+                  <Text className="text-xs font-extrabold text-foreground">
+                    {aiBehaviorCoaching.patternCard.strength.title}
+                  </Text>
                   <Text className="text-xs leading-5 text-muted-foreground">
                     {aiBehaviorCoaching.patternCard.strength.evidence}
                   </Text>
@@ -636,14 +685,18 @@ export function Step2Analysis() {
                   <View className="gap-1.5 rounded-2xl bg-muted p-3">
                     <Text className="text-xs font-extrabold text-foreground">재미로 보는 비유</Text>
                     <Text className="text-xs leading-5 text-muted-foreground">
-                      {aiBehaviorCoaching.patternCard.mbtiAnalogy.body} {aiBehaviorCoaching.patternCard.mbtiAnalogy.disclaimer}
+                      {aiBehaviorCoaching.patternCard.mbtiAnalogy.body}{' '}
+                      {aiBehaviorCoaching.patternCard.mbtiAnalogy.disclaimer}
                     </Text>
                   </View>
                 )}
               </View>
             </>
           )}
-          <Button disabled={isAiReflectionLoading || !aiReflectionRetryStatus.canRequest} onPress={handleAiBehaviorCoachingClick}>
+          <Button
+            disabled={isAiReflectionLoading || !aiReflectionRetryStatus.canRequest}
+            onPress={handleAiBehaviorCoachingClick}
+          >
             <Text>{aiReflectionButtonLabel}</Text>
           </Button>
           <Text className="text-[11px] leading-4 text-muted-foreground">
@@ -667,7 +720,9 @@ export function Step2Analysis() {
               <CardContent className="gap-3 pt-2">
                 <View className="gap-1">
                   <Text className="text-sm font-extrabold text-foreground">{insight.title}</Text>
-                  <Text className="text-xs leading-5 text-muted-foreground">{insight.evidence}</Text>
+                  <Text className="text-xs leading-5 text-muted-foreground">
+                    {insight.evidence}
+                  </Text>
                 </View>
                 <View className="gap-1.5 rounded-2xl bg-muted p-3">
                   <Text className="text-[11px] font-extrabold text-primary">
@@ -691,14 +746,17 @@ export function Step2Analysis() {
                 이 숫자, 다음 달에는 달라졌을까요?
               </Text>
               <Text className="text-sm leading-6 text-muted-foreground">
-                이번 결과 요약만 이 브라우저에 저장해두면 다음 거래내역을 올릴 때 변화량을 비교할 수 있어요.
-                처음 분석했던 브라우저에서 다시 열면 비교가 이어집니다. 다른 기기에서는 새 분석으로 시작될 수 있어요.
+                이번 결과 요약만 이 브라우저에 저장해두면 다음 거래내역을 올릴 때 변화량을 비교할 수
+                있어요. 처음 분석했던 브라우저에서 다시 열면 비교가 이어집니다. 다른 기기에서는 새
+                분석으로 시작될 수 있어요.
               </Text>
             </View>
             <View className="gap-1.5 rounded-2xl bg-background/80 p-3">
               <Text className="text-xs text-foreground">• 다음 거래내역 업로드 때 변화량 비교</Text>
               <Text className="text-xs text-foreground">• 월간 투자습관 리포트</Text>
-              <Text className="text-xs text-foreground">• 구독관리에서는 여러 달 비교와 목표 추적 준비</Text>
+              <Text className="text-xs text-foreground">
+                • 구독관리에서는 여러 달 비교와 목표 추적 준비
+              </Text>
             </View>
             <Button onPress={handleReanalysisReminderClick}>
               <Text>다음 달 재분석 알림 받기</Text>
@@ -716,8 +774,8 @@ export function Step2Analysis() {
             <Text className="text-base font-extrabold text-foreground">다음 달 비교 준비</Text>
             <Text className="text-xs font-extrabold text-primary">{snapshotStatusTitle}</Text>
             <Text className="text-xs leading-5 text-muted-foreground">
-              {snapshotStatusDescription} 이번 결과 저장하기를 누르면 투자거울 타입, 승률,
-              보유기간 같은 분석 요약만 저장해요. 원본 PDF와 비밀번호는 저장하지 않아요.
+              {snapshotStatusDescription} 이번 결과 저장하기를 누르면 투자거울 타입, 승률, 보유기간
+              같은 분석 요약만 저장해요. 원본 PDF와 비밀번호는 저장하지 않아요.
             </Text>
           </View>
           <View className="flex-row items-center justify-between gap-3 rounded-2xl bg-muted p-3">
@@ -744,9 +802,7 @@ export function Step2Analysis() {
                 <Text className="text-xs">저장한 결과 불러오기</Text>
               </Button>
               <Button size="sm" variant="ghost" onPress={handleClearLocalSummary}>
-                <Text className="text-xs text-muted-foreground">
-                  브라우저 저장 요약 삭제하기
-                </Text>
+                <Text className="text-xs text-muted-foreground">브라우저 저장 요약 삭제하기</Text>
               </Button>
             </View>
           </View>
@@ -758,11 +814,10 @@ export function Step2Analysis() {
               </Text>
               {snapshotComparison.dedupe.duplicateExecutionCount > 0 && (
                 <View className="gap-1 rounded-xl bg-background/80 p-2.5">
-                  <Text className="text-[11px] font-extrabold text-primary">
-                    겹치는 거래 처리
-                  </Text>
+                  <Text className="text-[11px] font-extrabold text-primary">겹치는 거래 처리</Text>
                   <Text className="text-[11px] leading-4 text-muted-foreground">
-                    {snapshotComparison.dedupe.copy} 새 거래만 비교 결과에 반영했어요. 이전에 산 기록은 새 거래로 세지 않고 이번 매도 계산에만 참고해요.
+                    {snapshotComparison.dedupe.copy} 새 거래만 비교 결과에 반영했어요. 이전에 산
+                    기록은 새 거래로 세지 않고 이번 매도 계산에만 참고해요.
                   </Text>
                 </View>
               )}
@@ -830,11 +885,15 @@ export function Step2Analysis() {
       <Card className="border-primary/20">
         <CardContent className="gap-3 pt-2">
           <View className="gap-1">
-            <Text className="text-[11px] font-extrabold text-primary">월간 투자습관 리포트 미리보기</Text>
-            <Text className="text-base font-extrabold text-foreground">{monthlyHabitReport.title}</Text>
+            <Text className="text-[11px] font-extrabold text-primary">
+              월간 투자습관 리포트 미리보기
+            </Text>
+            <Text className="text-base font-extrabold text-foreground">
+              {monthlyHabitReport.title}
+            </Text>
             <Text className="text-xs leading-5 text-muted-foreground">
-              {monthlyHabitReport.subtitle} {monthlyHabitReport.summaryCopy} 이번 달 저장한 분석, 중복 제외,
-              원가 연결 보정, 목표 회고를 한 번에 확인해요.
+              {monthlyHabitReport.subtitle} {monthlyHabitReport.summaryCopy} 이번 달 저장한 분석,
+              중복 제외, 원가 연결 보정, 목표 회고를 한 번에 확인해요.
             </Text>
           </View>
           <View className="flex-row flex-wrap gap-2.5">
@@ -850,16 +909,22 @@ export function Step2Analysis() {
             <View className="gap-2 rounded-2xl bg-background/80 p-3">
               <Text className="text-xs font-extrabold text-foreground">이번 달 변화</Text>
               {monthlyHabitReport.changes.map((change) => (
-                <Text key={change.metricKey} className="text-[11px] leading-4 text-muted-foreground">
+                <Text
+                  key={change.metricKey}
+                  className="text-[11px] leading-4 text-muted-foreground"
+                >
                   • {change.label}: {change.copy}
                 </Text>
               ))}
             </View>
           ) : (
             <View className="gap-1 rounded-2xl bg-muted p-3">
-              <Text className="text-xs font-extrabold text-foreground">한 번 더 저장하면 월간 변화가 생겨요</Text>
+              <Text className="text-xs font-extrabold text-foreground">
+                한 번 더 저장하면 월간 변화가 생겨요
+              </Text>
               <Text className="text-[11px] leading-4 text-muted-foreground">
-                같은 달에 저장한 분석이 2개 이상이면 중복 제외, 원가 연결 보정, 목표 회고를 함께 정리해요.
+                같은 달에 저장한 분석이 2개 이상이면 중복 제외, 원가 연결 보정, 목표 회고를 함께
+                정리해요.
               </Text>
             </View>
           )}
@@ -881,7 +946,10 @@ export function Step2Analysis() {
             {monthlyHabitReport.safetyCopy} 원본 PDF와 비밀번호는 저장하지 않아요.
           </Text>
           {subscriptionTier === 'free' && (
-            <Button variant="outline" onPress={() => handleSubscriptionPreviewClick('monthly_report')}>
+            <Button
+              variant="outline"
+              onPress={() => handleSubscriptionPreviewClick('monthly_report')}
+            >
               <Text>구독관리 혜택 보기</Text>
             </Button>
           )}
@@ -979,16 +1047,12 @@ export function Step2Analysis() {
         </CardContent>
       </Card>
 
-      <View className="items-center gap-2 px-2">
-        <Button variant="ghost" onPress={handleFeedbackClick}>
-          <Text>의견을 더 남기고 싶으신가요? 피드백 보내기</Text>
-        </Button>
-        {feedbackNotice && (
-          <View className="w-full rounded-2xl border border-primary/30 bg-background/80 p-3">
-            <Text className="text-xs leading-5 text-foreground">{feedbackNotice}</Text>
-          </View>
-        )}
-      </View>
+      <FeedbackCta
+        screen="analysis"
+        tone="ghost"
+        buttonText="의견을 더 남기고 싶으신가요? 피드백 보내기"
+        showSafetyCopy={false}
+      />
     </ScrollView>
   );
 }

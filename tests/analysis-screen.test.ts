@@ -208,14 +208,12 @@ test('분석 화면은 월간 투자습관 리포트 미리보기 카드를 제�
   assert.match(source, /원본 PDF와 비밀번호는 저장하지 않아요/);
 });
 
-
 test('분석 화면은 로컬 스냅샷 기반 비교 한계를 재분석 알림 근처에서 안내한다', async () => {
   const source = await readFile(STEP_2, 'utf8');
 
   assert.match(source, /처음 분석했던 브라우저에서 다시 열면 비교가 이어집니다/);
-  assert.match(source, /다른 기기에서는 새 분석으로 시작될 수 있어요/);
+  assert.match(source, /다른 기기에서는 새\s+분석으로 시작될 수 있어요/);
 });
-
 
 test('분석 화면은 거래 개요 직후 투자거울 타입을 먼저 보여주고 AI 행동코칭은 그 다음에 둔다', async () => {
   const source = await readFile(STEP_2, 'utf8');
@@ -239,8 +237,6 @@ test('분석 화면은 거래 개요 직후 투자거울 타입을 먼저 보여
   assert.match(source, /다음 달 실험 1개/);
   assert.match(source, /patternCard\.safetyCopy/);
 });
-
-
 
 test('AI 행동코칭 안내는 초보자도 이해할 수 있는 심리 설명 기대를 만든다', async () => {
   const source = await readFile('src/components/steps/step-2-analysis.tsx', 'utf8');
@@ -283,6 +279,17 @@ test('AI 행동코칭 받기 버튼은 safe payload로 api를 호출하고 실�
   assert.match(source, /AI 행동코칭 다시 시도/);
 });
 
+test('AI 행동코칭 성공 응답의 생성 문장 네 개를 현재 분석 화면에 표시한다', async () => {
+  const source = await readFile(STEP_2, 'utf8');
+
+  assert.match(source, /aiReflectionOutputState/);
+  assert.match(source, /fingerprint:\s*requestFingerprint/);
+  assert.match(source, /output:\s*result\.output/);
+  assert.match(source, /aiReflectionOutput\.observedPattern/);
+  assert.match(source, /aiReflectionOutput\.reduceAction/);
+  assert.match(source, /aiReflectionOutput\.reinforceAction/);
+  assert.match(source, /aiReflectionOutput\.nextQuestion/);
+});
 
 test('AI 행동코칭 받기는 성공 시 잠그고 실패 시 30초 후 최대 3회 재시도를 안내한다', async () => {
   const source = await readFile(STEP_2, 'utf8');
@@ -297,9 +304,11 @@ test('AI 행동코칭 받기는 성공 시 잠그고 실패 시 30초 후 최대
   assert.match(source, /aiReflectionLoadingFingerprint/);
   assert.match(source, /getCurrentAiReflectionFingerprint/);
   assert.match(source, /isAiReflectionRequestCurrent/);
-  assert.match(source, /disabled=\{isAiReflectionLoading \|\| !aiReflectionRetryStatus\.canRequest\}/);
+  assert.match(
+    source,
+    /disabled=\{isAiReflectionLoading \|\| !aiReflectionRetryStatus\.canRequest\}/
+  );
 });
-
 
 test('분석 화면 AI 행동코칭은 나열형 지표 대신 5블록 패턴 카드 구조를 렌더링한다', async () => {
   const source = await readFile(STEP_2, 'utf8');

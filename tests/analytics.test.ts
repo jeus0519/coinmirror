@@ -5,21 +5,37 @@ import test from 'node:test';
 import {
   buildAnalyticsConfig,
   buildAnalyticsEvent,
+  COINMIRROR_GA_MEASUREMENT_ID,
   getGoogleTagScriptSrc,
   installGoogleTag,
+  resolveAnalyticsMeasurementId,
   sanitizeAnalyticsPayload,
   trackAnalyticsEvent,
   trackCoinmirrorEvent,
 } from '../src/lib/analytics.ts';
 
 test('analytics config는 measurement id가 없거나 production web이 아니면 비활성화된다', () => {
-  assert.equal(buildAnalyticsConfig({ measurementId: '', isProduction: true, platform: 'web' }).enabled, false);
-  assert.equal(buildAnalyticsConfig({ measurementId: 'G-TEST1234', isProduction: false, platform: 'web' }).enabled, false);
-  assert.equal(buildAnalyticsConfig({ measurementId: 'G-TEST1234', isProduction: true, platform: 'ios' }).enabled, false);
-  assert.deepEqual(buildAnalyticsConfig({ measurementId: 'G-TEST1234', isProduction: true, platform: 'web' }), {
-    enabled: true,
-    measurementId: 'G-TEST1234',
-  });
+  assert.equal(
+    buildAnalyticsConfig({ measurementId: '', isProduction: true, platform: 'web' }).enabled,
+    false
+  );
+  assert.equal(
+    buildAnalyticsConfig({ measurementId: 'G-TEST1234', isProduction: false, platform: 'web' })
+      .enabled,
+    false
+  );
+  assert.equal(
+    buildAnalyticsConfig({ measurementId: 'G-TEST1234', isProduction: true, platform: 'ios' })
+      .enabled,
+    false
+  );
+  assert.deepEqual(
+    buildAnalyticsConfig({ measurementId: 'G-TEST1234', isProduction: true, platform: 'web' }),
+    {
+      enabled: true,
+      measurementId: 'G-TEST1234',
+    }
+  );
 });
 
 test('analytics payload는 원본 파일명·비밀번호·이메일·거래 원문·금액성 키를 제거한다', () => {
@@ -66,10 +82,57 @@ test('analytics event는 허용된 이벤트명과 안전한 payload만 만든�
 test('RootLayout은 Expo Web에서 Google tag bootstrap을 한 번 연결한다', async () => {
   const source = await readFile('src/app/_layout.tsx', 'utf8');
 
+  assert.equal(COINMIRROR_GA_MEASUREMENT_ID, 'G-RW7FRXJVER');
+  assert.equal(resolveAnalyticsMeasurementId(), 'G-RW7FRXJVER');
+  assert.equal(resolveAnalyticsMeasurementId(' G-OVERRIDE123 '), 'G-OVERRIDE123');
   assert.match(source, /buildAnalyticsConfig/);
   assert.match(source, /installGoogleTag/);
+  assert.match(source, /resolveAnalyticsMeasurementId/);
   assert.match(source, /EXPO_PUBLIC_GA_MEASUREMENT_ID/);
   assert.match(source, /Platform\.OS/);
+});
+
+test('app.config는 GA4 Measurement ID 기본값을 Expo extra에 주입한다', async () => {
+  const source = await readFile('app.config.ts', 'utf8');
+
+  assert.match(source, /G-RW7FRXJVER/);
+  assert.match(source, /gaMeasurementId/);
+  assert.match(source, /EXPO_PUBLIC_GA_MEASUREMENT_ID/);
+});
+
+test('Google tag bootstrap은 쿼리·해시 없이 page 정보를 설정한다', () => {
+  const calls: unknown[][] = [];
+  const createdScripts: Array<{ async?: boolean; src?: string }> = [];
+  const doc = {
+    createElement: () => {
+      const script = {};
+      createdScripts.push(script);
+      return script;
+    },
+    head: { appendChild: () => undefined },
+    location: {
+      origin: 'https://coinmirror.example',
+      pathname: '/?not-used',
+      href: 'https://coinmirror.example/?source=reanalysis-email&r=SECRET#frag',
+    },
+    referrer: 'https://mail.example/message?r=SECRET',
+  };
+
+  installGoogleTag({ enabled: true, measurementId: 'G-RW7FRXJVER' }, doc, (...args) =>
+    calls.push(args)
+  );
+
+  assert.equal(createdScripts[0]?.src, getGoogleTagScriptSrc('G-RW7FRXJVER'));
+  assert.deepEqual(calls[1], [
+    'config',
+    'G-RW7FRXJVER',
+    {
+      send_page_view: true,
+      page_path: '/',
+      page_location: 'https://coinmirror.example/',
+      page_referrer: 'https://mail.example/message',
+    },
+  ]);
 });
 
 test('무료 공개 MVP 핵심 화면은 GA4 익명 퍼널 이벤트를 연결한다', async () => {
@@ -113,8 +176,8 @@ test('첫 화면 CTA는 MVP 용어 없이 무료 분석과 브라우저 파일 �
   assert.doesNotMatch(source, /무료 공개 MVP/);
 });
 
-test('분석 결과 화면은 외부 피드백 폼 URL 환경변수로 피드백을 연결할 수 있다', async () => {
-  const source = await readFile('src/components/steps/step-2-analysis.tsx', 'utf8');
+test('공통 피드백 CTA는 외부 폼 URL과 익명 피드백 이벤트만 연결한다', async () => {
+  const source = await readFile('src/components/feedback-cta.tsx', 'utf8');
   const appConfigSource = await readFile('app.config.ts', 'utf8');
 
   assert.match(source, /Constants\.expoConfig\?\.extra/);
@@ -126,6 +189,7 @@ test('분석 결과 화면은 외부 피드백 폼 URL 환경변수로 피드백
   assert.match(source, /30초 피드백 남기기/);
   assert.match(source, /자유롭게 의견을 적어주세요/);
   assert.match(source, /종목, 금액, 수량, 수익률, 원본 파일명, PDF 비밀번호/);
+  assert.doesNotMatch(source, /fileName|password:|rawTradeText|symbol:|amount:|quantity:/);
 });
 
 test('주 피드백 CTA는 핵심 결과 직후이자 상세 행동 점수 전에 노출하고 최하단에는 보조 링크만 둔다', async () => {
@@ -141,6 +205,27 @@ test('주 피드백 CTA는 핵심 결과 직후이자 상세 행동 점수 전�
   assert.ok(symbolChartIndex < footerFeedbackIndex);
 });
 
+test('목표 진행 탭은 4주 관찰 CTA 바로 아래 피드백 CTA를 둔다', async () => {
+  const source = await readFile('src/components/steps/step-3-goals.tsx', 'utf8');
+  const observeIndex = source.indexOf('이 원칙으로 4주 관찰하기');
+  const feedbackIndex = source.indexOf('screen="goals"');
+  const noticeIndex = source.indexOf('{notice &&');
+
+  assert.ok(observeIndex >= 0);
+  assert.ok(feedbackIndex > observeIndex);
+  assert.ok(noticeIndex > feedbackIndex);
+});
+
+test('정보 이벤트 탭은 시장 배경과 거래소 이벤트 콘텐츠보다 먼저 피드백 CTA를 노출한다', async () => {
+  const source = await readFile('src/components/steps/step-4-info.tsx', 'utf8');
+  const feedbackIndex = source.indexOf('screen="info"');
+  const marketIndex = source.indexOf('viewModel.marketTemperature.title');
+  const exchangeIndex = source.indexOf('viewModel.exchangeEvents.title');
+
+  assert.ok(feedbackIndex >= 0);
+  assert.ok(feedbackIndex < marketIndex);
+  assert.ok(feedbackIndex < exchangeIndex);
+});
 
 test('analytics는 재분석 귀환과 2회차 비교 이벤트를 지원하고 민감 토큰 원문은 제거한다', () => {
   const returnEvent = buildAnalyticsEvent('reanalysis_return', {

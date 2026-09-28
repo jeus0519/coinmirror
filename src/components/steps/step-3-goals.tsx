@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
+import { FeedbackCta } from '@/components/feedback-cta';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -20,8 +21,8 @@ export function Step3Goals() {
       <View className="gap-2">
         <Text className="text-lg font-extrabold text-foreground">P7 · 원칙 지키기</Text>
         <Text className="text-xs leading-5 text-muted-foreground">
-          체험용 원칙 후보를 하나 골라요. 실제 저장은 아직 하지 않아요. 다음 분석에서 어떤
-          기준을 볼 수 있을지 미리 확인하는 화면입니다.
+          체험용 원칙 후보를 하나 골라요. 실제 저장은 아직 하지 않아요. 다음 분석에서 어떤 기준을 볼
+          수 있을지 미리 확인하는 화면입니다.
         </Text>
       </View>
 
@@ -68,6 +69,10 @@ export function Step3Goals() {
       >
         <Text>이 원칙으로 4주 관찰하기</Text>
       </Button>
+      <FeedbackCta
+        screen="goals"
+        description="목표 진행 화면도 써본 느낌을 알려주시면 관찰 흐름을 더 쉽게 다듬을게요."
+      />
       {notice && (
         <View className="rounded-2xl border border-primary/30 bg-primary/5 p-3">
           <Text className="text-xs leading-5 text-foreground">{notice}</Text>
