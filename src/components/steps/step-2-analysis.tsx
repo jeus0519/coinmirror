@@ -1,3 +1,4 @@
+import Constants from 'expo-constants';
 import { Lock } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -59,6 +60,14 @@ function StatTile({
   );
 }
 
+function getFeedbackFormUrl() {
+  const extra = Constants.expoConfig?.extra as { feedbackFormUrl?: unknown } | undefined;
+  const extraUrl = typeof extra?.feedbackFormUrl === 'string' ? extra.feedbackFormUrl.trim() : '';
+  const envUrl = process.env.EXPO_PUBLIC_FEEDBACK_FORM_URL?.trim() ?? '';
+
+  return extraUrl || envUrl;
+}
+
 type AiReflectionFlowState = Pick<
   ReturnType<typeof useFlowStore.getState>,
   'dataSource' | 'tradeAnalysis'
@@ -98,7 +107,7 @@ export function Step2Analysis() {
     fingerprint: string | null;
     message: string;
   } | null>(null);
-  const feedbackFormUrl = process.env.EXPO_PUBLIC_FEEDBACK_FORM_URL?.trim();
+  const feedbackFormUrl = getFeedbackFormUrl();
   const analysis = useMemo(
     () => buildAnalysisViewData({ dataSource, tradeAnalysis, diagnosis: diagnosisAnswers }),
     [tradeAnalysis, dataSource, diagnosisAnswers]

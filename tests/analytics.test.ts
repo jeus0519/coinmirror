@@ -115,8 +115,12 @@ test('첫 화면 CTA는 MVP 용어 없이 무료 분석과 브라우저 파일 �
 
 test('분석 결과 화면은 외부 피드백 폼 URL 환경변수로 피드백을 연결할 수 있다', async () => {
   const source = await readFile('src/components/steps/step-2-analysis.tsx', 'utf8');
+  const appConfigSource = await readFile('app.config.ts', 'utf8');
 
+  assert.match(source, /Constants\.expoConfig\?\.extra/);
   assert.match(source, /EXPO_PUBLIC_FEEDBACK_FORM_URL/);
+  assert.match(appConfigSource, /feedbackFormUrl/);
+  assert.match(appConfigSource, /EXPO_PUBLIC_FEEDBACK_FORM_URL/);
   assert.match(source, /feedback_click/);
   assert.match(source, /Linking\.openURL/);
   assert.match(source, /30초 피드백 남기기/);
