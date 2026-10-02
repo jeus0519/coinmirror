@@ -208,9 +208,13 @@ test('AI reflection prompt is beginner-friendly, psychology-based, behavior-only
   assert.match(prompt.user, /coinmirror.aiReflection.v1/);
   assert.match(prompt.user, /reentry_after_loss/);
   assert.doesNotMatch(prompt.system + prompt.user, /수익 보장|가격 예측|추천 종목|목표가/);
-  assert.doesNotMatch(prompt.system + prompt.user, /ARB|SOL|XRP|120,633|pdfPassword|fileName|email/);
+  assert.doesNotMatch(
+    prompt.system + prompt.user,
+    /ARB|SOL|XRP|120,633|pdfPassword|fileName|email/
+  );
 });
 
-test('AI reflection timeout budget stays small for cost and UX control', () => {
-  assert.ok(AI_REFLECTION_TIMEOUT_MS <= 4000);
+test('AI reflection timeout budget allows gpt-6-luna while staying bounded', () => {
+  assert.ok(AI_REFLECTION_TIMEOUT_MS >= 8000);
+  assert.ok(AI_REFLECTION_TIMEOUT_MS <= 10000);
 });
