@@ -69,18 +69,18 @@
 
 ## 2. 런칭 게이트 우선순위
 
-| 우선순위 | 게이트 | 상태 | 다음 액션 |
-| --- | --- | --- | --- |
-| P0 | 창업자 겸업·이해충돌 확인 | 미확인 | 사내 규정 확인 전 공개 유료 출시 금지 |
-| P0 | 개인정보/원본 파일 저장 경계 | 부분 구현 | 고객용 보안 안내와 삭제 플로우 검증 |
-| P0 | 투자 조언 오인 방지 | 문서/카피 일부 반영 | 앱 전 화면 금지 표현 정적 검사 추가 |
-| P0 | 실제 업비트 PDF/CSV 파싱 신뢰성 | PDF 일부 검증, CSV 미해결 | 익명화 실제 샘플 5~10개 수집/회귀 테스트 |
-| P1 | 첫 사용자 온보딩 이해도 | 기능 구현 중심 | 파일 업로드 전 신뢰/가치 설명 강화 |
-| P1 | 분석 결과 해석 UX | 구현됨 | 위험 카피/과장 수치/표본 부족 상태 QA |
-| P1 | 무료 분석 후 출시 알림 전환 | 부분 구현 | 구독관리 출시 알림 CTA는 `EXPO_PUBLIC_WAITLIST_FORM_URL`, 피드백 CTA는 `EXPO_PUBLIC_FEEDBACK_FORM_URL`로 외부 폼 연결 가능 |
-| P1 | 웹 트래픽·퍼널 계측 | 부분 구현 | GA4 helper, Google tag bootstrap, 핵심 익명 퍼널 이벤트 연결 완료 |
-| P1 | 배포 | 부분 검증 | `npx expo export --platform web` 성공, 배포 플랫폼/도메인 선택 대기 |
-| P2 | 결제/구독 | 보류 | 가격표와 결제 버튼은 이해충돌 검토 전까지 노출하지 않는다 |
+| 우선순위 | 게이트                          | 상태                      | 다음 액션                                                                                                                  |
+| -------- | ------------------------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| P0       | 창업자 겸업·이해충돌 확인       | 미확인                    | 사내 규정 확인 전 공개 유료 출시 금지                                                                                      |
+| P0       | 개인정보/원본 파일 저장 경계    | 부분 구현                 | 고객용 보안 안내와 삭제 플로우 검증                                                                                        |
+| P0       | 투자 조언 오인 방지             | 문서/카피 일부 반영       | 앱 전 화면 금지 표현 정적 검사 추가                                                                                        |
+| P0       | 실제 업비트 PDF/CSV 파싱 신뢰성 | PDF 일부 검증, CSV 미해결 | 익명화 실제 샘플 5~10개 수집/회귀 테스트                                                                                   |
+| P1       | 첫 사용자 온보딩 이해도         | 기능 구현 중심            | 파일 업로드 전 신뢰/가치 설명 강화                                                                                         |
+| P1       | 분석 결과 해석 UX               | 구현됨                    | 위험 카피/과장 수치/표본 부족 상태 QA                                                                                      |
+| P1       | 무료 분석 후 출시 알림 전환     | 부분 구현                 | 구독관리 출시 알림 CTA는 `EXPO_PUBLIC_WAITLIST_FORM_URL`, 피드백 CTA는 `EXPO_PUBLIC_FEEDBACK_FORM_URL`로 외부 폼 연결 가능 |
+| P1       | 웹 트래픽·퍼널 계측             | 부분 구현                 | GA4 helper, Google tag bootstrap, 핵심 익명 퍼널 이벤트 연결 완료                                                          |
+| P1       | 배포                            | 부분 검증                 | `npx expo export --platform web` 성공, 배포 플랫폼/도메인 선택 대기                                                        |
+| P2       | 결제/구독                       | 보류                      | 가격표와 결제 버튼은 이해충돌 검토 전까지 노출하지 않는다                                                                  |
 
 ---
 
@@ -121,6 +121,7 @@
 **Objective:** 앱/문서의 고객 노출 카피가 투자 조언·수익 보장으로 오인되지 않도록 정적 검사를 만든다.
 
 **Files:**
+
 - Create: `tests/launch-copy-compliance.test.ts`
 - Read/Scan: `src/app/**/*.tsx`, `src/components/**/*.tsx`, `docs/demo/*.md`, `docs/exec-plans/active/*.md`
 
@@ -170,6 +171,7 @@ node --import tsx --test tests/launch-copy-compliance.test.ts
 **Objective:** 사용자가 PDF/CSV와 PDF 비밀번호를 올리기 전에 무엇이 저장되고 저장되지 않는지 명확히 이해하게 한다.
 
 **Files:**
+
 - Modify: `src/components/steps/step-3-data-import.tsx`
 - Test: `tests/trade-history-ui.test.ts` 또는 신규 `tests/upload-trust-copy.test.ts`
 
@@ -198,6 +200,7 @@ npm run typecheck
 **Objective:** local-first 구독관리에서 저장된 스냅샷/목표/월간 리포트 근거가 삭제되는지 고객 관점으로 검증한다.
 
 **Files:**
+
 - Read: `src/lib/subscription/persistence.ts`
 - Modify: 필요 시 `src/components/steps/step-2-analysis.tsx`
 - Test: `tests/subscription-persistence.test.ts`, `tests/analysis-screen.test.ts`
@@ -216,6 +219,7 @@ npm run typecheck
 **Objective:** 런칭 전 가장 큰 제품 리스크인 파싱 실패율을 낮춘다.
 
 **Files:**
+
 - Existing: `src/lib/trade-history/*`
 - Existing Tests: `tests/*trade*`, `tests/*pdf*`, `tests/*csv*`
 - Create if needed: `tests/fixtures/upbit-anonymized/README.md`
@@ -242,6 +246,7 @@ npm run typecheck
 **Objective:** 첫 사용자가 결과 화면에서 점수보다 “내 행동 회고”를 먼저 이해하게 한다.
 
 **Files:**
+
 - Modify: `src/components/steps/step-2-analysis.tsx`
 - Test: `tests/analysis-screen.test.ts`
 
@@ -268,6 +273,7 @@ npm run typecheck
 **Objective:** 사용자가 핵심 분석을 무료로 경험한 뒤, 월간 리포트·목표 추적·다음 업로드 비교에 관심이 있으면 선택적으로 출시 알림을 남기게 한다.
 
 **Files:**
+
 - Modify: `src/app/subscription.tsx`
 - Modify or Create: `src/app/index.tsx` 또는 `src/components/*`
 - Test: `tests/subscription-page.test.ts`
@@ -302,6 +308,7 @@ npm run typecheck
 **Source:** Google Analytics는 웹/앱 데이터를 이벤트 기반으로 수집하는 현재 세대 Analytics이며, Google tag(gtag.js)는 Analytics 등 Google 측정 제품에 데이터를 보내기 위해 모든 추적 페이지에 설치하는 태그다.
 
 **Files:**
+
 - Modify or Create: Expo Web analytics bootstrap 파일
 - Modify if needed: `src/app/_layout.tsx` 또는 웹 전용 entry
 - Test: analytics helper가 민감 데이터를 event payload에 넣지 않는지 검증하는 테스트
@@ -360,11 +367,11 @@ Manual QA:
 
 **Options:**
 
-| 옵션 | 장점 | 리스크 |
-| --- | --- | --- |
-| Vercel/Netlify web export | 빠르고 공유 쉬움 | Expo Web 설정 확인 필요 |
-| Expo hosting/EAS Update | Expo 생태계 적합 | 현재 웹 우선 운영에는 다소 무거울 수 있음 |
-| GitHub Pages | 무료 | 라우팅/빌드 설정 번거로움 |
+| 옵션                      | 장점             | 리스크                                    |
+| ------------------------- | ---------------- | ----------------------------------------- |
+| Vercel/Netlify web export | 빠르고 공유 쉬움 | Expo Web 설정 확인 필요                   |
+| Expo hosting/EAS Update   | Expo 생태계 적합 | 현재 웹 우선 운영에는 다소 무거울 수 있음 |
+| GitHub Pages              | 무료             | 라우팅/빌드 설정 번거로움                 |
 
 **Recommended:** Vercel 또는 Netlify에 web build 배포.
 
@@ -391,6 +398,7 @@ npm run web 또는 web export build 명령
 **Objective:** 기능 개발이 아니라 실제 고객 반응을 기록할 틀을 만든다.
 
 **Files:**
+
 - Create: `docs/launch/v1.0_free_public_mvp_feedback_tracker.md`
 
 **Fields:**
@@ -576,22 +584,24 @@ Vercel 또는 Netlify 웹 배포
 
 이 3개가 끝나야 실제 사용자에게 무료 공개 링크를 보낼 수 있다.
 
-
 ## 2026-09-04 추가 결정 반영: 재분석 메인 + 구독 의사 확인 병행
 
 ### 결정
+
 - 메인 전환 CTA는 `다음 달 재분석 알림 받기`로 둔다.
 - 단, 사업성 확대 판단을 위해 구독관리 혜택 소개, 구독 혜택 반응, 구독 의사 확인은 반드시 함께 수집한다.
 - 알림/관심 폼은 `재분석 알림 + 구독 혜택 관심 확인` 목적의 단일 외부 폼으로 시작한다.
 - 거래소 API 키 연동은 이번 런칭 범위에서 제외한다.
 
 ### API 연동 제외 사유
+
 - API 키 입력은 무료 공개 MVP의 신뢰 장벽을 크게 높인다.
 - 출시 전 겸업·이해충돌·거래소 약관·보안 정책 확인이 필요하다.
 - 계정/서버 저장/키 암호화/삭제 요청/장애 대응 등 운영 범위가 커진다.
 - 현재 검증해야 할 핵심은 API 자동화가 아니라 `PDF/CSV 수동 업로드 기반 분석 가치`, `재분석 의향`, `구독관리 혜택 반응`이다.
 
 ### 이번 반영 범위
+
 - 고객 첫 화면에서 `MVP` 개발 용어를 제거하고 `무료 분석 · 파일은 내 브라우저에서만` 톤으로 정리한다.
 - 분석 결과 후속 CTA를 `다음 달 재분석 알림` 중심으로 리프레이밍한다.
 - 구독관리 혜택은 `여러 달 비교`, `월간 리포트`, `목표 추적` 3개 축으로 노출한다.
@@ -602,6 +612,7 @@ Vercel 또는 Netlify 웹 배포
 - 고객 노출 지표 라벨은 내부 score key를 유지하되 표시 레이어에서 중립화한다.
 
 ### 익명 GA4 이벤트 추가
+
 - `reanalysis_reminder_click`: 다음 달 재분석 알림 클릭.
 - `subscription_interest_click`: 구독 의사/혜택 관심 확인 CTA 클릭.
 - `reanalysis_return`: 재분석 이메일 링크 등으로 돌아온 방문.
@@ -609,15 +620,16 @@ Vercel 또는 Netlify 웹 배포
 - 허용 payload는 `has_return_token`, `has_local_snapshot`, `has_duplicate_executions`, `has_unique_executions`, `source_format` 같은 익명 boolean/summary 수준으로 제한한다.
 - 이메일 원문, return token 원문, 파일명, PDF 비밀번호, 종목명, 주문번호, 거래 금액/수량은 GA payload에 포함하지 않는다.
 
-
 ## 2026-09-04 추가 결정: 기본 AI 분석 레이어 포함
 
 ### 배경
+
 - 코인미러의 컨셉과 마케팅에는 `AI가 내 거래 습관을 해석해준다`는 인식이 필요하다.
 - 단순 규칙 기반 점수만 보여주면 서비스가 계산기/리포트 도구처럼 보일 수 있어, 사용자가 개선하거나 강화할 행동을 이해하기 어렵다.
 - 다만 투자 조언, 매수·매도 추천, 가격 전망으로 오인되지 않도록 AI 역할은 `과거 행동 회고 문장 생성`으로 제한한다.
 
 ### MVP AI 역할
+
 - 입력: 사용자가 선택한 MBTI/자기인식 답변 + 브라우저에서 산출된 안전한 요약 지표.
 - 금지 입력: 원본 PDF/CSV, PDF 비밀번호, 개별 체결 원문, 종목명, 주문번호, 거래 금액/수량, 이메일.
 - 출력:
@@ -628,6 +640,7 @@ Vercel 또는 Netlify 웹 배포
 - 금지 출력: 특정 자산 매수·매도, 가격 예측, 손익 보장, 포트폴리오 비중 제안, 상위 투자자 비교.
 
 ### 런칭 구현 범위
+
 - 1차 런칭에서 AI는 `기본 AI 코멘트` 카드로 제한한다.
 - AI API 키는 클라이언트 번들에 넣지 않는다. `EXPO_PUBLIC_*`에 AI 키를 넣는 것은 금지한다.
 - AI 호출이 필요하면 Vercel/Supabase/Cloudflare serverless endpoint를 통해 안전 요약 지표만 전달한다.
@@ -635,6 +648,7 @@ Vercel 또는 Netlify 웹 배포
 - 기본 분석/점수 계산은 계속 브라우저 local-first로 유지한다.
 
 ### 비용 관리 원칙
+
 - 기본 AI 코멘트는 결과 화면 진입 시 1회만 생성하고 자동 재시도/반복 생성은 제한한다.
 - 월 비용 한도와 rate limit을 둔다.
 - 초기에는 저가 모델을 사용하고, 고급 모델은 내부 품질 검토 또는 구독 기능으로 분리한다.
@@ -645,12 +659,14 @@ Vercel 또는 Netlify 웹 배포
 **위치:** Phase 2와 Phase 3 사이. 현재 rule/template 기반 AI 행동코칭을 유지하되, 실제 AI는 전체 분석이 아니라 이미 분류된 행동코칭 카드의 문장 일부만 다듬는 데 제한한다.
 
 **원칙:**
+
 - 점수 계산, 지표 산출, 코칭 유형 판정은 계속 브라우저 local-first/rule 기반으로 수행한다.
 - 실제 LLM은 `observedPattern`, `reduceAction`, `reinforceAction`, `nextQuestion`처럼 짧은 행동 회고 문장만 생성한다.
 - LLM 장애, timeout, 비용 한도 초과, 응답 검증 실패 시 현재 `buildAiBehaviorCoaching` rule/template 결과를 즉시 fallback으로 사용한다.
 - 사용자에게는 “AI 행동코칭”으로 노출하되, 안전 고지에는 “매수·매도 추천이 아니라 과거 기록 기반 행동 회고”와 “원본 거래내역과 PDF 비밀번호는 AI로 보내지 않음”을 유지한다.
 
 **코칭 유형 v1 후보:**
+
 1. `loss_management`: 손실 관리 점검형
 2. `profit_taking_rhythm`: 이익 정리 리듬 점검형
 3. `late_entry_check`: 직전 거래가 대비 높은 매수 점검형
@@ -663,6 +679,7 @@ Vercel 또는 Netlify 웹 배포
 10. `balanced_observation`: 뚜렷한 주의 지표가 없을 때의 균형 관찰형
 
 **LLM 전달 허용 payload:**
+
 ```json
 {
   "schemaVersion": "coinmirror.aiReflection.v1",
@@ -683,19 +700,21 @@ Vercel 또는 Netlify 웹 배포
 ```
 
 **LLM 전달 금지:**
+
 - 원본 PDF/CSV, PDF 비밀번호, 파일명, 개별 체결 원문
 - 주문번호, 계좌/고객 식별자, 이메일 또는 이메일 해시
 - 종목명, exact 금액/수량/가격, 체결 시각 원문, evidence row, raw stats 문자열
 - 사용자가 입력한 자유서술 원문 중 개인 식별 가능성이 있는 내용
 
 **서버리스 endpoint 구현 초안:**
+
 - Path: `/api/ai-reflection`
 - Method: `POST`
 - Input: `AiBehaviorCoachingSafePayload`만 허용
 - Output: 검증된 JSON `{ observedPattern, reduceAction, reinforceAction, nextQuestion }`
 - Timeout: `AI_REFLECTION_TIMEOUT_MS = 3500`으로 4초 이하 유지
 - Output cap: OpenAI-compatible 호출 기준 `max_tokens: 420`
-- Model default: `COINMIRROR_AI_REFLECTION_MODEL=gpt-4.1-mini`
+- Model default: `COINMIRROR_AI_REFLECTION_MODEL=gpt-6-luna`
 - Server-only API key: `COINMIRROR_AI_REFLECTION_OPENAI_API_KEY`; 절대 `EXPO_PUBLIC_*`로 두지 않는다.
 - Rate limit: IP/세션 기준 일 1~3회 또는 분석 1회당 1회. 현재 코드에는 아직 미구현이며 배포 플랫폼 선택 후 edge middleware/kv/host 기능으로 추가한다.
 - Request size cap: route에서 JSON 직렬화 기준 `MAX_AI_REFLECTION_BODY_BYTES = 2048`을 넘으면 모델 호출 전 `413 payload_too_large`로 차단한다.
@@ -704,6 +723,7 @@ Vercel 또는 Netlify 웹 배포
 - Logging: request body 전문 로그 금지. schemaVersion, coachingType, status, latency, error_code 정도만 기록. 현재 route는 request body를 별도로 로그하지 않는다.
 
 **구현 파일:**
+
 - `api/ai-reflection.ts`: 서버리스 POST route 초안. invalid/sensitive payload는 모델 호출 전 400으로 차단하고, 모델 미설정/실패/위험 응답은 fallback으로 반환한다.
 - `src/lib/ai-reflection-openai.ts`: 서버 전용 OpenAI-compatible 호출 함수. 키가 없으면 network call을 하지 않는다.
 - `src/lib/ai-reflection-api.ts`: request validation, prompt builder, timeout budget.
@@ -711,12 +731,14 @@ Vercel 또는 Netlify 웹 배포
 - `src/lib/ai-coaching.ts`: 코칭 유형 판정과 safe payload 생성.
 
 **비용 통제:**
+
 - 무료 공개 MVP에서는 기본 rule 코칭을 항상 먼저 생성한다.
 - 실제 AI 버튼/자동 호출은 초기엔 “첫 분석 1회” 또는 “구독 관심 확인 후 1회”로 제한한다.
 - 저가 모델 + 짧은 JSON 출력만 사용한다.
 - 비용 한도 초과 시 UI는 조용히 rule 코칭으로 대체하고, 사용자는 분석 실패로 느끼지 않게 한다.
 
 ### 권장 사용자 노출 카피
+
 - `AI가 과거 거래 기록과 자기인식 답변을 바탕으로 다음 달 확인할 행동 질문을 정리해요.`
 - `매수·매도 추천이 아니라, 지난 기록에서 반복된 행동을 회고하는 AI 코멘트예요.`
 - `원본 거래내역과 PDF 비밀번호는 AI로 보내지 않아요.`

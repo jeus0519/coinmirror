@@ -53,3 +53,8 @@ dist-web/
 .vercel
 .env*
 !.env.example
+
+# local secret scratch files — never commit API keys/tokens
+*_api.txt
+*api_key*.txt
+*secret*.txt
