@@ -46,6 +46,26 @@ test('Deployment Contract: Vercel adapter routes Expo server output without expo
     'Vercel Node builder version must not be pinned; use the project Node.js runtime'
   );
   assert.equal(vercelConfig.functions?.['api/index.ts']?.includeFiles, 'dist/server/**');
+  assert.deepEqual(vercelConfig.redirects, [
+    {
+      source: '/:path*',
+      has: [{ type: 'host', value: 'coinmirror\\.kr' }],
+      destination: 'https://www.coinmirror.kr/:path*',
+      permanent: true,
+    },
+    {
+      source: '/:path*',
+      has: [{ type: 'host', value: 'coinmirror\\.co\\.kr' }],
+      destination: 'https://www.coinmirror.kr/:path*',
+      permanent: true,
+    },
+    {
+      source: '/:path*',
+      has: [{ type: 'host', value: 'www\\.coinmirror\\.co\\.kr' }],
+      destination: 'https://www.coinmirror.kr/:path*',
+      permanent: true,
+    },
+  ]);
   assert.deepEqual(vercelConfig.rewrites, [
     {
       source: '/(.*)',
