@@ -26,7 +26,11 @@ test('Deployment Contract: src/app/api/ai-reflection+api.ts must exist and re-ex
   const expectedRoute = await import('../api/ai-reflection.ts');
 
   assert.ok(actualRoute.POST, 'src/app/api/ai-reflection+api.ts must export a POST handler');
-  assert.equal(actualRoute.POST, expectedRoute.POST, 'src/app/api/ai-reflection+api.ts must re-export POST from api/ai-reflection.ts');
+  assert.equal(
+    actualRoute.POST,
+    expectedRoute.POST,
+    'src/app/api/ai-reflection+api.ts must re-export POST from api/ai-reflection.ts'
+  );
 });
 
 test('Deployment Contract: Vercel adapter routes Expo server output without exposing AI secrets', () => {
@@ -39,7 +43,7 @@ test('Deployment Contract: Vercel adapter routes Expo server output without expo
   assert.equal(
     vercelConfig.functions?.['api/index.ts']?.runtime,
     undefined,
-    'Vercel Node builder version must not be pinned; use the project Node.js runtime',
+    'Vercel Node builder version must not be pinned; use the project Node.js runtime'
   );
   assert.equal(vercelConfig.functions?.['api/index.ts']?.includeFiles, 'dist/server/**');
   assert.deepEqual(vercelConfig.rewrites, [
@@ -50,7 +54,10 @@ test('Deployment Contract: Vercel adapter routes Expo server output without expo
   ]);
 
   const adapterPath = path.join(PROJECT_ROOT, 'api/index.ts');
-  assert.ok(fs.existsSync(adapterPath), 'api/index.ts must exist as the Vercel Expo server adapter entry');
+  assert.ok(
+    fs.existsSync(adapterPath),
+    'api/index.ts must exist as the Vercel Expo server adapter entry'
+  );
   const adapterSource = fs.readFileSync(adapterPath, 'utf8');
   assert.match(adapterSource, /expo-server\/adapter\/vercel/);
   assert.match(adapterSource, /dist\/server|dist\\server/);
@@ -58,9 +65,19 @@ test('Deployment Contract: Vercel adapter routes Expo server output without expo
   assert.doesNotMatch(adapterSource, /EXPO_PUBLIC_/);
 });
 
+test('Deployment Contract: AI reflection route reads the documented server-only OpenAI key env', () => {
+  const routeSource = fs.readFileSync(path.join(PROJECT_ROOT, 'api/ai-reflection.ts'), 'utf8');
+
+  assert.match(routeSource, /process\.env\.COINMIRROR_AI_REFLECTION_OPENAI_API_KEY/);
+  assert.doesNotMatch(routeSource, /process\.env\.COINMIRROR_AI_REFLECTION_API_KEY/);
+});
+
 test('Deployment Contract: Vercel function TypeScript uses explicit boolean discriminants', () => {
   const routeSource = fs.readFileSync(path.join(PROJECT_ROOT, 'api/ai-reflection.ts'), 'utf8');
-  const runtimeSource = fs.readFileSync(path.join(PROJECT_ROOT, 'src/lib/ai-reflection-runtime.ts'), 'utf8');
+  const runtimeSource = fs.readFileSync(
+    path.join(PROJECT_ROOT, 'src/lib/ai-reflection-runtime.ts'),
+    'utf8'
+  );
 
   assert.match(routeSource, /validation\.ok === false/);
   assert.match(runtimeSource, /validation\.ok === true/);
@@ -68,7 +85,7 @@ test('Deployment Contract: Vercel function TypeScript uses explicit boolean disc
 
 test('Deployment Contract: no AI key in EXPO_PUBLIC variables', () => {
   // Check process.env keys
-  const unsafeEnvKeys = Object.keys(process.env).filter(key => {
+  const unsafeEnvKeys = Object.keys(process.env).filter((key) => {
     if (!key.startsWith('EXPO_PUBLIC_')) return false;
     const cleanKey = key.toUpperCase();
     return (
@@ -81,7 +98,11 @@ test('Deployment Contract: no AI key in EXPO_PUBLIC variables', () => {
       cleanKey.includes('KEY')
     );
   });
-  assert.deepEqual(unsafeEnvKeys, [], `Found unsafe EXPO_PUBLIC env variables in process.env: ${unsafeEnvKeys.join(', ')}`);
+  assert.deepEqual(
+    unsafeEnvKeys,
+    [],
+    `Found unsafe EXPO_PUBLIC env variables in process.env: ${unsafeEnvKeys.join(', ')}`
+  );
 
   // Also check .env file if it exists, or .env.example
   const checkFileEnv = (filename: string) => {
@@ -95,15 +116,14 @@ test('Deployment Contract: no AI key in EXPO_PUBLIC variables', () => {
           const [key] = trimmed.split('=');
           const cleanKey = key.trim().toUpperCase();
           if (cleanKey.startsWith('EXPO_PUBLIC_')) {
-            const isUnsafe = (
+            const isUnsafe =
               cleanKey.includes('OPENAI') ||
               cleanKey.includes('GEMINI') ||
               cleanKey.includes('CLAUDE') ||
               cleanKey.includes('SECRET') ||
               cleanKey.includes('TOKEN') ||
               (cleanKey.includes('AI') && !cleanKey.includes('WAITLIST')) ||
-              cleanKey.includes('KEY')
-            );
+              cleanKey.includes('KEY');
             if (isUnsafe) {
               assert.fail(`Found unsafe EXPO_PUBLIC env variable ${key.trim()} in ${filename}`);
             }

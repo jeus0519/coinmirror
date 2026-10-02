@@ -2,11 +2,17 @@ import { checkRateLimit as checkVercelRateLimit } from '@vercel/firewall';
 
 import { validateAiReflectionRequest } from '../src/lib/ai-reflection-api';
 import { createOpenAiReflectionGenerator } from '../src/lib/ai-reflection-openai';
-import { buildAiReflectionResult, type AiReflectionGenerator } from '../src/lib/ai-reflection-runtime';
-import { type AiBehaviorCoaching, type AiBehaviorCoachingSafePayload } from '../src/lib/ai-coaching';
+import {
+  buildAiReflectionResult,
+  type AiReflectionGenerator,
+} from '../src/lib/ai-reflection-runtime';
+import {
+  type AiBehaviorCoaching,
+  type AiBehaviorCoachingSafePayload,
+} from '../src/lib/ai-coaching';
 
 export type AiReflectionRateLimitCheck = (
-  request: Request,
+  request: Request
 ) => Promise<{ rateLimited?: boolean }> | { rateLimited?: boolean };
 
 export type AiReflectionRouteDependencies = {
@@ -28,8 +34,10 @@ function jsonResponse(body: JsonValue, status = 200) {
   });
 }
 
-
-async function checkAiReflectionRateLimit(request: Request, dependencies: AiReflectionRouteDependencies) {
+async function checkAiReflectionRateLimit(
+  request: Request,
+  dependencies: AiReflectionRouteDependencies
+) {
   if (dependencies.checkRateLimit) {
     return dependencies.checkRateLimit(request);
   }
@@ -58,7 +66,9 @@ function fallbackFromPayload(payload: AiBehaviorCoachingSafePayload): AiBehavior
     eyebrow: '이번 기록을 바탕으로 정리한 AI 회고',
     intro: '이번 분석의 비식별 핵심 지표를 바탕으로 다음 달에 확인할 행동을 짧게 정리했어요.',
     keySignals: [primarySignal, secondarySignal]
-      .filter((signal): signal is AiBehaviorCoachingSafePayload['keySignals'][number] => Boolean(signal))
+      .filter((signal): signal is AiBehaviorCoachingSafePayload['keySignals'][number] =>
+        Boolean(signal)
+      )
       .map((signal) => `${signal.displayName} · ${signal.scoreBand} · ${signal.scoreBucket}`),
     reduceActions: [`다음 달에는 ${displayName} 지표가 흔들린 상황을 한 번 더 확인해보세요.`],
     reinforceActions: ['이미 안정적으로 유지된 행동은 같은 기준으로 다음 분석에서도 비교해보세요.'],
@@ -74,15 +84,18 @@ function fallbackFromPayload(payload: AiBehaviorCoachingSafePayload): AiBehavior
       patternName: {
         label: '이 패턴의 이름',
         name: '자기인식 갭',
-        explanation: '기록은 성격을 단정하지 않고 반복된 행동의 단서만 보여줘요. 나를 탓하기보다 다음에 같은 장면을 알아차리기 위한 이름표로 보면 좋아요.',
+        explanation:
+          '기록은 성격을 단정하지 않고 반복된 행동의 단서만 보여줘요. 나를 탓하기보다 다음에 같은 장면을 알아차리기 위한 이름표로 보면 좋아요.',
       },
       strength: {
         title: '반전: 이미 잘하고 있는 것',
-        evidence: '모든 행동을 한 번에 고치기보다 가장 선명한 패턴 하나만 보는 것부터 시작해도 충분해요.',
+        evidence:
+          '모든 행동을 한 번에 고치기보다 가장 선명한 패턴 하나만 보는 것부터 시작해도 충분해요.',
       },
       experiment: {
         title: '다음 달 실험 1개',
-        action: '같은 상황이 다시 오면 바로 행동하기 전에 “지금 감정이 먼저 움직였나, 기준이 먼저 있었나?”를 한 번 적어보세요.',
+        action:
+          '같은 상황이 다시 오면 바로 행동하기 전에 “지금 감정이 먼저 움직였나, 기준이 먼저 있었나?”를 한 번 적어보세요.',
         nextUploadPromise: '다음 업로드 때 같은 패턴이 줄었는지 비교해 드릴게요.',
       },
       safetyCopy: '매수·매도 추천이 아닌 과거 기록 회고입니다.',
@@ -136,7 +149,7 @@ export async function POST(request: Request, dependencies: AiReflectionRouteDepe
   const generator =
     dependencies.generate ??
     createOpenAiReflectionGenerator({
-      apiKey: process.env.COINMIRROR_AI_REFLECTION_API_KEY,
+      apiKey: process.env.COINMIRROR_AI_REFLECTION_OPENAI_API_KEY,
       model: process.env.COINMIRROR_AI_REFLECTION_MODEL,
     });
   const result = await buildAiReflectionResult({
