@@ -53,7 +53,7 @@ test('OpenAI reflection generator uses gpt-6-luna as the default model', async (
   const output = await generator(payload);
 
   assert.equal(capturedBody?.model, 'gpt-6-luna');
-  assert.equal(capturedBody?.temperature, 0.4);
+  assert.equal(capturedBody?.temperature, undefined);
   assert.equal(capturedBody?.max_completion_tokens, 420);
   assert.equal(capturedBody?.max_tokens, undefined);
   assert.deepEqual(capturedBody?.response_format, { type: 'json_object' });

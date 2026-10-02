@@ -14,8 +14,14 @@ type ChatCompletionResponse = {
   choices?: { message?: { content?: string } }[];
 };
 
-function completionTokenLimitForModel(model: string) {
-  return /^gpt-[56]/i.test(model) ? { max_completion_tokens: 420 } : { max_tokens: 420 };
+function usesDefaultOnlySamplingParameters(model: string) {
+  return /^gpt-[56]/i.test(model);
+}
+
+function chatCompletionOptionsForModel(model: string) {
+  return usesDefaultOnlySamplingParameters(model)
+    ? { max_completion_tokens: 420 }
+    : { temperature: 0.4, max_tokens: 420 };
 }
 
 export function createOpenAiReflectionGenerator(
@@ -42,8 +48,7 @@ export function createOpenAiReflectionGenerator(
           },
           body: JSON.stringify({
             model,
-            temperature: 0.4,
-            ...completionTokenLimitForModel(model),
+            ...chatCompletionOptionsForModel(model),
             response_format: { type: 'json_object' },
             messages: [
               { role: 'system', content: prompt.system },
