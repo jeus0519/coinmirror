@@ -14,7 +14,16 @@ type ChatCompletionResponse = {
   choices?: { message?: { content?: string } }[];
 };
 
+type ResponsesApiResponse = {
+  output_text?: string;
+  output?: { content?: { type?: string; text?: string }[] }[];
+};
+
 function usesDefaultOnlySamplingParameters(model: string) {
+  return /^gpt-[56]/i.test(model);
+}
+
+function usesResponsesApi(model: string) {
   return /^gpt-[56]/i.test(model);
 }
 
@@ -22,6 +31,13 @@ function chatCompletionOptionsForModel(model: string) {
   return usesDefaultOnlySamplingParameters(model)
     ? { max_completion_tokens: 420 }
     : { temperature: 0.4, max_tokens: 420 };
+}
+
+function extractResponsesOutputText(data: ResponsesApiResponse) {
+  if (typeof data.output_text === 'string' && data.output_text.trim()) return data.output_text;
+  return data.output
+    ?.flatMap((item) => item.content ?? [])
+    .find((content) => content.type === 'output_text' && typeof content.text === 'string')?.text;
 }
 
 export function createOpenAiReflectionGenerator(
@@ -38,15 +54,20 @@ export function createOpenAiReflectionGenerator(
 
     try {
       const model = options.model ?? DEFAULT_AI_REFLECTION_OPENAI_MODEL;
-      const response = await fetchImpl(
-        options.endpoint ?? 'https://api.openai.com/v1/chat/completions',
-        {
-          method: 'POST',
-          headers: {
-            authorization: `Bearer ${apiKey}`,
-            'content-type': 'application/json',
-          },
-          body: JSON.stringify({
+      const responseEndpoint = usesResponsesApi(model)
+        ? 'https://api.openai.com/v1/responses'
+        : 'https://api.openai.com/v1/chat/completions';
+      const requestBody = usesResponsesApi(model)
+        ? {
+            model,
+            input: [
+              { role: 'system', content: prompt.system },
+              { role: 'user', content: prompt.user },
+            ],
+            max_output_tokens: 420,
+            text: { format: { type: 'json_object' } },
+          }
+        : {
             model,
             ...chatCompletionOptionsForModel(model),
             response_format: { type: 'json_object' },
@@ -54,14 +75,22 @@ export function createOpenAiReflectionGenerator(
               { role: 'system', content: prompt.system },
               { role: 'user', content: prompt.user },
             ],
-          }),
-          signal: controller.signal,
-        }
-      );
+          };
+      const response = await fetchImpl(options.endpoint ?? responseEndpoint, {
+        method: 'POST',
+        headers: {
+          authorization: `Bearer ${apiKey}`,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+        signal: controller.signal,
+      });
 
       if (!response.ok) throw new Error(`ai_reflection_http_${response.status}`);
-      const data = (await response.json()) as ChatCompletionResponse;
-      const content = data.choices?.[0]?.message?.content;
+      const data = (await response.json()) as ChatCompletionResponse & ResponsesApiResponse;
+      const content = usesResponsesApi(model)
+        ? extractResponsesOutputText(data)
+        : data.choices?.[0]?.message?.content;
       if (!content) throw new Error('ai_reflection_empty_response');
       return JSON.parse(content) as unknown;
     } finally {

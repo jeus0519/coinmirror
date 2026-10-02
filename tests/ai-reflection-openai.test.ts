@@ -25,23 +25,31 @@ test('OpenAI reflection generator does not call network when server API key is m
 
 test('OpenAI reflection generator uses gpt-6-luna as the default model', async () => {
   const payload = buildAiBehaviorCoachingSafePayload({ generalMbti: 'INTJ', metrics: baseMetrics });
+  let capturedUrl = '';
   let capturedBody: Record<string, unknown> | undefined;
   const generator = createOpenAiReflectionGenerator({
-    apiKey: 'test-key',
-    fetch: async (_url, init) => {
+    apiKey: 'server-key',
+    fetch: async (url, init) => {
+      capturedUrl = String(url);
       capturedBody = JSON.parse(String(init?.body));
       return new Response(
         JSON.stringify({
-          choices: [
+          output: [
             {
-              message: {
-                content: JSON.stringify({
-                  observedPattern: '이번 기록에서는 손실 확정 뒤 다시 진입한 흐름이 먼저 보였어요.',
-                  reduceAction: '다음 달에는 재진입 전 대기 시간을 한 번 정해보세요.',
-                  reinforceAction: '늦은 시간대 거래를 줄인 흐름은 유지해볼 만해요.',
-                  nextQuestion: '다음 달에는 같은 상황에서 기다린 시간이 늘었을까요?',
-                }),
-              },
+              type: 'message',
+              role: 'assistant',
+              content: [
+                {
+                  type: 'output_text',
+                  text: JSON.stringify({
+                    observedPattern:
+                      '이번 기록에서는 손실 확정 뒤 다시 진입한 흐름이 먼저 보였어요.',
+                    reduceAction: '다음 달에는 재진입 전 대기 시간을 한 번 정해보세요.',
+                    reinforceAction: '늦은 시간대 거래를 줄인 흐름은 유지해볼 만해요.',
+                    nextQuestion: '다음 달에는 같은 상황에서 기다린 시간이 늘었을까요?',
+                  }),
+                },
+              ],
             },
           ],
         }),
@@ -52,11 +60,14 @@ test('OpenAI reflection generator uses gpt-6-luna as the default model', async (
 
   const output = await generator(payload);
 
+  assert.equal(capturedUrl, 'https://api.openai.com/v1/responses');
   assert.equal(capturedBody?.model, 'gpt-6-luna');
   assert.equal(capturedBody?.temperature, undefined);
-  assert.equal(capturedBody?.max_completion_tokens, 420);
+  assert.equal(capturedBody?.max_output_tokens, 420);
+  assert.equal(capturedBody?.max_completion_tokens, undefined);
   assert.equal(capturedBody?.max_tokens, undefined);
-  assert.deepEqual(capturedBody?.response_format, { type: 'json_object' });
+  assert.deepEqual(capturedBody?.text, { format: { type: 'json_object' } });
+  assert.equal(Array.isArray(capturedBody?.input), true);
   assert.doesNotMatch(
     JSON.stringify(capturedBody),
     /ARB|SOL|XRP|120,633|pdfPassword|fileName|email/
