@@ -140,8 +140,13 @@ function getSanitizedGoogleTagPageParams(doc: GoogleTagDocument) {
   };
 }
 
+type CoinmirrorGaGlobal = typeof globalThis & { __coinmirrorGaBootstrapped?: boolean };
+
 export function installGoogleTag(config: AnalyticsConfig, doc?: unknown, gtag?: Gtag) {
   if (!config.enabled || !doc || !gtag) return;
+
+  const gaGlobal = globalThis as CoinmirrorGaGlobal;
+  if (gaGlobal.__coinmirrorGaBootstrapped) return;
 
   const documentLike = doc as GoogleTagDocument;
   if (!documentLike.head) return;
@@ -155,6 +160,7 @@ export function installGoogleTag(config: AnalyticsConfig, doc?: unknown, gtag?: 
     send_page_view: true,
     ...getSanitizedGoogleTagPageParams(documentLike),
   });
+  gaGlobal.__coinmirrorGaBootstrapped = true;
 }
 
 export function trackAnalyticsEvent(

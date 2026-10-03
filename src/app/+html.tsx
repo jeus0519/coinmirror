@@ -1,12 +1,45 @@
 import { ScrollViewStyleReset } from 'expo-router/html';
 import { type PropsWithChildren } from 'react';
 
+import { COINMIRROR_GA_MEASUREMENT_ID, getGoogleTagScriptSrc } from '../lib/analytics';
 import { buildCoinmirrorMetadata } from '../lib/seo-metadata';
+
+const googleTagBootstrapScript = `
+(function () {
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){window.dataLayer.push(arguments);}
+  window.gtag = window.gtag || gtag;
+
+  var pageUrl = new URL(window.location.href);
+  pageUrl.search = '';
+  pageUrl.hash = '';
+
+  var pageReferrer = '';
+  if (document.referrer) {
+    try {
+      var referrerUrl = new URL(document.referrer);
+      referrerUrl.search = '';
+      referrerUrl.hash = '';
+      pageReferrer = referrerUrl.toString();
+    } catch (error) {}
+  }
+
+  gtag('js', new Date());
+  gtag('config', 'G-RW7FRXJVER', {
+    send_page_view: true,
+    page_path: pageUrl.pathname || '/',
+    page_location: pageUrl.toString(),
+    page_referrer: pageReferrer
+  });
+  window.__coinmirrorGaBootstrapped = true;
+})();
+`;
 
 export default function Root({ children }: PropsWithChildren) {
   const metadata = buildCoinmirrorMetadata();
   const ogImage = metadata.openGraph.images[0];
   const twitterImage = metadata.twitter.images[0];
+  const googleTagScriptSrc = getGoogleTagScriptSrc(COINMIRROR_GA_MEASUREMENT_ID);
 
   return (
     <html lang="ko">
@@ -35,6 +68,8 @@ export default function Root({ children }: PropsWithChildren) {
         <meta name="twitter:title" content={metadata.twitter.title} />
         <meta name="twitter:description" content={metadata.twitter.description} />
         <meta name="twitter:image" content={twitterImage} />
+        <script async src={googleTagScriptSrc}></script>
+        <script dangerouslySetInnerHTML={{ __html: googleTagBootstrapScript }} />
       </head>
       <body>{children}</body>
     </html>

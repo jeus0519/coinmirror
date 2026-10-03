@@ -100,6 +100,20 @@ test('app.config는 GA4 Measurement ID 기본값을 Expo extra에 주입한다',
   assert.match(source, /EXPO_PUBLIC_GA_MEASUREMENT_ID/);
 });
 
+test('Root HTML은 Google tag를 초기 head에서 로드해 GA 설치 감지를 안정화한다', async () => {
+  const source = await readFile('src/app/+html.tsx', 'utf8');
+
+  assert.match(source, /getGoogleTagScriptSrc/);
+  assert.match(source, /<script async src=\{googleTagScriptSrc\}>/);
+  assert.match(source, /G-RW7FRXJVER/);
+  assert.match(source, /window\.dataLayer/);
+  assert.match(source, /gtag\('config', 'G-RW7FRXJVER'/);
+  assert.match(source, /page_location/);
+  assert.match(source, /page_path/);
+  assert.match(source, /search = ''/);
+  assert.match(source, /hash = ''/);
+});
+
 test('Google tag bootstrap은 쿼리·해시 없이 page 정보를 설정한다', () => {
   const calls: unknown[][] = [];
   const createdScripts: Array<{ async?: boolean; src?: string }> = [];
@@ -133,6 +147,34 @@ test('Google tag bootstrap은 쿼리·해시 없이 page 정보를 설정한다'
       page_referrer: 'https://mail.example/message',
     },
   ]);
+});
+
+test('Google tag bootstrap은 Root HTML에서 이미 실행된 경우 중복 page_view를 만들지 않는다', () => {
+  const createdScripts: Array<{ async?: boolean; src?: string }> = [];
+  const calls: unknown[][] = [];
+  const previous = (globalThis as { __coinmirrorGaBootstrapped?: boolean })
+    .__coinmirrorGaBootstrapped;
+  (globalThis as { __coinmirrorGaBootstrapped?: boolean }).__coinmirrorGaBootstrapped = true;
+
+  try {
+    installGoogleTag(
+      { enabled: true, measurementId: 'G-RW7FRXJVER' },
+      {
+        createElement: () => {
+          const script = {};
+          createdScripts.push(script);
+          return script;
+        },
+        head: { appendChild: () => undefined },
+      },
+      (...args) => calls.push(args)
+    );
+  } finally {
+    (globalThis as { __coinmirrorGaBootstrapped?: boolean }).__coinmirrorGaBootstrapped = previous;
+  }
+
+  assert.deepEqual(createdScripts, []);
+  assert.deepEqual(calls, []);
 });
 
 test('무료 공개 MVP 핵심 화면은 GA4 익명 퍼널 이벤트를 연결한다', async () => {
