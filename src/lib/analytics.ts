@@ -25,6 +25,7 @@ export type AnalyticsEventName =
 export type AnalyticsPayload = Record<string, string | number | boolean | null | undefined>;
 
 export const COINMIRROR_GA_MEASUREMENT_ID = 'G-RW7FRXJVER';
+export const COINMIRROR_GA_HOSTNAME = 'www.coinmirror.kr';
 
 export type Gtag = (
   command: 'js' | 'config' | 'event',
@@ -72,13 +73,21 @@ export function buildAnalyticsConfig({
   measurementId,
   isProduction,
   platform,
+  hostname,
 }: {
   measurementId?: string | null;
   isProduction: boolean;
   platform: AnalyticsPlatform;
+  hostname?: string | null;
 }): AnalyticsConfig {
   const normalizedMeasurementId = measurementId?.trim() ?? '';
-  if (!normalizedMeasurementId || !isProduction || platform !== 'web') {
+  const normalizedHostname = hostname?.trim().toLowerCase() ?? '';
+  if (
+    !normalizedMeasurementId ||
+    !isProduction ||
+    platform !== 'web' ||
+    normalizedHostname !== COINMIRROR_GA_HOSTNAME
+  ) {
     return { enabled: false, measurementId: normalizedMeasurementId || null };
   }
 
@@ -182,6 +191,7 @@ export function trackCoinmirrorEvent(name: AnalyticsEventName, payload: Analytic
       measurementId: resolveAnalyticsMeasurementId(process.env.EXPO_PUBLIC_GA_MEASUREMENT_ID),
       isProduction: process.env.NODE_ENV === 'production',
       platform: typeof window === 'undefined' ? 'native' : 'web',
+      hostname: typeof window === 'undefined' ? null : window.location.hostname,
     }),
     name,
     payload,

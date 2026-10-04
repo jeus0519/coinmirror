@@ -1,14 +1,22 @@
 import { ScrollViewStyleReset } from 'expo-router/html';
 import { type PropsWithChildren } from 'react';
 
-import { COINMIRROR_GA_MEASUREMENT_ID, getGoogleTagScriptSrc } from '../lib/analytics';
+import { COINMIRROR_GA_HOSTNAME, COINMIRROR_GA_MEASUREMENT_ID, getGoogleTagScriptSrc } from '../lib/analytics';
 import { buildCoinmirrorMetadata } from '../lib/seo-metadata';
 
+const googleTagScriptSrc = getGoogleTagScriptSrc(COINMIRROR_GA_MEASUREMENT_ID);
 const googleTagBootstrapScript = `
 (function () {
+  if (window.location.hostname !== '${COINMIRROR_GA_HOSTNAME}') return;
+
   window.dataLayer = window.dataLayer || [];
   function gtag(){window.dataLayer.push(arguments);}
   window.gtag = window.gtag || gtag;
+
+  var script = document.createElement('script');
+  script.async = true;
+  script.src = '${googleTagScriptSrc}';
+  document.head.appendChild(script);
 
   var pageUrl = new URL(window.location.href);
   pageUrl.search = '';
@@ -39,7 +47,6 @@ export default function Root({ children }: PropsWithChildren) {
   const metadata = buildCoinmirrorMetadata();
   const ogImage = metadata.openGraph.images[0];
   const twitterImage = metadata.twitter.images[0];
-  const googleTagScriptSrc = getGoogleTagScriptSrc(COINMIRROR_GA_MEASUREMENT_ID);
 
   return (
     <html lang="ko">
@@ -68,7 +75,6 @@ export default function Root({ children }: PropsWithChildren) {
         <meta name="twitter:title" content={metadata.twitter.title} />
         <meta name="twitter:description" content={metadata.twitter.description} />
         <meta name="twitter:image" content={twitterImage} />
-        <script async src={googleTagScriptSrc}></script>
         <script dangerouslySetInnerHTML={{ __html: googleTagBootstrapScript }} />
       </head>
       <body>{children}</body>

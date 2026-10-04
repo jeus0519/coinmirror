@@ -30,7 +30,21 @@ test('analytics config는 measurement id가 없거나 production web이 아니�
     false
   );
   assert.deepEqual(
-    buildAnalyticsConfig({ measurementId: 'G-TEST1234', isProduction: true, platform: 'web' }),
+    buildAnalyticsConfig({
+      measurementId: 'G-TEST1234',
+      isProduction: true,
+      platform: 'web',
+      hostname: 'preview.vercel.app',
+    }),
+    { enabled: false, measurementId: 'G-TEST1234' }
+  );
+  assert.deepEqual(
+    buildAnalyticsConfig({
+      measurementId: 'G-TEST1234',
+      isProduction: true,
+      platform: 'web',
+      hostname: 'www.coinmirror.kr',
+    }),
     {
       enabled: true,
       measurementId: 'G-TEST1234',
@@ -103,8 +117,11 @@ test('app.config는 GA4 Measurement ID 기본값을 Expo extra에 주입한다',
 test('Root HTML은 Google tag를 초기 head에서 로드해 GA 설치 감지를 안정화한다', async () => {
   const source = await readFile('src/app/+html.tsx', 'utf8');
 
-  assert.match(source, /getGoogleTagScriptSrc/);
-  assert.match(source, /<script async src=\{googleTagScriptSrc\}>/);
+  assert.match(source, /COINMIRROR_GA_HOSTNAME/);
+  assert.match(source, /window\.location\.hostname !== '\$\{COINMIRROR_GA_HOSTNAME\}'/);
+  assert.match(source, /document\.createElement\('script'\)/);
+  assert.match(source, /document\.head\.appendChild\(script\)/);
+  assert.doesNotMatch(source, /<script async src=\{googleTagScriptSrc\}>/);
   assert.match(source, /G-RW7FRXJVER/);
   assert.match(source, /window\.dataLayer/);
   assert.match(source, /gtag\('config', 'G-RW7FRXJVER'/);

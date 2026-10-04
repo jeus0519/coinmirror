@@ -24,13 +24,14 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
     const config = buildAnalyticsConfig({
       measurementId: resolveAnalyticsMeasurementId(process.env.EXPO_PUBLIC_GA_MEASUREMENT_ID),
       isProduction: process.env.NODE_ENV === 'production',
       platform: Platform.OS,
+      hostname: window.location.hostname,
     });
-
-    if (typeof window === 'undefined' || typeof document === 'undefined') return;
 
     const analyticsWindow = window as typeof window & {
       dataLayer?: unknown[];
